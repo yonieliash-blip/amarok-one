@@ -36,6 +36,7 @@ git commit -m "Description of your changes"
 ```
 
 Use clear, descriptive commit messages:
+
 - ✅ Good: `Add user authentication form validation`
 - ❌ Bad: `Fix stuff`
 
@@ -46,6 +47,7 @@ git push origin feature/your-feature-name
 ```
 
 Then create a Pull Request (PR) on GitHub with:
+
 - A clear title describing the changes
 - A description of what was changed and why
 - Reference to any related issues
@@ -53,6 +55,7 @@ Then create a Pull Request (PR) on GitHub with:
 ### 5. Code Review
 
 Review your own code before merging:
+
 - Does it solve the problem?
 - Is it maintainable?
 - Are there any edge cases?
@@ -61,6 +64,7 @@ Review your own code before merging:
 ### 6. Merge
 
 Once everything looks good, merge the PR:
+
 - Use "Squash and merge" to keep history clean
 - Delete the feature branch after merging
 
@@ -75,6 +79,7 @@ Once everything looks good, merge the PR:
 ## Testing
 
 Before pushing:
+
 - Test your changes thoroughly
 - Check for console errors
 - Test on different screen sizes (for UI changes)
@@ -82,6 +87,7 @@ Before pushing:
 ## Documentation
 
 If you make significant changes:
+
 - Update relevant documentation in `docs/`
 - Update this README if needed
 - Add comments to complex code

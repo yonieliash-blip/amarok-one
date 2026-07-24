@@ -1,0 +1,403 @@
+// Prisma schema — Sprint 1: Identity, Authentication & Organization
+// Organization is the tenant boundary; tenant-scoped rows use organizationId.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Tenant root entity. All tenant-isolated data references Organization.id via organizationId.
+model Organization {
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  companies   Company[]
+  branches    Branch[]
+  customers   Customer[]
+  customerContacts CustomerContact[]
+  equipmentTypes EquipmentType[]
+  equipment   Equipment[]
+  serviceCalls ServiceCall[]
+  userRoles   UserRole[]
+  roles       Role[]
+  auditLogs   AuditLog[]
+
+  @@index([deletedAt])
+  @@map("organizations")
+}
+
+/// Legal entity operating within an organization (tenant-scoped).
+model Company {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @db.Uuid
+  name           String
+  code           String
+  legalName      String?
+  taxId          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branches     Branch[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@index([organizationId, deletedAt])
+  @@map("companies")
+}
+
+/// Physical or logical site belonging to a company (tenant-scoped via organizationId).
+model Branch {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @db.Uuid
+  companyId      String    @db.Uuid
+  name           String
+  code           String
+  addressLine1   String?
+  city           String?
+  country        String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  company      Company      @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  equipment    Equipment[]
+  serviceCalls ServiceCall[]
+
+  @@unique([companyId, code])
+  @@index([organizationId])
+  @@index([companyId])
+  @@index([organizationId, deletedAt])
+  @@map("branches")
+}
+
+/// Global identity with credentials and profile.
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  email        String    @unique
+  passwordHash String?
+  displayName  String
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  userRoles      UserRole[]
+  refreshTokens  RefreshToken[]
+  auditLogs      AuditLog[] @relation("AuditActor")
+  assignedServiceCalls ServiceCall[] @relation("AssignedTechnician")
+
+  @@index([deletedAt])
+  @@index([isActive])
+  @@map("users")
+}
+
+/// System-wide permission definition (e.g. organizations:read).
+model Permission {
+  id          String   @id @default(uuid()) @db.Uuid
+  slug        String   @unique
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+/// Tenant-scoped role definition (admin, manager, technician, viewer, or custom).
+model Role {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @db.Uuid
+  name           String
+  slug           String
+  description    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@index([organizationId, deletedAt])
+  @@map("roles")
+}
+
+/// Links a permission to a tenant-scoped role.
+model RolePermission {
+  id           String   @id @default(uuid()) @db.Uuid
+  roleId       String   @db.Uuid
+  permissionId String   @db.Uuid
+  createdAt    DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+/// Links a User to an Organization with a Role (tenant-scoped user-role assignment).
+model UserRole {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @db.Uuid
+  userId         String    @db.Uuid
+  roleId         String    @db.Uuid
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  role         Role         @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, userId, roleId])
+  @@index([organizationId])
+  @@index([userId])
+  @@index([organizationId, deletedAt])
+  @@map("user_roles")
+}
+
+/// Hashed refresh token for JWT session rotation.
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+/// Append-only audit trail. Never updated or soft-deleted.
+model AuditLog {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  actorId        String?  @db.Uuid
+  action         String
+  entityType     String
+  entityId       String   @db.Uuid
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  actor        User?        @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([organizationId, createdAt])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+/// Customer lifecycle status.
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+  PROSPECT
+}
+
+/// Tenant-scoped customer account.
+model Customer {
+  id                 String         @id @default(uuid()) @db.Uuid
+  organizationId     String         @db.Uuid
+  name               String
+  legalName          String?
+  registrationNumber String?
+  customerNumber     String
+  email              String?
+  phone              String?
+  address            String?
+  city               String?
+  country            String?
+  notes              String?
+  status             CustomerStatus @default(ACTIVE)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  deletedAt          DateTime?
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  contacts     CustomerContact[]
+  equipment    Equipment[]
+  serviceCalls ServiceCall[]
+
+  @@unique([organizationId, customerNumber])
+  @@index([organizationId])
+  @@index([organizationId, deletedAt])
+  @@index([organizationId, status])
+  @@map("customers")
+}
+
+/// Contact person belonging to a customer (tenant-scoped).
+model CustomerContact {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @db.Uuid
+  customerId     String    @db.Uuid
+  name           String
+  email          String?
+  phone          String?
+  jobTitle       String?
+  isPrimary      Boolean   @default(false)
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@index([customerId])
+  @@index([customerId, deletedAt])
+  @@map("customer_contacts")
+}
+
+/// Equipment operational status.
+enum EquipmentStatus {
+  ACTIVE
+  IN_SERVICE
+  OUT_OF_SERVICE
+  RETIRED
+}
+
+/// Tenant-scoped equipment category (forklift, crane, excavator, etc.).
+model EquipmentType {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @db.Uuid
+  name           String
+  code           String
+  description    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  equipment    Equipment[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@index([organizationId, deletedAt])
+  @@map("equipment_types")
+}
+
+/// Tenant-scoped equipment asset (machine, vehicle, or tool).
+model Equipment {
+  id                 String          @id @default(uuid()) @db.Uuid
+  organizationId     String          @db.Uuid
+  equipmentTypeId    String          @db.Uuid
+  customerId         String?         @db.Uuid
+  branchId           String?         @db.Uuid
+  name               String
+  internalNumber     String
+  serialNumber       String?
+  manufacturer       String?
+  model              String?
+  year               Int?
+  status             EquipmentStatus @default(ACTIVE)
+  engineHours        Decimal?        @db.Decimal(10, 2)
+  mileage            Int?
+  registrationNumber String?
+  warrantyEndDate    DateTime?       @db.Date
+  location           String?
+  notes              String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  deletedAt          DateTime?
+
+  organization  Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  equipmentType EquipmentType @relation(fields: [equipmentTypeId], references: [id], onDelete: Restrict)
+  customer      Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  branch        Branch?       @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  serviceCalls  ServiceCall[]
+
+  @@unique([organizationId, internalNumber])
+  @@index([organizationId])
+  @@index([organizationId, deletedAt])
+  @@index([organizationId, status])
+  @@index([organizationId, customerId])
+  @@index([organizationId, equipmentTypeId])
+  @@index([organizationId, manufacturer])
+  @@index([organizationId, model])
+  @@map("equipment")
+}
+
+/// Service call lifecycle status.
+enum ServiceCallStatus {
+  OPEN
+  SCHEDULED
+  IN_PROGRESS
+  WAITING_FOR_PARTS
+  COMPLETED
+  CANCELLED
+}
+
+/// Service call urgency level.
+enum ServiceCallPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+/// Tenant-scoped field service work order.
+model ServiceCall {
+  id                String              @id @default(uuid()) @db.Uuid
+  organizationId    String              @db.Uuid
+  serviceCallNumber String
+  title             String
+  description       String?
+  status            ServiceCallStatus   @default(OPEN)
+  priority          ServiceCallPriority @default(NORMAL)
+  openedAt          DateTime            @default(now())
+  scheduledAt       DateTime?
+  completedAt       DateTime?
+  customerId        String              @db.Uuid
+  equipmentId       String              @db.Uuid
+  branchId          String?             @db.Uuid
+  assignedUserId    String?             @db.Uuid
+  contactName       String?
+  contactPhone      String?
+  location          String?
+  notes             String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  deletedAt         DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  equipment    Equipment    @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+  branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  assignedUser User?        @relation("AssignedTechnician", fields: [assignedUserId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, serviceCallNumber])
+  @@index([organizationId])
+  @@index([organizationId, deletedAt])
+  @@index([organizationId, status])
+  @@index([organizationId, priority])
+  @@index([organizationId, customerId])
+  @@index([organizationId, equipmentId])
+  @@index([organizationId, assignedUserId])
+  @@index([organizationId, openedAt])
+  @@map("service_calls")
+}

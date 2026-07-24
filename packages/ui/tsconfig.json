@@ -1,0 +1,8 @@
+{
+  "extends": "@amarok-one/config/typescript/react.json",
+  "compilerOptions": {
+    "ignoreDeprecations": "6.0",
+    "rootDir": "src"
+  },
+  "include": ["src"]
+}

@@ -7,6 +7,7 @@ Automated CI/CD workflows for AMAROK ONE.
 (Workflow automation scripts to be added)
 
 Examples:
+
 - Automated testing
 - Build verification
 - Deployment automation

@@ -1,0 +1,27 @@
+{
+  "name": "@amarok-one/config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./typescript/base.json": "./typescript/base.json",
+    "./typescript/react.json": "./typescript/react.json",
+    "./typescript/node.json": "./typescript/node.json",
+    "./typescript/react-native.json": "./typescript/react-native.json",
+    "./eslint/base": "./eslint/base.js",
+    "./eslint/react": "./eslint/react.js",
+    "./eslint/react-native": "./eslint/react-native.js",
+    "./eslint/node": "./eslint/node.js"
+  },
+  "dependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
+    "globals": "^17.7.0",
+    "typescript-eslint": "^8.62.0"
+  },
+  "peerDependencies": {
+    "eslint": "^10.0.0"
+  }
+}

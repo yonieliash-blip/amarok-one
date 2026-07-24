@@ -1,0 +1,40 @@
+# Dependencies (reinstalled in container)
+node_modules/
+
+# Build output (rebuilt in container)
+dist/
+build/
+out/
+.turbo/
+
+# Local data and caches
+.data/
+.pnpm-store/
+coverage/
+*.log
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# Git and IDE
+.git/
+.vscode/
+.idea/
+
+# Legacy (not used in Docker builds)
+frontend/
+backend/
+
+# OS and temp files
+Thumbs.db
+.DS_Store
+*.tmp
+*.temp
+
+# Documentation (not needed in image)
+docs/
+*.md
+!apps/**/README.md

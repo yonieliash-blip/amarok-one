@@ -7,6 +7,7 @@ Issue templates for GitHub.
 (Issue templates to be created)
 
 Examples:
+
 - Bug reports
 - Feature requests
 - Documentation improvements

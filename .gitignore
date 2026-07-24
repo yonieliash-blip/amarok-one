@@ -5,6 +5,13 @@ node_modules/
 dist/
 build/
 out/
+.next/
+
+# Turborepo
+.turbo/
+
+# Expo
+.expo/
 
 # Environment variables
 .env
@@ -12,6 +19,24 @@ out/
 .env.*.local
 .env.*
 !.env.example
+!.env.production.example
+
+# Secrets and keys
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+secrets.json
+
+# Terraform / IaC state
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# Docker local volumes (if bind-mounted)
+postgres_data/
 
 # Logs
 logs/
@@ -19,6 +44,7 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
 # Testing
 coverage/
@@ -30,7 +56,6 @@ coverage/
 *.swp
 *.swo
 *~
-.DS_Store
 *.sublime-project
 *.sublime-workspace
 
@@ -42,6 +67,8 @@ Thumbs.db
 *.tmp
 *.temp
 
-# Lock files (optional - uncomment if working with team)
-# package-lock.json
-# yarn.lock
+# Local embedded PostgreSQL data (fallback when Docker is unavailable)
+.data/
+
+# pnpm
+.pnpm-store/

@@ -1,0 +1,26 @@
+# Local development PostgreSQL for AMAROK ONE
+# Usage: docker compose -f infrastructure/docker/docker-compose.postgres.yml up -d
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: amarok-one-postgres
+    environment:
+      POSTGRES_USER: amarok
+      POSTGRES_PASSWORD: amarok
+      POSTGRES_DB: amarok_one
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U amarok -d amarok_one"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    name: amarok-one-postgres-data

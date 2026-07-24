@@ -1,0 +1,52 @@
+{
+  "name": "@amarok-one/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx scripts/ensure-database.ts && tsx watch --env-file=../../.env src/index.ts",
+    "build": "prisma generate && tsc -p tsconfig.build.json",
+    "start": "node --env-file=../../.env dist/index.js",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit -p tsconfig.build.json",
+    "test": "vitest run",
+    "clean": "rimraf dist",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "db:reset": "prisma migrate reset",
+    "db:seed": "tsx --env-file=../../.env prisma/seed.ts",
+    "db:setup": "tsx scripts/ensure-database.ts"
+  },
+  "dependencies": {
+    "@amarok-one/permissions": "workspace:*",
+    "@amarok-one/types": "workspace:*",
+    "@amarok-one/utils": "workspace:*",
+    "@hono/node-server": "^1.19.9",
+    "@hono/zod-validator": "^0.7.2",
+    "@prisma/client": "^6.19.0",
+    "argon2": "^0.43.0",
+    "hono": "^4.11.4",
+    "jose": "^6.1.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@amarok-one/config": "workspace:*",
+    "@types/node": "^24.13.2",
+    "@types/pg": "^8.15.5",
+    "eslint": "^10.6.0",
+    "prisma": "^6.19.0",
+    "embedded-postgres": "17.10.0-beta.17",
+    "pg": "^8.16.3",
+    "rimraf": "^6.0.1",
+    "tsx": "^4.21.0",
+    "typescript": "~6.0.2",
+    "vitest": "^3.2.4"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma",
+    "seed": "tsx --env-file=../../.env prisma/seed.ts"
+  }
+}

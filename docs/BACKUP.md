@@ -7,14 +7,17 @@ This guide covers backup and disaster recovery procedures for AMAROK ONE.
 ## Backup Strategy
 
 ### GitHub Repository
+
 - The GitHub repository is the primary backup for source code
 - All changes are versioned and can be recovered
 - Regular pushes ensure code is backed up
 
 ### Database Backups
+
 (To be documented)
 
 ### File Storage Backups
+
 (To be documented)
 
 ## Backup Frequency
@@ -24,6 +27,7 @@ This guide covers backup and disaster recovery procedures for AMAROK ONE.
 ## Recovery Procedures
 
 ### Code Recovery
+
 ```bash
 # View commit history
 git log --oneline
@@ -36,6 +40,7 @@ git revert <commit-hash>
 ```
 
 ### Database Recovery
+
 (To be documented)
 
 ## Testing Backups

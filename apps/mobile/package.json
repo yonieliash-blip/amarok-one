@@ -1,0 +1,32 @@
+{
+  "name": "@amarok-one/mobile",
+  "version": "0.0.0",
+  "private": true,
+  "main": "expo/AppEntry.js",
+  "scripts": {
+    "dev": "expo start",
+    "build": "tsc --noEmit -p tsconfig.json",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "lint": "eslint App.tsx",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "clean": "rimraf dist .expo"
+  },
+  "dependencies": {
+    "@amarok-one/types": "workspace:*",
+    "@amarok-one/utils": "workspace:*",
+    "expo": "~54.0.33",
+    "expo-status-bar": "~3.0.9",
+    "react": "19.1.0",
+    "react-native": "0.81.5"
+  },
+  "devDependencies": {
+    "@amarok-one/config": "workspace:*",
+    "@types/react": "~19.1.10",
+    "babel-preset-expo": "~54.0.10",
+    "eslint": "^10.6.0",
+    "rimraf": "^6.0.1",
+    "typescript": "~6.0.2"
+  }
+}
