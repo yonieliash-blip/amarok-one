@@ -74,7 +74,7 @@ async function waitForDatabase(databaseUrl: string, maxAttempts = 45): Promise<v
 
 function dockerAvailable(): boolean {
   try {
-    execSync("docker version", { stdio: "ignore", shell: true });
+    execSync("docker info", { stdio: "ignore", shell: true });
     return true;
   } catch {
     return false;

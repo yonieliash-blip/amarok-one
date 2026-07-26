@@ -30,9 +30,9 @@
     "db:studio": "pnpm --filter @amarok-one/api db:studio",
     "dev:api": "pnpm --filter @amarok-one/api dev",
     "build:prod": "turbo run build",
-    "docker:build": "docker compose -f infrastructure/docker/docker-compose.yml build",
-    "docker:up": "docker compose -f infrastructure/docker/docker-compose.yml up -d --wait",
-    "docker:down": "docker compose -f infrastructure/docker/docker-compose.yml down",
+    "docker:build": "docker compose --env-file infrastructure/docker/compose.env -f infrastructure/docker/docker-compose.yml build",
+    "docker:up": "docker compose --env-file infrastructure/docker/compose.env -f infrastructure/docker/docker-compose.yml up -d --wait",
+    "docker:down": "docker compose --env-file infrastructure/docker/compose.env -f infrastructure/docker/docker-compose.yml down",
     "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {

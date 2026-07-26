@@ -6,7 +6,7 @@ RUN corepack enable && corepack prepare pnpm@10.12.4 --activate
 WORKDIR /app
 
 FROM base AS pruner
-RUN pnpm add -g turbo
+RUN npm install -g turbo@2.10.5
 COPY . .
 RUN turbo prune @amarok-one/api --docker
 
@@ -16,24 +16,21 @@ COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 RUN pnpm install --frozen-lockfile
 COPY --from=pruner /app/out/full/ .
 RUN pnpm turbo run build --filter=@amarok-one/api
+RUN pnpm deploy --filter=@amarok-one/api --prod --legacy /deploy/api
 
 FROM node:20-alpine AS runner
 RUN apk add --no-cache openssl wget
+RUN npm install -g prisma@6.19.3
 WORKDIR /app
 ENV NODE_ENV=production
 
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/packages ./packages
-COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
-COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
+COPY --from=builder /deploy/api ./
+COPY --from=builder /app/apps/api/prisma ./prisma
+RUN prisma generate --schema=./prisma/schema.prisma
 
 COPY infrastructure/docker/entrypoint.api.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
-WORKDIR /app/apps/api
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \

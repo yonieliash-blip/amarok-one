@@ -84,38 +84,102 @@ pnpm --filter @amarok-one/web dev   # Web → http://localhost:5173
 
 ## Docker full stack (production-like)
 
-Build and run postgres + API + web locally:
+Local Docker uses [`infrastructure/docker/compose.env`](../infrastructure/docker/compose.env) for Compose variable substitution. This avoids relying on a malformed or secret-bearing root `.env` file. Values in `compose.env` are **local-only** defaults (not for AWS).
+
+### Build images
+
+From the repository root:
 
 ```bash
-# Optional: copy production template and set secrets
-cp .env.production.example .env
-
-# Build and start (from repo root)
 pnpm docker:build
-pnpm docker:up
 ```
 
-| Service    | URL                          |
-| ---------- | ---------------------------- |
-| Web        | http://localhost:8080        |
-| API        | http://localhost:3000        |
-| API health | http://localhost:3000/health |
-| PostgreSQL | localhost:5432               |
-
-Stop the stack:
+Equivalent:
 
 ```bash
+docker compose --env-file infrastructure/docker/compose.env \
+  -f infrastructure/docker/docker-compose.yml build
+```
+
+Build the web image with a custom API URL (required before AWS — baked into the static bundle):
+
+```bash
+docker compose --env-file infrastructure/docker/compose.env \
+  -f infrastructure/docker/docker-compose.yml build \
+  --build-arg VITE_API_URL=http://localhost:3000 web
+```
+
+### Start and stop the stack
+
+```bash
+pnpm docker:up
 pnpm docker:down
 ```
 
-**First-time database seed** (optional, staging/demo only):
+Equivalent:
 
 ```bash
-docker compose -f infrastructure/docker/docker-compose.yml exec api \
-  node ../../node_modules/tsx/dist/cli.mjs prisma/seed.ts
+docker compose --env-file infrastructure/docker/compose.env \
+  -f infrastructure/docker/docker-compose.yml up -d --wait
+
+docker compose --env-file infrastructure/docker/compose.env \
+  -f infrastructure/docker/docker-compose.yml down
 ```
 
-Or run seed locally against the Docker postgres: `pnpm db:seed`.
+| Service    | URL                             |
+| ---------- | ------------------------------- |
+| Web        | http://localhost:8080           |
+| API        | http://localhost:3000           |
+| Web health | http://localhost:8080/health    |
+| API health | http://localhost:3000/health    |
+| API DB     | http://localhost:3000/health/db |
+| PostgreSQL | localhost:5432 (user `amarok`)  |
+
+**Health check expectations**
+
+- **API** `GET /health` — JSON with `"status":"ok"` and `"database":"connected"`.
+- **Web** `GET /health` — plain text `ok`.
+- Compose waits until postgres, api, and web services report healthy.
+
+### Database migrations (Docker)
+
+The API container **runs migrations on every start** (`prisma migrate deploy` in `entrypoint.api.sh`) before listening on port 3000. No separate migration step is required for local Docker.
+
+For non-Docker production (ECS/RDS), migrations run the same way via the API container entrypoint, or manually:
+
+```bash
+pnpm db:migrate:deploy
+```
+
+(with `DATABASE_URL` set to the target database).
+
+### One-time seed (demo / staging data)
+
+A fresh Compose volume has schema but **no demo users**. Run seed **once** after the stack is up, using the Docker network (recommended on Windows where host port `5432` may not reach the Compose postgres):
+
+**Linux / macOS (bash):**
+
+```bash
+docker run --rm --network docker_default \
+  -e DATABASE_URL="postgresql://amarok:amarok@postgres:5432/amarok_one?schema=public" \
+  -v "$(pwd):/app" -w /app/apps/api \
+  node:20-bookworm-slim \
+  sh -c "corepack enable && corepack prepare pnpm@10.12.4 --activate && cd /app && pnpm exec tsx apps/api/prisma/seed.ts"
+```
+
+**Windows (PowerShell):**
+
+```powershell
+docker run --rm --network docker_default `
+  -e DATABASE_URL="postgresql://amarok:amarok@postgres:5432/amarok_one?schema=public" `
+  -v "${PWD}:/app" -w /app/apps/api `
+  node:20-bookworm-slim `
+  sh -c "corepack enable && corepack prepare pnpm@10.12.4 --activate && cd /app && pnpm exec tsx apps/api/prisma/seed.ts"
+```
+
+Demo password after seed: `Admin@123456` (see demo emails in [Local verification](#local-verification-clean-environment) above).
+
+**Production (AWS):** do not use demo seed defaults. Create real admin users through a controlled, audited process; set `SEED_ADMIN_PASSWORD` only for explicit staging runs, never in production Secrets Manager.
 
 ---
 

@@ -27,23 +27,28 @@ When Docker is unavailable, `pnpm db:setup` falls back to **embedded PostgreSQL*
 
 ## Docker full stack
 
+Uses [docker/compose.env](docker/compose.env) for local Compose variables (see [docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md)).
+
 ```bash
 pnpm docker:build
 pnpm docker:up
+pnpm docker:down
 ```
 
-| Service    | URL                   |
-| ---------- | --------------------- |
-| `postgres` | localhost:5432        |
-| `web`      | http://localhost:8080 |
-| `api`      | http://localhost:3000 |
+| Service    | URL                           |
+| ---------- | ----------------------------- |
+| `postgres` | localhost:5432                |
+| `web`      | http://localhost:8080         |
+| `api`      | http://localhost:3000         |
+| Health     | `:8080/health`, `:3000/health |
 
-Environment: copy [`.env.production.example`](../.env.production.example) to `.env` and set JWT secrets before running in any shared environment. Local Docker uses documented fallback secrets when `.env` is absent.
+Migrations run automatically when the API container starts. Demo seed is a separate one-time step — see [docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md).
 
 ## Docker files
 
 | File                                                 | Purpose                                      |
 | ---------------------------------------------------- | -------------------------------------------- |
+| [docker/compose.env](docker/compose.env)             | Local Compose env (not for production)       |
 | [docker/Dockerfile.api](docker/Dockerfile.api)       | API image (Node 20, Prisma migrate on start) |
 | [docker/Dockerfile.web](docker/Dockerfile.web)       | Web image (Vite build + nginx)               |
 | [docker/entrypoint.api.sh](docker/entrypoint.api.sh) | Runs migrations then starts API              |

@@ -5,7 +5,7 @@ RUN corepack enable && corepack prepare pnpm@10.12.4 --activate
 WORKDIR /app
 
 FROM base AS pruner
-RUN pnpm add -g turbo
+RUN npm install -g turbo@2.10.5
 COPY . .
 RUN turbo prune @amarok-one/web --docker
 

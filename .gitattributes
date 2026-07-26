@@ -1,0 +1,2 @@
+# Shell scripts in Docker images must use LF line endings
+infrastructure/docker/*.sh text eol=lf

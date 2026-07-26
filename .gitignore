@@ -21,6 +21,9 @@ out/
 !.env.example
 !.env.production.example
 
+# Local Docker Compose env (safe local defaults — not production secrets)
+!infrastructure/docker/compose.env
+
 # Secrets and keys
 *.pem
 *.key
