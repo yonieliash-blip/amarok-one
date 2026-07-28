@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { useAuth } from "../auth/useAuth";
 import { useTranslation } from "../i18n/useTranslation";
+import { useDismissOnEscape } from "./useDismissOnEscape";
 
 export function OrganizationSwitcher() {
   const { user } = useAuth();
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useDismissOnEscape(open, () => setOpen(false));
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent): void {
@@ -34,9 +38,7 @@ export function OrganizationSwitcher() {
       >
         <span className="org-switcher__label">{t("org", "label")}</span>
         <span className="org-switcher__value">{user.organization.name}</span>
-        <span className="org-switcher__chevron" aria-hidden="true">
-          ▾
-        </span>
+        <ChevronDown className="org-switcher__chevron" size={18} aria-hidden="true" />
       </button>
 
       {open ? (

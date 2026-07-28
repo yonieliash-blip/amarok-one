@@ -34,4 +34,6 @@ export const env = {
   JWT_REFRESH_EXPIRES_IN:
     process.env.JWT_REFRESH_EXPIRES_IN?.trim() || DEFAULT_JWT_REFRESH_EXPIRES_IN,
   SEED_ADMIN_PASSWORD: process.env.SEED_ADMIN_PASSWORD?.trim() || DEFAULT_SEED_ADMIN_PASSWORD,
+  /** Required in production to access GET /health/db (sent as X-Health-Token). */
+  HEALTH_DB_TOKEN: process.env.HEALTH_DB_TOKEN?.trim() || undefined,
 } as const;

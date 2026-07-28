@@ -72,14 +72,20 @@ export function AppLayout() {
   return (
     <div className="app-shell">
       <aside
+        id="app-sidebar"
         className={`sidebar${isMobileNav && sidebarOpen ? " sidebar--open" : ""}${isMobileNav ? " sidebar--drawer" : " sidebar--docked"}`}
         aria-label={t("common", "mainNavigation")}
+        aria-hidden={isMobileNav && !sidebarOpen ? true : undefined}
       >
         <Sidebar onNavigate={() => setSidebarOpen(false)} />
       </aside>
 
       <div className="app-shell__main">
-        <Header title={title} onMenuToggle={() => setSidebarOpen((value) => !value)} />
+        <Header
+          title={title}
+          menuOpen={isMobileNav && sidebarOpen}
+          onMenuToggle={() => setSidebarOpen((value) => !value)}
+        />
         <main className="app-shell__content">
           <Outlet />
         </main>

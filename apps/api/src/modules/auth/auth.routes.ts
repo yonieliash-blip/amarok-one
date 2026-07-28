@@ -3,16 +3,19 @@ import { Hono } from "hono";
 import { createApiResponse } from "@amarok-one/utils";
 import { getAuth } from "../../lib/auth-context.js";
 import { jwtGuard } from "../../middleware/jwt-guard.js";
+import { rateLimit } from "../../middleware/rate-limit.js";
 import { loginSchema, logoutSchema, refreshTokenSchema, switchRoleSchema } from "./auth.schemas.js";
 import { getCurrentUser, login, logout, refreshSession, switchRole } from "./auth.service.js";
 
+const AUTH_RATE_LIMIT = rateLimit("auth", { windowMs: 60_000, max: 10 });
+
 export const authRoutes = new Hono()
-  .post("/login", zValidator("json", loginSchema), async (context) => {
+  .post("/login", AUTH_RATE_LIMIT, zValidator("json", loginSchema), async (context) => {
     const body = context.req.valid("json");
     const session = await login(body);
     return context.json(createApiResponse(session));
   })
-  .post("/refresh", zValidator("json", refreshTokenSchema), async (context) => {
+  .post("/refresh", AUTH_RATE_LIMIT, zValidator("json", refreshTokenSchema), async (context) => {
     const body = context.req.valid("json");
     const session = await refreshSession(body);
     return context.json(createApiResponse(session));

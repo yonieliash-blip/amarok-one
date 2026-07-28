@@ -45,6 +45,10 @@ export const he: TranslationMessages = {
     parts: "חלקים",
     accounting: "הנהלת חשבונות",
     reports: "דוחות",
+    navGroupOverview: "מרכז שליטה",
+    navGroupOperations: "תפעול שירות",
+    navGroupField: "שטח וטכנאים",
+    navGroupBackOffice: "משרד אחורי",
   },
   titles: {
     dashboard: "לוח בקרה",
@@ -103,6 +107,9 @@ export const he: TranslationMessages = {
   },
   dashboard: {
     welcomeBack: "ברוכים השבים",
+    greeting: "שלום, {{name}}",
+    quickActions: "גישה מהירה",
+    metricsSection: "מדדי תפעול",
     subtitle: "{{organization}} · {{role}}",
     managementTitle: "לוח ניהול",
     managementSubtitle: "{{organization}} · {{role}}",

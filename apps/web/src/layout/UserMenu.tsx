@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getDefaultLandingPath } from "@amarok-one/permissions";
 import { useAuth } from "../auth/useAuth";
 import { useTranslation } from "../i18n/useTranslation";
+import { useDismissOnEscape } from "./useDismissOnEscape";
 
 export function UserMenu() {
   const { user, logout, switchRole } = useAuth();
@@ -12,6 +13,8 @@ export function UserMenu() {
   const [signingOut, setSigningOut] = useState(false);
   const [switchingRoleId, setSwitchingRoleId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useDismissOnEscape(open, () => setOpen(false));
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent): void {

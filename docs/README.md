@@ -10,6 +10,7 @@ Central documentation for the AMAROK ONE project. **All agents must read every d
 | [CODING_STANDARDS.md](CODING_STANDARDS.md)         | TypeScript, linting, testing, and package rules  |
 | [SECURITY.md](SECURITY.md)                         | Security requirements and secure defaults        |
 | [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md) | Branching, verification, and completion criteria |
+| [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)               | UI tokens, components, RTL, and accessibility    |
 
 ## Operations
 

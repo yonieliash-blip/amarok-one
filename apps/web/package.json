@@ -17,6 +17,7 @@
     "@amarok-one/types": "workspace:*",
     "@amarok-one/ui": "workspace:*",
     "@amarok-one/utils": "workspace:*",
+    "lucide-react": "^1.27.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.9.1"

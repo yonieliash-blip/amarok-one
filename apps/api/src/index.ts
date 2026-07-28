@@ -2,17 +2,20 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import { secureHeaders } from "hono/secure-headers";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { ApiResponse, HealthStatus } from "@amarok-one/types";
 import { createApiResponse, createHealthStatus } from "@amarok-one/utils";
 import { disconnectDatabase, verifyDatabaseConnection } from "./lib/database.js";
 import { isAppError } from "./lib/errors.js";
 import { prisma } from "./lib/prisma.js";
+import { healthDbGuard } from "./middleware/health-db-guard.js";
 import { apiRoutes } from "./routes.js";
 import { env } from "./env.js";
 
 const app = new Hono();
 
+app.use("*", secureHeaders());
 app.use("*", logger());
 app.use(
   "*",
@@ -45,7 +48,7 @@ app.get("/health", async (context) => {
   return context.json(response, databaseOk ? 200 : 503);
 });
 
-app.get("/health/db", async (context) => {
+app.get("/health/db", healthDbGuard, async (context) => {
   const databaseOk = await verifyDatabaseConnection();
 
   if (!databaseOk) {

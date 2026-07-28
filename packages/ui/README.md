@@ -18,6 +18,8 @@ import "@amarok-one/ui/styles.css";
 
 Built with [tsup](https://tsup.egoist.dev/). CSS is bundled separately — import `styles.css` in your app entry point.
 
+Visual tokens and component rules: [Design System v1](../../docs/DESIGN_SYSTEM.md). App-level CSS variables live in `apps/web/src/design-system/tokens.css`.
+
 ## Development
 
 ```bash

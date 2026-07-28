@@ -45,6 +45,10 @@ export const en: TranslationMessages = {
     parts: "Parts",
     accounting: "Accounting",
     reports: "Reports",
+    navGroupOverview: "Overview",
+    navGroupOperations: "Service operations",
+    navGroupField: "Field & technicians",
+    navGroupBackOffice: "Back office",
   },
   titles: {
     dashboard: "Dashboard",
@@ -103,6 +107,9 @@ export const en: TranslationMessages = {
   },
   dashboard: {
     welcomeBack: "Welcome back",
+    greeting: "Hello, {{name}}",
+    quickActions: "Quick access",
+    metricsSection: "Operations metrics",
     subtitle: "{{organization}} · {{role}}",
     managementTitle: "Management Dashboard",
     managementSubtitle: "{{organization}} · {{role}}",

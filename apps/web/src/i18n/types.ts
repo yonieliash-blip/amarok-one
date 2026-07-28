@@ -47,6 +47,10 @@ export interface TranslationMessages {
     parts: string;
     accounting: string;
     reports: string;
+    navGroupOverview: string;
+    navGroupOperations: string;
+    navGroupField: string;
+    navGroupBackOffice: string;
   };
   titles: {
     dashboard: string;
@@ -105,6 +109,9 @@ export interface TranslationMessages {
   };
   dashboard: {
     welcomeBack: string;
+    greeting: string;
+    quickActions: string;
+    metricsSection: string;
     subtitle: string;
     managementTitle: string;
     managementSubtitle: string;
