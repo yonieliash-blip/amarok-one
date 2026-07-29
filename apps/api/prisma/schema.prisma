@@ -26,6 +26,8 @@ model Organization {
   equipmentTypes EquipmentType[]
   equipment   Equipment[]
   serviceCalls ServiceCall[]
+  serviceCallVisits ServiceCallVisit[]
+  workflowEvents WorkflowEvent[]
   userRoles   UserRole[]
   roles       Role[]
   auditLogs   AuditLog[]
@@ -97,6 +99,7 @@ model User {
   refreshTokens  RefreshToken[]
   auditLogs      AuditLog[] @relation("AuditActor")
   assignedServiceCalls ServiceCall[] @relation("AssignedTechnician")
+  serviceCallVisits    ServiceCallVisit[] @relation("VisitTechnician")
 
   @@index([deletedAt])
   @@index([isActive])
@@ -360,6 +363,33 @@ enum ServiceCallPriority {
   URGENT
 }
 
+/// Control-center lifecycle (Sprint 4).
+enum ServiceCallLifecycleState {
+  NEW
+  WAITING_ASSIGNMENT
+  ASSIGNED
+  DRIVING
+  WORKING
+  WAITING_FOR_PARTS
+  WAITING_CUSTOMER
+  WAITING_SPECIALIST
+  WAITING_MANAGER_CLOSURE
+  CLOSED
+}
+
+/// Technician visit status within a service call.
+enum ServiceCallVisitStatus {
+  PLANNED
+  ASSIGNED
+  DRIVING
+  WORKING
+  FINISHED
+  CANCELLED
+  CHECKED_IN
+  IN_PROGRESS
+  COMPLETED
+}
+
 /// Tenant-scoped field service work order.
 model ServiceCall {
   id                String              @id @default(uuid()) @db.Uuid
@@ -368,6 +398,7 @@ model ServiceCall {
   title             String
   description       String?
   status            ServiceCallStatus   @default(OPEN)
+  lifecycleState    ServiceCallLifecycleState @default(NEW)
   priority          ServiceCallPriority @default(NORMAL)
   openedAt          DateTime            @default(now())
   scheduledAt       DateTime?
@@ -389,6 +420,7 @@ model ServiceCall {
   equipment    Equipment    @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
   branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
   assignedUser User?        @relation("AssignedTechnician", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  visits       ServiceCallVisit[]
 
   @@unique([organizationId, serviceCallNumber])
   @@index([organizationId])
@@ -400,4 +432,57 @@ model ServiceCall {
   @@index([organizationId, assignedUserId])
   @@index([organizationId, openedAt])
   @@map("service_calls")
+}
+
+/// Technician visit on a service call (operational store; workflow events remain source of truth for transitions).
+model ServiceCallVisit {
+  id               String                 @id @default(uuid()) @db.Uuid
+  organizationId   String                 @db.Uuid
+  serviceCallId    String                 @db.Uuid
+  technicianId     String                 @db.Uuid
+  sequence         Int
+  status           ServiceCallVisitStatus @default(ASSIGNED)
+  scheduledStart   DateTime?
+  scheduledEnd     DateTime?
+  drivingStartedAt DateTime?
+  workingStartedAt DateTime?
+  finishedAt       DateTime?
+  notes            String?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  deletedAt        DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  serviceCall  ServiceCall  @relation(fields: [serviceCallId], references: [id], onDelete: Restrict)
+  technician   User         @relation("VisitTechnician", fields: [technicianId], references: [id], onDelete: Restrict)
+
+  @@unique([serviceCallId, sequence])
+  @@index([organizationId])
+  @@index([organizationId, serviceCallId])
+  @@index([organizationId, technicianId])
+  @@index([organizationId, deletedAt])
+  @@map("service_call_visits")
+}
+
+/// Append-only workflow event stream (service-call aggregate).
+model WorkflowEvent {
+  id             String   @id @db.Uuid
+  organizationId String   @db.Uuid
+  aggregateType  String
+  aggregateId    String   @db.Uuid
+  type           String
+  payload        Json
+  occurredAt     DateTime
+  actorId        String?  @db.Uuid
+  correlationId  String
+  causationId    String?  @db.Uuid
+  sequence       Int
+  idempotencyKey String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, aggregateId, sequence])
+  @@index([organizationId, aggregateId])
+  @@index([organizationId, idempotencyKey])
+  @@map("workflow_events")
 }

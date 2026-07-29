@@ -4,13 +4,14 @@ import type {
   Customer,
   OrganizationMember,
   ServiceCall,
+  ServiceCallLifecycleState,
   ServiceCallPriority,
   ServiceCallStatus,
 } from "@amarok-one/types";
 import { Button } from "@amarok-one/ui";
 import { useAuth } from "../../auth/useAuth";
+import { ServiceCallLifecycleBadge } from "../../components/ServiceCallLifecycleBadge";
 import { ServiceCallPriorityBadge } from "../../components/ServiceCallPriorityBadge";
-import { ServiceCallStatusBadge } from "../../components/ServiceCallStatusBadge";
 import { EmptyState } from "../../components/EmptyState";
 import { ErrorState } from "../../components/ErrorState";
 import { LoadingState } from "../../components/LoadingState";
@@ -18,6 +19,7 @@ import { formatDate, formatNumber } from "../../i18n/format";
 import { useTranslation } from "../../i18n/useTranslation";
 import { getApiErrorMessage } from "../../lib/auth-errors";
 import { listCustomersRequest } from "../../lib/customers-api";
+import { getServiceCallLifecycleLabel } from "../../lib/service-call-lifecycle-labels";
 import {
   getServiceCallPriorityLabel,
   getServiceCallStatusLabel,
@@ -31,6 +33,19 @@ import { isApiRequestError } from "../../lib/api-client";
 
 type PageStatus = "loading" | "ready" | "error";
 
+const LIFECYCLE_FILTER_ORDER: readonly ServiceCallLifecycleState[] = [
+  "new",
+  "waiting_assignment",
+  "assigned",
+  "driving",
+  "working",
+  "waiting_for_parts",
+  "waiting_customer",
+  "waiting_specialist",
+  "waiting_manager_closure",
+  "closed",
+];
+
 export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine" }) {
   const { user, accessToken } = useAuth();
   const { t, locale } = useTranslation();
@@ -41,6 +56,7 @@ export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine"
   const [assignees, setAssignees] = useState<OrganizationMember[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"" | ServiceCallStatus>("");
+  const [lifecycleFilter, setLifecycleFilter] = useState<"" | ServiceCallLifecycleState>("");
   const [priorityFilter, setPriorityFilter] = useState<"" | ServiceCallPriority>("");
   const [customerFilter, setCustomerFilter] = useState("");
   const [assigneeFilter, setAssigneeFilter] = useState("");
@@ -57,6 +73,14 @@ export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine"
     ...(
       ["open", "scheduled", "in_progress", "waiting_for_parts", "completed", "cancelled"] as const
     ).map((value) => ({ value, label: getServiceCallStatusLabel(t, value) })),
+  ];
+
+  const lifecycleOptions: Array<{ value: "" | ServiceCallLifecycleState; label: string }> = [
+    { value: "", label: t("serviceCalls", "allLifecycleStates") },
+    ...LIFECYCLE_FILTER_ORDER.map((value) => ({
+      value,
+      label: getServiceCallLifecycleLabel(t, value),
+    })),
   ];
 
   const priorityOptions: Array<{ value: "" | ServiceCallPriority; label: string }> = [
@@ -111,6 +135,7 @@ export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine"
         const result = await listServiceCallsRequest(user.organization.id, accessToken, {
           search: debouncedSearch,
           status: statusFilter,
+          lifecycleState: lifecycleFilter,
           priority: priorityFilter,
           customerId: customerFilter || undefined,
           assignedUserId: assigneeFilter || undefined,
@@ -144,6 +169,7 @@ export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine"
     accessToken,
     debouncedSearch,
     statusFilter,
+    lifecycleFilter,
     priorityFilter,
     customerFilter,
     assigneeFilter,
@@ -162,6 +188,7 @@ export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine"
       const result = await listServiceCallsRequest(user.organization.id, accessToken, {
         search: debouncedSearch,
         status: statusFilter,
+        lifecycleState: lifecycleFilter,
         priority: priorityFilter,
         customerId: customerFilter || undefined,
         assignedUserId: assigneeFilter || undefined,
@@ -185,6 +212,7 @@ export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine"
     accessToken,
     debouncedSearch,
     statusFilter,
+    lifecycleFilter,
     priorityFilter,
     customerFilter,
     assigneeFilter,
@@ -242,6 +270,24 @@ export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine"
             ))}
           </select>
         </label>
+
+        {!isMine ? (
+          <label className="customers-toolbar__filter">
+            <span>{t("serviceCalls", "lifecycleFilter")}</span>
+            <select
+              value={lifecycleFilter}
+              onChange={(event) =>
+                setLifecycleFilter(event.target.value as "" | ServiceCallLifecycleState)
+              }
+            >
+              {lifecycleOptions.map((option) => (
+                <option key={option.value || "all-lifecycle"} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
 
         <label className="customers-toolbar__filter">
           <span>{t("serviceCalls", "priorityFilter")}</span>
@@ -354,7 +400,7 @@ export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine"
                   <th>{t("serviceCalls", "tableCustomer")}</th>
                   <th>{t("serviceCalls", "tableEquipment")}</th>
                   <th>{t("serviceCalls", "tableAssignee")}</th>
-                  <th>{t("serviceCalls", "tableStatus")}</th>
+                  <th>{t("serviceCalls", "lifecycleColumn")}</th>
                   <th>{t("serviceCalls", "tablePriority")}</th>
                   <th>{t("serviceCalls", "tableOpened")}</th>
                 </tr>
@@ -376,7 +422,7 @@ export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine"
                     <td>{call.equipment?.name ?? t("common", "emptyValue")}</td>
                     <td>{call.assignedUser?.displayName ?? t("serviceCalls", "unassigned")}</td>
                     <td>
-                      <ServiceCallStatusBadge status={call.status} />
+                      <ServiceCallLifecycleBadge lifecycleState={call.lifecycleState} />
                     </td>
                     <td>
                       <ServiceCallPriorityBadge priority={call.priority} />

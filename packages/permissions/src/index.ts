@@ -7,12 +7,15 @@ export {
 } from "./permissions.js";
 export { DEFAULT_ROLES, getDefaultRolePermissions, type DefaultRoleDefinition } from "./roles.js";
 export {
+  canAssignServiceCalls,
+  canCloseServiceCalls,
   canManageServiceCalls,
   canReadCustomers,
   canReadEquipment,
   canReadServiceCalls,
   canWriteCustomers,
   canWriteEquipment,
+  canWriteMyServiceCallFieldNotes,
   canWriteServiceCalls,
   extractPermissionSlugs,
   hasAllPermissions,

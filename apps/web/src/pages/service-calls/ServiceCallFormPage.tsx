@@ -1,18 +1,13 @@
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import type {
-  Branch,
-  Customer,
-  Equipment,
-  OrganizationMember,
-  ServiceCallPriority,
-  ServiceCallStatus,
-} from "@amarok-one/types";
+import type { Branch, Customer, Equipment, ServiceCallPriority } from "@amarok-one/types";
+import { canWriteServiceCalls, extractPermissionSlugs } from "@amarok-one/permissions";
 import { Button } from "@amarok-one/ui";
 import { useAuth } from "../../auth/useAuth";
 import { ErrorState } from "../../components/ErrorState";
 import { LoadingState } from "../../components/LoadingState";
+import { UnauthorizedPage } from "../../pages/UnauthorizedPage";
 import { useTranslation } from "../../i18n/useTranslation";
 import { getApiErrorMessage } from "../../lib/auth-errors";
 import { listCustomersRequest } from "../../lib/customers-api";
@@ -21,36 +16,21 @@ import {
   listCompaniesRequest,
   listEquipmentRequest,
 } from "../../lib/equipment-api";
+import { getServiceCallPriorityLabel } from "../../lib/service-call-labels";
 import {
-  getServiceCallPriorityLabel,
-  getServiceCallStatusLabel,
-} from "../../lib/service-call-labels";
+  buildCreatePayload,
+  buildUpdatePayload,
+  EMPTY_SERVICE_CALL_FORM,
+  type ServiceCallFormValues,
+} from "../../lib/service-call-form";
 import {
   createServiceCallRequest,
   getServiceCallRequest,
-  listAssignableUsersRequest,
   updateServiceCallRequest,
-  type ServiceCallFormInput,
 } from "../../lib/service-calls-api";
 import { isApiRequestError } from "../../lib/api-client";
 
 type FormStatus = "loading" | "ready" | "submitting" | "error";
-
-const EMPTY_FORM: ServiceCallFormInput = {
-  serviceCallNumber: "",
-  title: "",
-  description: "",
-  status: "open",
-  priority: "normal",
-  customerId: "",
-  equipmentId: "",
-  branchId: "",
-  assignedUserId: "",
-  contactName: "",
-  contactPhone: "",
-  location: "",
-  notes: "",
-};
 
 function toLocalDateTimeInput(value?: string): string {
   if (!value) return "";
@@ -73,24 +53,16 @@ export function ServiceCallFormPage() {
   const { user, accessToken } = useAuth();
   const { t } = useTranslation();
   const [status, setStatus] = useState<FormStatus>(isEdit ? "loading" : "ready");
-  const [form, setForm] = useState<ServiceCallFormInput>(EMPTY_FORM);
+  const [form, setForm] = useState<ServiceCallFormValues>(EMPTY_SERVICE_CALL_FORM);
   const [openedAtInput, setOpenedAtInput] = useState("");
   const [scheduledAtInput, setScheduledAtInput] = useState("");
-  const [completedAtInput, setCompletedAtInput] = useState("");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
-  const [assignees, setAssignees] = useState<OrganizationMember[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const statusOptions: ServiceCallStatus[] = [
-    "open",
-    "scheduled",
-    "in_progress",
-    "waiting_for_parts",
-    "completed",
-    "cancelled",
-  ];
+  const canWrite = user ? canWriteServiceCalls(extractPermissionSlugs(user.permissions)) : false;
+
   const priorityOptions: ServiceCallPriority[] = ["low", "normal", "high", "urgent"];
 
   const compatibleEquipment = useMemo(() => {
@@ -105,10 +77,9 @@ export function ServiceCallFormPage() {
 
     async function loadOptions(): Promise<void> {
       try {
-        const [customerResult, equipmentResult, assigneeList, companies] = await Promise.all([
+        const [customerResult, equipmentResult, companies] = await Promise.all([
           listCustomersRequest(user!.organization.id, accessToken!, { pageSize: 100 }),
           listEquipmentRequest(user!.organization.id, accessToken!, { pageSize: 100 }),
-          listAssignableUsersRequest(user!.organization.id, accessToken!),
           listCompaniesRequest(user!.organization.id, accessToken!),
         ]);
         const branchLists = await Promise.all(
@@ -119,7 +90,6 @@ export function ServiceCallFormPage() {
         if (!cancelled) {
           setCustomers(customerResult.data);
           setEquipment(equipmentResult.data);
-          setAssignees(assigneeList);
           setBranches(branchLists.flat());
         }
       } catch {
@@ -150,12 +120,10 @@ export function ServiceCallFormPage() {
           serviceCallNumber: call.serviceCallNumber,
           title: call.title,
           description: call.description ?? "",
-          status: call.status,
           priority: call.priority,
           customerId: call.customerId,
           equipmentId: call.equipmentId,
           branchId: call.branchId ?? "",
-          assignedUserId: call.assignedUserId ?? "",
           contactName: call.contactName ?? "",
           contactPhone: call.contactPhone ?? "",
           location: call.location ?? "",
@@ -163,7 +131,6 @@ export function ServiceCallFormPage() {
         });
         setOpenedAtInput(toLocalDateTimeInput(call.openedAt));
         setScheduledAtInput(toLocalDateTimeInput(call.scheduledAt));
-        setCompletedAtInput(toLocalDateTimeInput(call.completedAt));
         setStatus("ready");
       } catch (error) {
         if (!cancelled) {
@@ -183,9 +150,9 @@ export function ServiceCallFormPage() {
     };
   }, [isEdit, serviceCallId, user, accessToken, t]);
 
-  function updateField<K extends keyof ServiceCallFormInput>(
+  function updateField<K extends keyof ServiceCallFormValues>(
     key: K,
-    value: ServiceCallFormInput[K],
+    value: ServiceCallFormValues[K],
   ): void {
     setForm((current) => ({ ...current, [key]: value }));
   }
@@ -197,36 +164,22 @@ export function ServiceCallFormPage() {
     setStatus("submitting");
     setErrorMessage(null);
 
-    const basePayload = {
-      serviceCallNumber: form.serviceCallNumber.trim(),
-      title: form.title.trim(),
-      description: form.description?.trim() || undefined,
-      status: form.status,
-      priority: form.priority,
-      customerId: form.customerId,
-      equipmentId: form.equipmentId,
+    const scheduling = {
       openedAt: toIsoDateTime(openedAtInput),
-      scheduledAt: toIsoDateTime(scheduledAtInput),
-      completedAt: toIsoDateTime(completedAtInput),
-      branchId: form.branchId?.trim() || undefined,
-      contactName: form.contactName?.trim() || undefined,
-      contactPhone: form.contactPhone?.trim() || undefined,
-      location: form.location?.trim() || undefined,
-      notes: form.notes?.trim() || undefined,
+      scheduledAt: scheduledAtInput.trim() ? toIsoDateTime(scheduledAtInput) : null,
     };
 
     try {
       if (isEdit && serviceCallId) {
-        await updateServiceCallRequest(user.organization.id, serviceCallId, accessToken, {
-          ...basePayload,
-          assignedUserId: form.assignedUserId?.trim() || null,
-        });
+        const payload = buildUpdatePayload(form, scheduling);
+        await updateServiceCallRequest(user.organization.id, serviceCallId, accessToken, payload);
         navigate(`/service-calls/${serviceCallId}`);
       } else {
-        const created = await createServiceCallRequest(user.organization.id, accessToken, {
-          ...basePayload,
-          assignedUserId: form.assignedUserId?.trim() || undefined,
+        const payload = buildCreatePayload(form, {
+          openedAt: scheduling.openedAt,
+          scheduledAt: scheduling.scheduledAt ?? undefined,
         });
+        const created = await createServiceCallRequest(user.organization.id, accessToken, payload);
         navigate(`/service-calls/${created.id}`);
       }
     } catch (error) {
@@ -241,6 +194,14 @@ export function ServiceCallFormPage() {
 
   if (!user || !accessToken) {
     return <LoadingState message={t("serviceCalls", "loadForm")} />;
+  }
+
+  if (isEdit && !canWrite) {
+    return <UnauthorizedPage />;
+  }
+
+  if (!isEdit && !canWrite) {
+    return <UnauthorizedPage />;
   }
 
   if (status === "loading") {
@@ -267,6 +228,9 @@ export function ServiceCallFormPage() {
           <h2 className="customers-page__title">
             {isEdit ? t("serviceCalls", "editTitle") : t("serviceCalls", "newTitle")}
           </h2>
+          {!isEdit ? (
+            <p className="customers-page__subtitle">{t("serviceCalls", "createLifecycleHint")}</p>
+          ) : null}
         </div>
         <Link to={isEdit && serviceCallId ? `/service-calls/${serviceCallId}` : "/service-calls"}>
           <Button variant="secondary">{t("common", "cancel")}</Button>
@@ -312,27 +276,14 @@ export function ServiceCallFormPage() {
               <span>{t("serviceCalls", "description")}</span>
               <textarea
                 rows={3}
-                value={form.description ?? ""}
+                value={form.description}
                 onChange={(event) => updateField("description", event.target.value)}
               />
             </label>
             <label className="customer-form__field">
-              <span>{t("serviceCalls", "status")}</span>
-              <select
-                value={form.status ?? "open"}
-                onChange={(event) => updateField("status", event.target.value as ServiceCallStatus)}
-              >
-                {statusOptions.map((value) => (
-                  <option key={value} value={value}>
-                    {getServiceCallStatusLabel(t, value)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="customer-form__field">
               <span>{t("serviceCalls", "priority")}</span>
               <select
-                value={form.priority ?? "normal"}
+                value={form.priority}
                 onChange={(event) =>
                   updateField("priority", event.target.value as ServiceCallPriority)
                 }
@@ -374,7 +325,7 @@ export function ServiceCallFormPage() {
             </label>
             <label className="customer-form__field">
               <span>
-                {t("serviceCalls", "equipment")} {t("common", "requiredMark")}
+                {t("serviceCalls", "machine")} {t("common", "requiredMark")}
               </span>
               <select
                 required
@@ -394,27 +345,13 @@ export function ServiceCallFormPage() {
             <label className="customer-form__field">
               <span>{t("serviceCalls", "branch")}</span>
               <select
-                value={form.branchId ?? ""}
+                value={form.branchId}
                 onChange={(event) => updateField("branchId", event.target.value)}
               >
                 <option value="">{t("serviceCalls", "noBranch")}</option>
                 {branches.map((branch) => (
                   <option key={branch.id} value={branch.id}>
                     {branch.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="customer-form__field">
-              <span>{t("serviceCalls", "assignee")}</span>
-              <select
-                value={form.assignedUserId ?? ""}
-                onChange={(event) => updateField("assignedUserId", event.target.value)}
-              >
-                <option value="">{t("serviceCalls", "noAssignee")}</option>
-                {assignees.map((assignee) => (
-                  <option key={assignee.id} value={assignee.id}>
-                    {assignee.displayName}
                   </option>
                 ))}
               </select>
@@ -443,15 +380,6 @@ export function ServiceCallFormPage() {
                 onChange={(event) => setScheduledAtInput(event.target.value)}
               />
             </label>
-            <label className="customer-form__field">
-              <span>{t("serviceCalls", "completedAt")}</span>
-              <input
-                type="datetime-local"
-                dir="ltr"
-                value={completedAtInput}
-                onChange={(event) => setCompletedAtInput(event.target.value)}
-              />
-            </label>
           </div>
         </section>
 
@@ -461,7 +389,7 @@ export function ServiceCallFormPage() {
             <label className="customer-form__field">
               <span>{t("serviceCalls", "contactName")}</span>
               <input
-                value={form.contactName ?? ""}
+                value={form.contactName}
                 onChange={(event) => updateField("contactName", event.target.value)}
               />
             </label>
@@ -469,14 +397,14 @@ export function ServiceCallFormPage() {
               <span>{t("serviceCalls", "contactPhone")}</span>
               <input
                 dir="ltr"
-                value={form.contactPhone ?? ""}
+                value={form.contactPhone}
                 onChange={(event) => updateField("contactPhone", event.target.value)}
               />
             </label>
             <label className="customer-form__field customer-form__field--wide">
-              <span>{t("serviceCalls", "location")}</span>
+              <span>{t("serviceCalls", "workSite")}</span>
               <input
-                value={form.location ?? ""}
+                value={form.location}
                 onChange={(event) => updateField("location", event.target.value)}
               />
             </label>
@@ -489,7 +417,7 @@ export function ServiceCallFormPage() {
             <span>{t("serviceCalls", "internalNotes")}</span>
             <textarea
               rows={4}
-              value={form.notes ?? ""}
+              value={form.notes}
               onChange={(event) => updateField("notes", event.target.value)}
             />
           </label>

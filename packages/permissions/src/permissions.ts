@@ -13,7 +13,10 @@ export const PERMISSIONS = {
   EQUIPMENT_WRITE: "equipment:write",
   SERVICE_CALLS_READ: "service_calls:read",
   SERVICE_CALLS_WRITE: "service_calls:write",
+  SERVICE_CALLS_ASSIGN: "service_calls:assign",
+  SERVICE_CALLS_CLOSE: "service_calls:close",
   MY_SERVICE_CALLS_READ: "my_service_calls:read",
+  MY_SERVICE_CALLS_WRITE: "my_service_calls:write",
   MY_EQUIPMENT_READ: "my_equipment:read",
   MY_SCHEDULE_READ: "my_schedule:read",
   TECHNICIANS_READ: "technicians:read",
@@ -106,12 +109,27 @@ export const ALL_PERMISSIONS: readonly PermissionDefinition[] = [
   {
     slug: PERMISSIONS.SERVICE_CALLS_WRITE,
     name: "Write Service Calls",
-    description: "Manage service calls",
+    description: "Update service call metadata (not lifecycle)",
+  },
+  {
+    slug: PERMISSIONS.SERVICE_CALLS_ASSIGN,
+    name: "Assign Service Calls",
+    description: "Assign technicians and manage service call lifecycle",
+  },
+  {
+    slug: PERMISSIONS.SERVICE_CALLS_CLOSE,
+    name: "Close Service Calls",
+    description: "Close service calls after manager review",
   },
   {
     slug: PERMISSIONS.MY_SERVICE_CALLS_READ,
     name: "Read My Service Calls",
     description: "View assigned service calls",
+  },
+  {
+    slug: PERMISSIONS.MY_SERVICE_CALLS_WRITE,
+    name: "Update My Service Calls",
+    description: "Update field notes on assigned service calls",
   },
   {
     slug: PERMISSIONS.MY_EQUIPMENT_READ,

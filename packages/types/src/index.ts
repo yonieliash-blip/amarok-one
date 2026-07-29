@@ -158,6 +158,67 @@ export interface CustomerDetail extends Customer {
 export type ServiceCallStatus =
   "open" | "scheduled" | "in_progress" | "waiting_for_parts" | "completed" | "cancelled";
 
+/** Control-center lifecycle (Sprint 4). */
+export type ServiceCallLifecycleState =
+  | "new"
+  | "waiting_assignment"
+  | "assigned"
+  | "driving"
+  | "working"
+  | "waiting_for_parts"
+  | "waiting_customer"
+  | "waiting_specialist"
+  | "waiting_manager_closure"
+  | "closed";
+
+export type ServiceCallVisitStatus =
+  | "planned"
+  | "assigned"
+  | "driving"
+  | "working"
+  | "finished"
+  | "cancelled"
+  | "checked_in"
+  | "in_progress"
+  | "completed";
+
+/** Technician visit on a service call. */
+export interface ServiceCallVisit {
+  id: EntityId;
+  organizationId: EntityId;
+  serviceCallId: EntityId;
+  technicianId: EntityId;
+  technician?: Pick<OrganizationMember, "id" | "email" | "displayName">;
+  sequence: number;
+  status: ServiceCallVisitStatus;
+  scheduledStart?: ISODateString;
+  scheduledEnd?: ISODateString;
+  drivingStartedAt?: ISODateString;
+  workingStartedAt?: ISODateString;
+  finishedAt?: ISODateString;
+  notes?: string;
+  createdAt: ISODateString;
+  updatedAt: ISODateString;
+}
+
+/** Workflow timeline entry (immutable transition fact). */
+export interface ServiceCallTimelineEvent {
+  id: EntityId;
+  type: string;
+  sequence: number;
+  occurredAt: ISODateString;
+  actorId?: EntityId;
+  payload: Record<string, unknown>;
+}
+
+/** Lifecycle view returned by dedicated endpoints. */
+export interface ServiceCallLifecycleView {
+  serviceCallId: EntityId;
+  lifecycleState: ServiceCallLifecycleState;
+  visits: ServiceCallVisit[];
+  timeline: ServiceCallTimelineEvent[];
+}
+
 /** Service call urgency */
 export type ServiceCallPriority = "low" | "normal" | "high" | "urgent";
 
@@ -181,6 +242,7 @@ export interface ServiceCall {
   title: string;
   description?: string;
   status: ServiceCallStatus;
+  lifecycleState: ServiceCallLifecycleState;
   priority: ServiceCallPriority;
   openedAt: ISODateString;
   scheduledAt?: ISODateString;

@@ -9,6 +9,7 @@ Internal libraries shared across AMAROK ONE applications.
 | `@amarok-one/utils`       | [utils/](utils/)             | Shared utility functions      |
 | `@amarok-one/ui`          | [ui/](ui/)                   | React component library       |
 | `@amarok-one/permissions` | [permissions/](permissions/) | RBAC permission engine        |
+| `@amarok-one/workflow`    | [workflow/](workflow/)       | Workflow engine foundation    |
 
 All packages use the `@amarok-one/*` scope and are linked via pnpm workspace protocol (`workspace:*`).
 

@@ -1,32 +1,32 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import type { OrganizationMember, ServiceCall, ServiceCallStatus } from "@amarok-one/types";
+import type { OrganizationMember, ServiceCall } from "@amarok-one/types";
 import {
-  canManageServiceCalls,
   canWriteServiceCalls,
   extractPermissionSlugs,
   isAssignedServiceCallsOnly,
 } from "@amarok-one/permissions";
 import { Button } from "@amarok-one/ui";
 import { useAuth } from "../../auth/useAuth";
+import { ServiceCallLifecycleBadge } from "../../components/ServiceCallLifecycleBadge";
+import { ServiceCallLifecyclePanel } from "../../components/ServiceCallLifecyclePanel";
 import { ServiceCallPriorityBadge } from "../../components/ServiceCallPriorityBadge";
-import { ServiceCallStatusBadge } from "../../components/ServiceCallStatusBadge";
 import { EmptyState } from "../../components/EmptyState";
 import { ErrorState } from "../../components/ErrorState";
 import { LoadingState } from "../../components/LoadingState";
 import { formatDate, formatPhone } from "../../i18n/format";
 import { useTranslation } from "../../i18n/useTranslation";
 import { getApiErrorMessage } from "../../lib/auth-errors";
-import { getServiceCallStatusLabel } from "../../lib/service-call-labels";
 import {
   deleteServiceCallRequest,
   getServiceCallRequest,
+  hasServiceCallsAssign,
+  hasServiceCallsClose,
   listAssignableUsersRequest,
-  updateServiceCallRequest,
 } from "../../lib/service-calls-api";
 import { isApiRequestError } from "../../lib/api-client";
 
-type PageStatus = "loading" | "ready" | "error" | "deleting" | "updating";
+type PageStatus = "loading" | "ready" | "error" | "deleting";
 
 export function ServiceCallDetailPage() {
   const { serviceCallId } = useParams();
@@ -36,17 +36,15 @@ export function ServiceCallDetailPage() {
   const [status, setStatus] = useState<PageStatus>("loading");
   const [serviceCall, setServiceCall] = useState<ServiceCall | null>(null);
   const [assignees, setAssignees] = useState<OrganizationMember[]>([]);
-  const [quickStatus, setQuickStatus] = useState<ServiceCallStatus>("open");
-  const [quickAssignee, setQuickAssignee] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [reloadToken, setReloadToken] = useState(0);
 
   const permissionSlugs = user ? extractPermissionSlugs(user.permissions) : [];
-  const canManage = canManageServiceCalls(permissionSlugs);
-  const canUpdateStatus =
-    canWriteServiceCalls(permissionSlugs) &&
-    (canManage || isAssignedServiceCallsOnly(permissionSlugs));
-  const listBackPath = canManage ? "/service-calls" : "/my/service-calls";
+  const canWrite = canWriteServiceCalls(permissionSlugs);
+  const canAssign = hasServiceCallsAssign(user?.permissions ?? []);
+  const canClose = hasServiceCallsClose(user?.permissions ?? []);
+  const technicianOnly = isAssignedServiceCallsOnly(permissionSlugs);
+  const listBackPath = technicianOnly ? "/my/service-calls" : "/service-calls";
   const emptyValue = t("common", "emptyValue");
 
   useEffect(() => {
@@ -64,13 +62,11 @@ export function ServiceCallDetailPage() {
           serviceCallId,
           accessToken,
         );
-        const assigneeList = canManage
+        const assigneeList = canAssign
           ? await listAssignableUsersRequest(user.organization.id, accessToken)
           : [];
         if (!cancelled) {
           setServiceCall(detail);
-          setQuickStatus(detail.status);
-          setQuickAssignee(detail.assignedUserId ?? "");
           setAssignees(assigneeList);
           setStatus("ready");
         }
@@ -90,32 +86,14 @@ export function ServiceCallDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [user, accessToken, serviceCallId, t, canManage]);
+  }, [user, accessToken, serviceCallId, t, canAssign, reloadToken]);
 
-  const reloadServiceCall = useCallback(async () => {
-    if (!user || !accessToken || !serviceCallId) return;
-
-    setStatus("loading");
-    setErrorMessage(null);
-
-    try {
-      const detail = await getServiceCallRequest(user.organization.id, serviceCallId, accessToken);
-      setServiceCall(detail);
-      setQuickStatus(detail.status);
-      setQuickAssignee(detail.assignedUserId ?? "");
-      setStatus("ready");
-    } catch (error) {
-      setErrorMessage(
-        isApiRequestError(error)
-          ? getApiErrorMessage(error, t("serviceCalls", "loadCallError"))
-          : t("serviceCalls", "loadCallError"),
-      );
-      setStatus("error");
-    }
-  }, [user, accessToken, serviceCallId, t]);
+  async function reloadDetail(): Promise<void> {
+    setReloadToken((value) => value + 1);
+  }
 
   async function handleDelete(): Promise<void> {
-    if (!user || !accessToken || !serviceCallId || !serviceCall) return;
+    if (!user || !accessToken || !serviceCallId || !serviceCall || !canWrite) return;
 
     const confirmed = window.confirm(
       t("serviceCalls", "deleteConfirm", { name: serviceCall.title }),
@@ -131,35 +109,6 @@ export function ServiceCallDetailPage() {
         isApiRequestError(error)
           ? getApiErrorMessage(error, t("serviceCalls", "deleteCallError"))
           : t("serviceCalls", "deleteCallError"),
-      );
-      setStatus("ready");
-    }
-  }
-
-  async function handleQuickUpdate(field: "status" | "assignee"): Promise<void> {
-    if (!user || !accessToken || !serviceCallId || !serviceCall) return;
-
-    setStatus("updating");
-    setActionMessage(null);
-    setErrorMessage(null);
-
-    try {
-      const updated = await updateServiceCallRequest(
-        user.organization.id,
-        serviceCallId,
-        accessToken,
-        field === "status" ? { status: quickStatus } : { assignedUserId: quickAssignee || null },
-      );
-      setServiceCall(updated);
-      setQuickStatus(updated.status);
-      setQuickAssignee(updated.assignedUserId ?? "");
-      setActionMessage(t("serviceCalls", "actionSuccess"));
-      setStatus("ready");
-    } catch (error) {
-      setErrorMessage(
-        isApiRequestError(error)
-          ? getApiErrorMessage(error, t("serviceCalls", "actionError"))
-          : t("serviceCalls", "actionError"),
       );
       setStatus("ready");
     }
@@ -184,7 +133,7 @@ export function ServiceCallDetailPage() {
       <ErrorState
         title={t("serviceCalls", "loadErrorTitle")}
         message={errorMessage ?? t("serviceCalls", "loadCallError")}
-        onRetry={() => void reloadServiceCall()}
+        onRetry={() => void reloadDetail()}
       />
     );
   }
@@ -199,15 +148,6 @@ export function ServiceCallDetailPage() {
     );
   }
 
-  const statusOptions: ServiceCallStatus[] = [
-    "open",
-    "scheduled",
-    "in_progress",
-    "waiting_for_parts",
-    "completed",
-    "cancelled",
-  ];
-
   return (
     <div className="customers-page">
       <header className="customers-page__header">
@@ -215,7 +155,7 @@ export function ServiceCallDetailPage() {
           <p className="customers-page__eyebrow">{t("serviceCalls", "callEyebrow")}</p>
           <h2 className="customers-page__title">{serviceCall.title}</h2>
           <div className="customers-page__meta">
-            <ServiceCallStatusBadge status={serviceCall.status} />
+            <ServiceCallLifecycleBadge lifecycleState={serviceCall.lifecycleState} />
             <ServiceCallPriorityBadge priority={serviceCall.priority} />
             <span dir="ltr">{serviceCall.serviceCallNumber}</span>
           </div>
@@ -224,7 +164,7 @@ export function ServiceCallDetailPage() {
           <Link to={listBackPath}>
             <Button variant="secondary">{t("serviceCalls", "backToList")}</Button>
           </Link>
-          {canManage ? (
+          {canWrite ? (
             <>
               <Link to={`/service-calls/${serviceCall.id}/edit`}>
                 <Button variant="primary">{t("common", "edit")}</Button>
@@ -243,64 +183,17 @@ export function ServiceCallDetailPage() {
         </div>
       ) : null}
 
-      {actionMessage ? (
-        <div className="customers-alert customers-alert--success" role="status">
-          {actionMessage}
-        </div>
-      ) : null}
-
-      {canUpdateStatus ? (
-        <section className="customer-detail-card customer-detail-card--wide">
-          <h3>{t("serviceCalls", "quickActions")}</h3>
-          <div className="customers-toolbar">
-            <label className="customers-toolbar__filter">
-              <span>{t("serviceCalls", "updateStatus")}</span>
-              <select
-                value={quickStatus}
-                onChange={(event) => setQuickStatus(event.target.value as ServiceCallStatus)}
-              >
-                {statusOptions.map((value) => (
-                  <option key={value} value={value}>
-                    {getServiceCallStatusLabel(t, value)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <Button
-              variant="secondary"
-              disabled={status === "updating"}
-              onClick={() => void handleQuickUpdate("status")}
-            >
-              {t("serviceCalls", "saveChanges")}
-            </Button>
-
-            {canManage ? (
-              <>
-                <label className="customers-toolbar__filter">
-                  <span>{t("serviceCalls", "assignTechnician")}</span>
-                  <select
-                    value={quickAssignee}
-                    onChange={(event) => setQuickAssignee(event.target.value)}
-                  >
-                    <option value="">{t("serviceCalls", "noAssignee")}</option>
-                    {assignees.map((assignee) => (
-                      <option key={assignee.id} value={assignee.id}>
-                        {assignee.displayName}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <Button
-                  variant="secondary"
-                  disabled={status === "updating"}
-                  onClick={() => void handleQuickUpdate("assignee")}
-                >
-                  {t("serviceCalls", "assignTechnician")}
-                </Button>
-              </>
-            ) : null}
-          </div>
-        </section>
+      {canAssign || canClose ? (
+        <ServiceCallLifecyclePanel
+          organizationId={user.organization.id}
+          serviceCallId={serviceCall.id}
+          accessToken={accessToken}
+          serviceCall={serviceCall}
+          assignees={assignees}
+          canAssign={canAssign}
+          canClose={canClose}
+          onUpdated={reloadDetail}
+        />
       ) : null}
 
       <div className="customer-detail-grid">
@@ -312,7 +205,7 @@ export function ServiceCallDetailPage() {
               <dd>{serviceCall.description ?? emptyValue}</dd>
             </div>
             <div>
-              <dt>{t("serviceCalls", "location")}</dt>
+              <dt>{t("serviceCalls", "workSite")}</dt>
               <dd>{serviceCall.location ?? emptyValue}</dd>
             </div>
           </dl>
@@ -345,26 +238,14 @@ export function ServiceCallDetailPage() {
           <dl className="customer-detail-list">
             <div>
               <dt>{t("serviceCalls", "customer")}</dt>
-              <dd>
-                {serviceCall.customer ? (
-                  <Link to={`/customers/${serviceCall.customer.id}`}>
-                    {serviceCall.customer.name}
-                  </Link>
-                ) : (
-                  emptyValue
-                )}
-              </dd>
+              <dd>{serviceCall.customer?.name ?? emptyValue}</dd>
             </div>
             <div>
-              <dt>{t("serviceCalls", "equipment")}</dt>
+              <dt>{t("serviceCalls", "machine")}</dt>
               <dd>
-                {serviceCall.equipment ? (
-                  <Link to={`/equipment/${serviceCall.equipment.id}`}>
-                    {serviceCall.equipment.name}
-                  </Link>
-                ) : (
-                  emptyValue
-                )}
+                {serviceCall.equipment
+                  ? `${serviceCall.equipment.name} (${serviceCall.equipment.internalNumber})`
+                  : emptyValue}
               </dd>
             </div>
             <div>

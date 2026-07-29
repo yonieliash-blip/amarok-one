@@ -31,6 +31,7 @@ import type {
   UserRole as UserRoleModel,
   Role as RoleModel,
 } from "@prisma/client";
+import { toServiceCallLifecycleStateDto } from "../modules/service-calls/service-call-lifecycle-mappers.js";
 
 export function toOrganizationDto(model: OrganizationModel): Organization {
   return {
@@ -318,6 +319,7 @@ export function toServiceCallDto(model: ServiceCallWithRelations): ServiceCall {
     title: model.title,
     description: model.description ?? undefined,
     status: toServiceCallStatusDto(model.status),
+    lifecycleState: toServiceCallLifecycleStateDto(model.lifecycleState),
     priority: toServiceCallPriorityDto(model.priority),
     openedAt: model.openedAt.toISOString(),
     scheduledAt: model.scheduledAt?.toISOString(),

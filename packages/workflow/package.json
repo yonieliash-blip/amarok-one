@@ -1,0 +1,33 @@
+{
+  "name": "@amarok-one/workflow",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Workflow engine domain and application foundation (bounded context)",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit -p tsconfig.build.json",
+    "test": "vitest run",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "@amarok-one/config": "workspace:*",
+    "eslint": "^10.6.0",
+    "rimraf": "^6.0.1",
+    "typescript": "~6.0.2",
+    "vitest": "^3.2.4"
+  }
+}

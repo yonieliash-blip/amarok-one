@@ -90,6 +90,18 @@ export function canManageServiceCalls(granted: Iterable<PermissionInput>): boole
   return hasPermission(granted, PERMISSIONS.SERVICE_CALLS_READ);
 }
 
+export function canAssignServiceCalls(granted: Iterable<PermissionInput>): boolean {
+  return hasPermission(granted, PERMISSIONS.SERVICE_CALLS_ASSIGN);
+}
+
+export function canCloseServiceCalls(granted: Iterable<PermissionInput>): boolean {
+  return hasPermission(granted, PERMISSIONS.SERVICE_CALLS_CLOSE);
+}
+
+export function canWriteMyServiceCallFieldNotes(granted: Iterable<PermissionInput>): boolean {
+  return hasPermission(granted, PERMISSIONS.MY_SERVICE_CALLS_WRITE);
+}
+
 export function isAssignedServiceCallsOnly(granted: Iterable<PermissionInput>): boolean {
   return (
     hasPermission(granted, PERMISSIONS.MY_SERVICE_CALLS_READ) &&

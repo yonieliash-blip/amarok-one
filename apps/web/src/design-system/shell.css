@@ -657,6 +657,83 @@
   gap: var(--ds-space-4);
 }
 
+.dashboard__stats--six {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dashboard__stat-card--selectable {
+  width: 100%;
+  text-align: start;
+  cursor: pointer;
+  transition:
+    border-color var(--ds-transition-base),
+    background-color var(--ds-transition-base);
+}
+
+.dashboard__stat-card--selectable:hover {
+  border-color: var(--ds-color-border-strong);
+  background: var(--ds-color-surface-hover);
+}
+
+.dashboard__stat-card--selectable:focus-visible {
+  outline: 2px solid var(--ds-color-primary);
+  outline-offset: 2px;
+}
+
+.dashboard__stat-card--active {
+  border-color: var(--ds-color-primary);
+  box-shadow: inset 0 0 0 1px var(--ds-color-primary);
+}
+
+.service-manager-dashboard__hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-3);
+}
+
+.service-manager-dashboard__hero-actions .amarok-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.service-manager-dashboard__workspace {
+  margin-top: var(--ds-space-6);
+}
+
+.service-manager-dashboard__workspace-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ds-space-3);
+  margin-bottom: var(--ds-space-4);
+}
+
+.service-manager-dashboard__queue-meta {
+  margin: var(--ds-space-1) 0 0;
+  color: var(--ds-color-text-muted);
+  font-size: var(--ds-text-body-sm-size);
+}
+
+.service-manager-dashboard__view-all {
+  font-size: var(--ds-text-body-sm-size);
+  font-weight: var(--ds-font-weight-semibold);
+  color: var(--ds-color-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.service-manager-dashboard__filters {
+  margin-bottom: var(--ds-space-4);
+}
+
+.service-manager-dashboard__table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .dashboard__stat-card {
   display: flex;
   flex-direction: column;
@@ -705,7 +782,8 @@
     grid-column: span 12;
   }
 
-  .dashboard__stats {
+  .dashboard__stats,
+  .dashboard__stats--six {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -762,7 +840,8 @@
     padding: var(--ds-page-padding-mobile);
   }
 
-  .dashboard__stats {
+  .dashboard__stats,
+  .dashboard__stats--six {
     grid-template-columns: 1fr;
   }
 

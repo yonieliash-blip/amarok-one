@@ -8,10 +8,15 @@ import type { ApiResponse, HealthStatus } from "@amarok-one/types";
 import { createApiResponse, createHealthStatus } from "@amarok-one/utils";
 import { disconnectDatabase, verifyDatabaseConnection } from "./lib/database.js";
 import { isAppError } from "./lib/errors.js";
+import { mapWorkflowError } from "./lib/workflow-errors.js";
 import { prisma } from "./lib/prisma.js";
 import { healthDbGuard } from "./middleware/health-db-guard.js";
-import { apiRoutes } from "./routes.js";
+import { createApiRoutes } from "./routes.js";
 import { env } from "./env.js";
+import { createCompositionRoot } from "./composition-root.js";
+
+const compositionRoot = createCompositionRoot();
+const apiRoutes = createApiRoutes(compositionRoot.serviceCallService);
 
 const app = new Hono();
 
@@ -108,14 +113,15 @@ app.notFound((context) => {
 });
 
 app.onError((error, context) => {
-  if (isAppError(error)) {
+  const mapped = mapWorkflowError(error);
+  if (isAppError(mapped)) {
     return context.json(
       {
-        code: error.code,
-        message: error.message,
-        ...(error.details ? { details: error.details } : {}),
+        code: mapped.code,
+        message: mapped.message,
+        ...(mapped.details ? { details: mapped.details } : {}),
       },
-      error.status as ContentfulStatusCode,
+      mapped.status as ContentfulStatusCode,
     );
   }
 

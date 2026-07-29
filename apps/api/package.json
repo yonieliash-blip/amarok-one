@@ -8,7 +8,7 @@
     "build": "prisma generate && tsc -p tsconfig.build.json",
     "start": "node --env-file=../../.env dist/index.js",
     "lint": "eslint src/",
-    "typecheck": "tsc --noEmit -p tsconfig.build.json",
+    "typecheck": "prisma generate && tsc --noEmit -p tsconfig.build.json",
     "test": "vitest run",
     "clean": "rimraf dist",
     "db:generate": "prisma generate",
@@ -18,12 +18,14 @@
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
     "db:seed": "tsx --env-file=../../.env prisma/seed.ts",
+    "db:reconcile-workflows": "tsx --env-file=../../.env scripts/reconcile-service-call-workflows.ts",
     "db:setup": "tsx scripts/ensure-database.ts"
   },
   "dependencies": {
     "@amarok-one/permissions": "workspace:*",
     "@amarok-one/types": "workspace:*",
     "@amarok-one/utils": "workspace:*",
+    "@amarok-one/workflow": "workspace:*",
     "@hono/node-server": "^1.19.9",
     "@hono/zod-validator": "^0.7.2",
     "@prisma/client": "^6.19.0",
