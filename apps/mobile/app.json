@@ -5,23 +5,29 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
     "platforms": ["ios", "android", "web"],
     "splash": {
+      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#101010"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.amarokone.mobile",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Attach visit photos stored on this device for your records."
+        "NSPhotoLibraryUsageDescription": "Attach visit photos stored on this device for your records.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#101010"
       },
       "package": "com.amarokone.mobile",
+      "versionCode": 1,
       "permissions": ["READ_MEDIA_IMAGES"]
     },
     "plugins": [

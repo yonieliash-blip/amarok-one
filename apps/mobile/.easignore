@@ -1,0 +1,8 @@
+# Paths relative to apps/mobile (EAS project root).
+../web
+../api
+../../infrastructure
+../../frontend
+../../backend
+../../.data
+**/.turbo

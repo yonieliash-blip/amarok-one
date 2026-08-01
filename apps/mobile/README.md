@@ -2,9 +2,14 @@
 
 Expo React Native mobile app for AMAROK ONE field technicians.
 
+## Apple Developer & TestFlight
+
+See [APPLE_DEVELOPER.md](./APPLE_DEVELOPER.md) for the Sprint 5.3 readiness checklist and owner actions (Apple Developer Program, App Store Connect, EAS).
+
 ## Prerequisites
 
 - [Expo Go](https://expo.dev/go) on a physical device, or Android/iOS simulators
+- For TestFlight: Apple Developer Program membership and [EAS Build](https://docs.expo.dev/build/introduction/)
 
 ## Scripts
 
@@ -16,6 +21,17 @@ Expo React Native mobile app for AMAROK ONE field technicians.
 | `pnpm build`     | Type-check the project             |
 | `pnpm lint`      | Lint source files                  |
 | `pnpm typecheck` | Type-check without emitting        |
+| `pnpm test`      | Run unit tests                     |
+
+EAS monorepo hooks (used by EAS Build cloud): `eas-build-pre-install`, `eas-build-post-install`.
+
+## Environment
+
+| Variable              | Purpose                                                                |
+| --------------------- | ---------------------------------------------------------------------- |
+| `EXPO_PUBLIC_API_URL` | API base URL for release builds (must be HTTPS for TestFlight devices) |
+
+Documented in root [`.env.example`](../../.env.example).
 
 ## Monorepo setup
 

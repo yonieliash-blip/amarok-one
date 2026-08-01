@@ -12,7 +12,9 @@
     "lint": "eslint App.tsx src",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
-    "clean": "rimraf dist .expo"
+    "clean": "rimraf dist .expo",
+    "eas-build-pre-install": "cd ../.. && corepack enable && corepack prepare pnpm@10.12.4 --activate && pnpm install --frozen-lockfile",
+    "eas-build-post-install": "cd ../.. && pnpm exec turbo run build --filter=@amarok-one/types... --filter=@amarok-one/permissions... --filter=@amarok-one/utils..."
   },
   "dependencies": {
     "@amarok-one/permissions": "workspace:*",
