@@ -18,6 +18,11 @@ import { paginationMeta, parsePagination } from "../../lib/pagination.js";
 import { prisma } from "../../lib/prisma.js";
 import { assertOrganizationExists } from "../organizations/organization.service.js";
 import { buildCustomerListWhere } from "./customer-filters.js";
+import {
+  buildCustomerListOrderBy,
+  type CustomerSortField,
+  type CustomerSortOrder,
+} from "./customer-sort.js";
 import type {
   CreateContactInput,
   CreateCustomerInput,
@@ -31,16 +36,19 @@ export async function listCustomers(
   pageSizeValue?: string,
   search?: string,
   status?: CustomerStatus,
+  sortBy?: CustomerSortField,
+  sortOrder?: CustomerSortOrder,
 ) {
   await assertOrganizationExists(organizationId);
 
   const { page, pageSize, skip } = parsePagination(pageValue, pageSizeValue);
   const where = buildCustomerListWhere({ organizationId, search, status });
+  const orderBy = buildCustomerListOrderBy(sortBy, sortOrder);
 
   const [items, total] = await prisma.$transaction([
     prisma.customer.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy,
       skip,
       take: pageSize,
     }),

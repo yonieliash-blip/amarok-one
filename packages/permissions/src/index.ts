@@ -2,10 +2,35 @@ export {
   ALL_PERMISSIONS,
   ALL_PERMISSION_SLUGS,
   PERMISSIONS,
+  TENANT_PERMISSION_SLUGS,
   type PermissionDefinition,
   type PermissionSlug,
 } from "./permissions.js";
-export { DEFAULT_ROLES, getDefaultRolePermissions, type DefaultRoleDefinition } from "./roles.js";
+export {
+  DEFAULT_ROLES,
+  getDefaultRolePermissions,
+  ORGANIZATION_OWNER_ROLE_SLUG,
+  PLATFORM_ADMIN_ROLE_SLUG,
+  type DefaultRoleDefinition,
+} from "./roles.js";
+export {
+  resolveEffectivePermissions,
+  isOrganizationOwnerRole,
+  type EffectivePermissionInput,
+  type EffectivePermissionResult,
+} from "./effective-permissions.js";
+export {
+  MODULE_DEFINITIONS,
+  MODULE_KEYS,
+  expandEnabledModules,
+  expandModulePermissions,
+  getModuleDefinition,
+  isModuleKey,
+  type ModuleActionPermissions,
+  type ModuleDefinition,
+  type ModuleKey,
+} from "./modules.js";
+export { ROLE_MODULE_TEMPLATES, getDefaultModulesForRole } from "./role-module-templates.js";
 export {
   canAssignServiceCalls,
   canCloseServiceCalls,
@@ -22,6 +47,7 @@ export {
   hasAnyPermission,
   hasPermission,
   isAssignedServiceCallsOnly,
+  isPlatformAdmin,
   mergePermissionSlugs,
   permissionSlugsFromCarrier,
   type PermissionCarrier,
@@ -32,6 +58,7 @@ export {
   getDefaultLandingPath,
   resolveAuthorizedPath,
   NAVIGATION_ITEMS,
+  type BuildNavigationOptions,
   type NavLabelKey,
   type NavigationItemDefinition,
   type ResolvedNavigationItem,

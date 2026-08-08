@@ -116,6 +116,7 @@ export async function projectServiceCallFromWorkflow(
         scheduledStart: visit.scheduledStart ? new Date(visit.scheduledStart) : undefined,
         scheduledEnd: visit.scheduledEnd ? new Date(visit.scheduledEnd) : undefined,
         notes: visit.notes,
+        deletedAt: null,
         ...(visit.status === "driving" ? { drivingStartedAt: new Date(visit.updatedAt) } : {}),
         ...(visit.status === "working" ? { workingStartedAt: new Date(visit.updatedAt) } : {}),
         ...(TERMINAL_VISIT_STATUSES.includes(visit.status)

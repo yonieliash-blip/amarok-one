@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import type { OrganizationMember, ServiceCall } from "@amarok-one/types";
+import type { OrganizationMember, ServiceCall, ServiceCallLifecycleView } from "@amarok-one/types";
 import {
   canWriteServiceCalls,
   extractPermissionSlugs,
@@ -11,6 +11,7 @@ import { useAuth } from "../../auth/useAuth";
 import { ServiceCallLifecycleBadge } from "../../components/ServiceCallLifecycleBadge";
 import { ServiceCallLifecyclePanel } from "../../components/ServiceCallLifecyclePanel";
 import { ServiceCallPriorityBadge } from "../../components/ServiceCallPriorityBadge";
+import { ServiceCallVisitTimeline } from "../../components/ServiceCallVisitTimeline";
 import { EmptyState } from "../../components/EmptyState";
 import { ErrorState } from "../../components/ErrorState";
 import { LoadingState } from "../../components/LoadingState";
@@ -19,6 +20,7 @@ import { useTranslation } from "../../i18n/useTranslation";
 import { getApiErrorMessage } from "../../lib/auth-errors";
 import {
   deleteServiceCallRequest,
+  getServiceCallLifecycleRequest,
   getServiceCallRequest,
   hasServiceCallsAssign,
   hasServiceCallsClose,
@@ -36,6 +38,11 @@ export function ServiceCallDetailPage() {
   const [status, setStatus] = useState<PageStatus>("loading");
   const [serviceCall, setServiceCall] = useState<ServiceCall | null>(null);
   const [assignees, setAssignees] = useState<OrganizationMember[]>([]);
+  const [lifecycle, setLifecycle] = useState<ServiceCallLifecycleView | null>(null);
+  const [lifecycleStatus, setLifecycleStatus] = useState<"idle" | "loading" | "ready" | "error">(
+    "idle",
+  );
+  const [lifecycleErrorMessage, setLifecycleErrorMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
@@ -54,20 +61,39 @@ export function ServiceCallDetailPage() {
       if (!user || !accessToken || !serviceCallId) return;
 
       setStatus("loading");
+      setLifecycleStatus("loading");
       setErrorMessage(null);
+      setLifecycleErrorMessage(null);
 
       try {
-        const detail = await getServiceCallRequest(
-          user.organization.id,
-          serviceCallId,
-          accessToken,
-        );
-        const assigneeList = canAssign
-          ? await listAssignableUsersRequest(user.organization.id, accessToken)
-          : [];
+        const [detail, assigneeList, lifecycleResult] = await Promise.all([
+          getServiceCallRequest(user.organization.id, serviceCallId, accessToken),
+          canAssign
+            ? listAssignableUsersRequest(user.organization.id, accessToken)
+            : Promise.resolve([] as OrganizationMember[]),
+          getServiceCallLifecycleRequest(user.organization.id, serviceCallId, accessToken).then(
+            (view) => ({ ok: true as const, view }),
+            (error: unknown) => ({ ok: false as const, error }),
+          ),
+        ]);
         if (!cancelled) {
           setServiceCall(detail);
           setAssignees(assigneeList);
+          if (lifecycleResult.ok) {
+            setLifecycle(lifecycleResult.view);
+            setLifecycleStatus("ready");
+          } else {
+            setLifecycle(null);
+            setLifecycleStatus("error");
+            setLifecycleErrorMessage(
+              isApiRequestError(lifecycleResult.error)
+                ? getApiErrorMessage(
+                    lifecycleResult.error,
+                    t("serviceCalls", "loadVisitsErrorMessage"),
+                  )
+                : t("serviceCalls", "loadVisitsErrorMessage"),
+            );
+          }
           setStatus("ready");
         }
       } catch (error) {
@@ -195,6 +221,15 @@ export function ServiceCallDetailPage() {
           onUpdated={reloadDetail}
         />
       ) : null}
+
+      <ServiceCallVisitTimeline
+        serviceCall={serviceCall}
+        assignees={assignees}
+        lifecycle={lifecycle}
+        status={lifecycleStatus}
+        errorMessage={lifecycleErrorMessage}
+        onRetry={() => void reloadDetail()}
+      />
 
       <div className="customer-detail-grid">
         <section className="customer-detail-card">

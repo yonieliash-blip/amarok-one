@@ -40,9 +40,21 @@ export const updateCustomerSchema = z
     message: "At least one field must be provided",
   });
 
+export const customerSortFieldSchema = z.enum([
+  "name",
+  "customerNumber",
+  "status",
+  "city",
+  "createdAt",
+]);
+
+export const customerSortOrderSchema = z.enum(["asc", "desc"]);
+
 export const listCustomersQuerySchema = paginationQuerySchema.extend({
   search: z.string().trim().max(128).optional(),
   status: customerStatusSchema.optional(),
+  sortBy: customerSortFieldSchema.optional(),
+  sortOrder: customerSortOrderSchema.optional(),
 });
 
 export const contactIdParamSchema = customerIdParamSchema.extend({

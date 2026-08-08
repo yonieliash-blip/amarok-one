@@ -1,14 +1,11 @@
 import { describe, expect, it } from "vitest";
-import {
-  canAccessPath,
-  getDefaultLandingPath,
-  getDefaultRolePermissions,
-  ROLE_LANDING_PATHS,
-} from "@amarok-one/permissions";
+import { canAccessPath, getDefaultLandingPath, ROLE_LANDING_PATHS } from "@amarok-one/permissions";
+
+import { resolveEffectivePermissions } from "./effective-permissions.js";
 
 const STABILIZED_ROLES = [
   ["system-administrator", "/dashboard/management"],
-  ["company-owner", "/dashboard/executive"],
+  ["organization-owner", "/dashboard/executive"],
   ["service-manager", "/dashboard/service"],
   ["technician", "/my/service-calls"],
   ["warehouse-employee", "/dashboard/warehouse"],
@@ -17,14 +14,32 @@ const STABILIZED_ROLES = [
 
 describe("stabilized role landings", () => {
   it.each(STABILIZED_ROLES)("lands %s on %s", (roleSlug, landingPath) => {
-    const permissions = getDefaultRolePermissions(roleSlug);
+    const modules =
+      roleSlug === "technician"
+        ? ["core"]
+        : ["core", "service", "inventory", "finance", "administration"];
+    const { permissions } = resolveEffectivePermissions({
+      isOrganizationOwner: roleSlug === "organization-owner",
+      primaryRoleSlug: roleSlug,
+      primaryRoleIsOwner: roleSlug === "organization-owner",
+      enabledModules: modules,
+    });
     expect(getDefaultLandingPath(permissions, roleSlug)).toBe(landingPath);
     expect(ROLE_LANDING_PATHS[roleSlug]).toBe(landingPath);
     expect(canAccessPath(landingPath, permissions, { activeRoleSlug: roleSlug })).toBe(true);
   });
 
   it.each(STABILIZED_ROLES)("blocks %s from other role dashboards", (roleSlug) => {
-    const permissions = getDefaultRolePermissions(roleSlug);
+    const modules =
+      roleSlug === "technician"
+        ? ["core"]
+        : ["core", "service", "inventory", "finance", "administration"];
+    const { permissions } = resolveEffectivePermissions({
+      isOrganizationOwner: roleSlug === "organization-owner",
+      primaryRoleSlug: roleSlug,
+      primaryRoleIsOwner: roleSlug === "organization-owner",
+      enabledModules: modules,
+    });
     const foreignDashboards = STABILIZED_ROLES.filter(([slug]) => slug !== roleSlug).map(
       ([, path]) => path,
     );

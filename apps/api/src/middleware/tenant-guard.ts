@@ -1,12 +1,12 @@
 import { createMiddleware } from "hono/factory";
-import { assertTenantOrganization } from "../lib/tenant.js";
+import { assertTenantOrganizationAccess } from "../lib/tenant.js";
 
-/** Validates URL organizationId matches the JWT tenant context. */
+/** Validates URL organizationId matches JWT tenant context or platform admin cross-tenant access. */
 export const tenantGuard = createMiddleware(async (context, next) => {
   const organizationId = context.req.param("organizationId");
   if (organizationId) {
     const auth = context.get("auth");
-    assertTenantOrganization(organizationId, auth.user.organizationId);
+    assertTenantOrganizationAccess(organizationId, auth.user.organizationId, auth.user.permissions);
   }
   await next();
 });

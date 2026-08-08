@@ -14,6 +14,20 @@ function parsePort(value: string | undefined): number {
   return parsed;
 }
 
+function parseCorsOrigins(value: string | undefined): string[] {
+  const raw = value?.trim() || DEFAULT_CORS_ORIGIN;
+  const origins = raw
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0);
+
+  if (origins.length === 0) {
+    throw new Error("CORS_ORIGIN must include at least one origin");
+  }
+
+  return origins;
+}
+
 function requireSecret(value: string | undefined, name: string, minLength: number): string {
   const secret = value?.trim();
   if (!secret || secret.length < minLength) {
@@ -26,7 +40,7 @@ export const env = {
   NODE_ENV: process.env.NODE_ENV ?? "development",
   HOST: process.env.HOST ?? DEFAULT_HOST,
   PORT: parsePort(process.env.PORT),
-  CORS_ORIGIN: process.env.CORS_ORIGIN ?? DEFAULT_CORS_ORIGIN,
+  CORS_ORIGIN: parseCorsOrigins(process.env.CORS_ORIGIN),
   DATABASE_URL: process.env.DATABASE_URL?.trim() || DEFAULT_DATABASE_URL,
   JWT_SECRET: requireSecret(process.env.JWT_SECRET, "JWT_SECRET", 32),
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN?.trim() || DEFAULT_JWT_EXPIRES_IN,

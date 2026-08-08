@@ -254,10 +254,11 @@ export function createServiceCallLifecycleService(deps: ServiceCallLifecycleServ
 
     try {
       await prisma.$transaction(async (tx) => {
-        const existingVisits = await tx.serviceCallVisit.count({
-          where: { serviceCallId, deletedAt: null },
+        const maxSequence = await tx.serviceCallVisit.aggregate({
+          where: { serviceCallId },
+          _max: { sequence: true },
         });
-        const sequence = input.sequence ?? existingVisits + 1;
+        const sequence = input.sequence ?? (maxSequence._max.sequence ?? 0) + 1;
 
         await dispatchAndProject(
           tx,

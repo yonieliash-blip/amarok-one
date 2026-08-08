@@ -5,6 +5,7 @@ import {
   persistActiveRoleId,
   persistRefreshToken,
   readStoredSession,
+  registerPermissionsStaleHandler,
 } from "../lib/api-client";
 import {
   loginRequest,
@@ -62,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const session = await refreshSessionRequest(
         stored.refreshToken,
-        stored.activeRoleId ?? userRef.current?.role.id,
+        userRef.current?.organization.id ?? stored.activeRoleId,
       );
       applySession(
         session,
@@ -151,6 +152,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
+    registerPermissionsStaleHandler(() => {
+      void refreshSession();
+    });
+    return () => registerPermissionsStaleHandler(null);
+  }, [refreshSession]);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function bootstrap(): Promise<void> {
@@ -164,7 +172,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        const session = await refreshSessionRequest(stored.refreshToken, stored.activeRoleId);
+        const session = await refreshSessionRequest(
+          stored.refreshToken,
+          userRef.current?.organization.id ?? stored.activeRoleId,
+        );
         if (cancelled) {
           return;
         }

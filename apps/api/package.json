@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx scripts/ensure-database.ts && tsx watch --env-file=../../.env src/index.ts",
+    "dev": "tsx watch --env-file=../../.env src/index.ts",
+    "dev:lan": "tsx watch --env-file=../../.env --env-file=../../.env.lan.local src/index.ts",
+    "dev:with-setup": "tsx --env-file=../../.env scripts/ensure-database.ts && tsx watch --env-file=../../.env src/index.ts",
     "build": "prisma generate && tsc -p tsconfig.build.json",
     "start": "node --env-file=../../.env dist/index.js",
     "lint": "eslint src/",
@@ -19,7 +21,7 @@
     "db:reset": "prisma migrate reset",
     "db:seed": "tsx --env-file=../../.env prisma/seed.ts",
     "db:reconcile-workflows": "tsx --env-file=../../.env scripts/reconcile-service-call-workflows.ts",
-    "db:setup": "tsx scripts/ensure-database.ts"
+    "db:setup": "tsx --env-file=../../.env scripts/ensure-database.ts"
   },
   "dependencies": {
     "@amarok-one/permissions": "workspace:*",

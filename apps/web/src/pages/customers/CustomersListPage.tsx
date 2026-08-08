@@ -11,10 +11,17 @@ import { LoadingState } from "../../components/LoadingState";
 import { formatNumber, formatPhone } from "../../i18n/format";
 import { useTranslation } from "../../i18n/useTranslation";
 import { getApiErrorMessage } from "../../lib/auth-errors";
-import { hasCustomersWrite, listCustomersRequest } from "../../lib/customers-api";
+import {
+  hasCustomersWrite,
+  listCustomersRequest,
+  type CustomerSortField,
+  type CustomerSortOrder,
+} from "../../lib/customers-api";
 import { isApiRequestError } from "../../lib/api-client";
 
 type PageStatus = "loading" | "ready" | "error";
+
+const PAGE_SIZE_OPTIONS = [25, 50, 100] as const;
 
 export function CustomersListPage() {
   const { user, accessToken } = useAuth();
@@ -26,18 +33,33 @@ export function CustomersListPage() {
       label: getCustomerStatusLabel(t, value),
     })),
   ];
+  const sortOptions: Array<{ value: CustomerSortField; label: string }> = [
+    { value: "createdAt", label: t("customers", "sortCreatedAt") },
+    { value: "name", label: t("customers", "sortName") },
+    { value: "customerNumber", label: t("customers", "sortCustomerNumber") },
+    { value: "status", label: t("customers", "sortStatus") },
+    { value: "city", label: t("customers", "sortCity") },
+  ];
   const [status, setStatus] = useState<PageStatus>("loading");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"" | CustomerStatus>("");
+  const [sortBy, setSortBy] = useState<CustomerSortField>("createdAt");
+  const [sortOrder, setSortOrder] = useState<CustomerSortOrder>("desc");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(25);
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
 
   const canWrite = user ? hasCustomersWrite(user.permissions) : false;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedSearch(search), 300);
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
     return () => window.clearTimeout(timer);
   }, [search]);
 
@@ -56,7 +78,10 @@ export function CustomersListPage() {
         const result = await listCustomersRequest(user.organization.id, accessToken, {
           search: debouncedSearch,
           status: statusFilter,
-          pageSize: 50,
+          sortBy,
+          sortOrder,
+          page,
+          pageSize,
         });
         if (!cancelled) {
           setCustomers(result.data);
@@ -80,7 +105,7 @@ export function CustomersListPage() {
     return () => {
       cancelled = true;
     };
-  }, [user, accessToken, debouncedSearch, statusFilter, t]);
+  }, [user, accessToken, debouncedSearch, statusFilter, sortBy, sortOrder, page, pageSize, t]);
 
   const reloadCustomers = useCallback(async () => {
     if (!user || !accessToken) {
@@ -94,7 +119,10 @@ export function CustomersListPage() {
       const result = await listCustomersRequest(user.organization.id, accessToken, {
         search: debouncedSearch,
         status: statusFilter,
-        pageSize: 50,
+        sortBy,
+        sortOrder,
+        page,
+        pageSize,
       });
       setCustomers(result.data);
       setTotal(result.meta?.total ?? result.data.length);
@@ -107,7 +135,7 @@ export function CustomersListPage() {
       );
       setStatus("error");
     }
-  }, [user, accessToken, debouncedSearch, statusFilter, t]);
+  }, [user, accessToken, debouncedSearch, statusFilter, sortBy, sortOrder, page, pageSize, t]);
 
   if (!user || !accessToken) {
     return <LoadingState message={t("customers", "loading")} />;
@@ -145,11 +173,62 @@ export function CustomersListPage() {
           <span>{t("customers", "statusFilter")}</span>
           <select
             value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value as "" | CustomerStatus)}
+            onChange={(event) => {
+              setPage(1);
+              setStatusFilter(event.target.value as "" | CustomerStatus);
+            }}
           >
             {statusOptions.map((option) => (
               <option key={option.value || "all"} value={option.value}>
                 {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="customers-toolbar__filter">
+          <span>{t("customers", "sortBy")}</span>
+          <select
+            value={sortBy}
+            onChange={(event) => {
+              setPage(1);
+              setSortBy(event.target.value as CustomerSortField);
+            }}
+          >
+            {sortOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="customers-toolbar__filter">
+          <span>{t("customers", "sortOrder")}</span>
+          <select
+            value={sortOrder}
+            onChange={(event) => {
+              setPage(1);
+              setSortOrder(event.target.value as CustomerSortOrder);
+            }}
+          >
+            <option value="asc">{t("customers", "sortAscending")}</option>
+            <option value="desc">{t("customers", "sortDescending")}</option>
+          </select>
+        </label>
+
+        <label className="customers-toolbar__filter">
+          <span>{t("customers", "pageSize")}</span>
+          <select
+            value={pageSize}
+            onChange={(event) => {
+              setPage(1);
+              setPageSize(Number(event.target.value) as (typeof PAGE_SIZE_OPTIONS)[number]);
+            }}
+          >
+            {PAGE_SIZE_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
               </option>
             ))}
           </select>
@@ -229,6 +308,29 @@ export function CustomersListPage() {
               </tbody>
             </table>
           </div>
+
+          <nav className="customers-pagination" aria-label={t("customers", "paginationLabel")}>
+            <Button
+              variant="secondary"
+              disabled={page <= 1}
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+            >
+              {t("customers", "previousPage")}
+            </Button>
+            <span className="customers-pagination__status">
+              {t("customers", "pageStatus", {
+                page: formatNumber(page, locale),
+                totalPages: formatNumber(totalPages, locale),
+              })}
+            </span>
+            <Button
+              variant="secondary"
+              disabled={page >= totalPages}
+              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+            >
+              {t("customers", "nextPage")}
+            </Button>
+          </nav>
         </>
       ) : null}
     </div>

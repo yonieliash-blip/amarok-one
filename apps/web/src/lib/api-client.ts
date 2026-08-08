@@ -61,6 +61,12 @@ export class ApiRequestError extends Error {
   }
 }
 
+let permissionsStaleHandler: (() => void) | null = null;
+
+export function registerPermissionsStaleHandler(handler: (() => void) | null): void {
+  permissionsStaleHandler = handler;
+}
+
 export function isApiRequestError(error: unknown): error is ApiRequestError {
   return error instanceof ApiRequestError;
 }
@@ -101,6 +107,10 @@ export async function apiRequest<T>(
 
   if (!response.ok) {
     throw await parseErrorResponse(response);
+  }
+
+  if (response.headers.get("X-Permissions-Stale") === "true") {
+    permissionsStaleHandler?.();
   }
 
   if (response.status === 204) {

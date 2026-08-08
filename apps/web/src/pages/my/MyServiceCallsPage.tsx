@@ -101,9 +101,10 @@ export function MyServiceCallsPage() {
       try {
         const result = await listServiceCallsRequest(user.organization.id, accessToken, {
           pageSize: 100,
+          assignedUserId: user.id,
         });
         if (!cancelled) {
-          setGrouped(groupTechnicianServiceCalls(result.data));
+          setGrouped(groupTechnicianServiceCalls(result.data, new Date(), user.id));
           setStatus("ready");
         }
       } catch (error) {

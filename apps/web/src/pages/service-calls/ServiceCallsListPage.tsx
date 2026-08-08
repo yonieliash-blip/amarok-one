@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import type {
   Customer,
   OrganizationMember,
@@ -30,6 +30,15 @@ import {
   listServiceCallsRequest,
 } from "../../lib/service-calls-api";
 import { isApiRequestError } from "../../lib/api-client";
+import {
+  fetchAllServiceCalls,
+  filterDashboardCalls,
+  startOfLocalDay,
+  endOfLocalDay,
+  type ServiceManagerBucket,
+} from "../../lib/service-manager-dashboard";
+import { parseServiceCallsListSearchParams } from "../../lib/service-calls-list-url";
+import type { TranslationMessages } from "../../i18n/types";
 
 type PageStatus = "loading" | "ready" | "error";
 
@@ -46,9 +55,22 @@ const LIFECYCLE_FILTER_ORDER: readonly ServiceCallLifecycleState[] = [
   "closed",
 ];
 
+const DASHBOARD_BUCKET_TITLE_KEYS = {
+  current: "bucketCurrentTitle",
+  waiting_assignment: "bucketWaitingAssignmentTitle",
+  in_progress: "bucketInProgressTitle",
+  waiting_for_parts: "bucketWaitingPartsTitle",
+  waiting_manager: "bucketWaitingManagerTitle",
+  completed_today: "bucketCompletedTodayTitle",
+} as const satisfies Record<
+  ServiceManagerBucket,
+  keyof TranslationMessages["serviceManagerDashboard"]
+>;
+
 export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine" }) {
   const { user, accessToken } = useAuth();
   const { t, locale } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isMine = scope === "mine";
   const [status, setStatus] = useState<PageStatus>("loading");
   const [serviceCalls, setServiceCalls] = useState<ServiceCall[]>([]);
@@ -65,6 +87,15 @@ export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine"
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
+
+  const urlFilters = useMemo(
+    () => (isMine ? {} : parseServiceCallsListSearchParams(searchParams)),
+    [isMine, searchParams],
+  );
+  const dashboardBucket = urlFilters.bucket ?? "";
+
+  const todayStart = useMemo(() => startOfLocalDay(new Date()), []);
+  const todayEnd = useMemo(() => endOfLocalDay(new Date()), []);
 
   const canWrite = !isMine && user ? hasServiceCallsWrite(user.permissions) : false;
 
@@ -95,6 +126,16 @@ export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine"
     const timer = window.setTimeout(() => setDebouncedSearch(search), 300);
     return () => window.clearTimeout(timer);
   }, [search]);
+
+  const clearDashboardFilter = useCallback((): void => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("bucket");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  const dashboardBucketTitle = dashboardBucket
+    ? t("serviceManagerDashboard", DASHBOARD_BUCKET_TITLE_KEYS[dashboardBucket])
+    : null;
 
   useEffect(() => {
     if (!user || !accessToken) return;
@@ -132,20 +173,52 @@ export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine"
       setErrorMessage(null);
 
       try {
+        const activeSearch = dashboardBucket ? (urlFilters.search ?? "") : debouncedSearch;
+        const activePriority = dashboardBucket ? (urlFilters.priority ?? "") : priorityFilter;
+        const activeAssignee = dashboardBucket ? (urlFilters.assigneeId ?? "") : assigneeFilter;
+
+        if (dashboardBucket && !isMine) {
+          const allCalls = await fetchAllServiceCalls(user.organization.id, accessToken);
+          const filtered = filterDashboardCalls(allCalls, {
+            bucket: dashboardBucket,
+            todayStart,
+            todayEnd,
+            search: activeSearch,
+            priority: activePriority,
+            assigneeId: activeAssignee,
+          });
+          if (!cancelled) {
+            setServiceCalls(filtered);
+            setTotal(filtered.length);
+            setStatus("ready");
+          }
+          return;
+        }
+
+        const assignedUserId = isMine
+          ? user.id
+          : assigneeFilter && assigneeFilter !== "unassigned"
+            ? assigneeFilter
+            : undefined;
+
         const result = await listServiceCallsRequest(user.organization.id, accessToken, {
           search: debouncedSearch,
           status: statusFilter,
           lifecycleState: lifecycleFilter,
           priority: priorityFilter,
           customerId: customerFilter || undefined,
-          assignedUserId: assigneeFilter || undefined,
+          assignedUserId,
           openedFrom: openedFrom ? `${openedFrom}T00:00:00.000Z` : undefined,
           openedTo: openedTo ? `${openedTo}T23:59:59.999Z` : undefined,
           pageSize: 50,
         });
+        let data = result.data;
+        if (assigneeFilter === "unassigned") {
+          data = data.filter((call) => !call.assignedUserId);
+        }
         if (!cancelled) {
-          setServiceCalls(result.data);
-          setTotal(result.meta?.total ?? result.data.length);
+          setServiceCalls(data);
+          setTotal(result.meta?.total ?? data.length);
           setStatus("ready");
         }
       } catch (error) {
@@ -175,6 +248,11 @@ export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine"
     assigneeFilter,
     openedFrom,
     openedTo,
+    dashboardBucket,
+    urlFilters,
+    todayStart,
+    todayEnd,
+    isMine,
     t,
   ]);
 
@@ -185,19 +263,49 @@ export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine"
     setErrorMessage(null);
 
     try {
+      const activeSearch = dashboardBucket ? (urlFilters.search ?? "") : debouncedSearch;
+      const activePriority = dashboardBucket ? (urlFilters.priority ?? "") : priorityFilter;
+      const activeAssignee = dashboardBucket ? (urlFilters.assigneeId ?? "") : assigneeFilter;
+
+      if (dashboardBucket && !isMine) {
+        const allCalls = await fetchAllServiceCalls(user.organization.id, accessToken);
+        const filtered = filterDashboardCalls(allCalls, {
+          bucket: dashboardBucket,
+          todayStart,
+          todayEnd,
+          search: activeSearch,
+          priority: activePriority,
+          assigneeId: activeAssignee,
+        });
+        setServiceCalls(filtered);
+        setTotal(filtered.length);
+        setStatus("ready");
+        return;
+      }
+
+      const assignedUserId = isMine
+        ? user.id
+        : assigneeFilter && assigneeFilter !== "unassigned"
+          ? assigneeFilter
+          : undefined;
+
       const result = await listServiceCallsRequest(user.organization.id, accessToken, {
         search: debouncedSearch,
         status: statusFilter,
         lifecycleState: lifecycleFilter,
         priority: priorityFilter,
         customerId: customerFilter || undefined,
-        assignedUserId: assigneeFilter || undefined,
+        assignedUserId,
         openedFrom: openedFrom ? `${openedFrom}T00:00:00.000Z` : undefined,
         openedTo: openedTo ? `${openedTo}T23:59:59.999Z` : undefined,
         pageSize: 50,
       });
-      setServiceCalls(result.data);
-      setTotal(result.meta?.total ?? result.data.length);
+      let data = result.data;
+      if (assigneeFilter === "unassigned") {
+        data = data.filter((call) => !call.assignedUserId);
+      }
+      setServiceCalls(data);
+      setTotal(result.meta?.total ?? data.length);
       setStatus("ready");
     } catch (error) {
       setErrorMessage(
@@ -218,6 +326,11 @@ export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine"
     assigneeFilter,
     openedFrom,
     openedTo,
+    dashboardBucket,
+    urlFilters,
+    todayStart,
+    todayEnd,
+    isMine,
     t,
   ]);
 
@@ -245,6 +358,20 @@ export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine"
           </Link>
         ) : null}
       </header>
+
+      {dashboardBucket && dashboardBucketTitle ? (
+        <div
+          className="customers-alert customers-alert--info service-calls-list__dashboard-filter"
+          role="status"
+        >
+          <span>
+            {t("serviceCalls", "dashboardFilterActive", { bucket: dashboardBucketTitle })}
+          </span>
+          <Button type="button" variant="secondary" onClick={clearDashboardFilter}>
+            {t("serviceCalls", "clearDashboardFilter")}
+          </Button>
+        </div>
+      ) : null}
 
       <section className="customers-toolbar">
         <label className="customers-toolbar__search">

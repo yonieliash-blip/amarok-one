@@ -6,6 +6,8 @@ Expo React Native mobile app for AMAROK ONE field technicians.
 
 See [APPLE_DEVELOPER.md](./APPLE_DEVELOPER.md) for the Sprint 5.3 readiness checklist and owner actions (Apple Developer Program, App Store Connect, EAS).
 
+For the first EAS iOS build workflow, see [EAS_BUILD.md](./EAS_BUILD.md).
+
 ## Prerequisites
 
 - [Expo Go](https://expo.dev/go) on a physical device, or Android/iOS simulators

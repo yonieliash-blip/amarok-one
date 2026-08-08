@@ -109,6 +109,11 @@ export function isAssignedServiceCallsOnly(granted: Iterable<PermissionInput>): 
   );
 }
 
+/** Whether the caller may perform cross-tenant platform operations. */
+export function isPlatformAdmin(granted: Iterable<PermissionInput>): boolean {
+  return hasPermission(granted, PERMISSIONS.PLATFORM_ADMIN);
+}
+
 export function permissionSlugsFromCarrier(user: PermissionCarrier | null | undefined): string[] {
   if (!user) {
     return [];

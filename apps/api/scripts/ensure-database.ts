@@ -16,14 +16,40 @@ const COMPOSE_FILE = path.join(
 );
 const EMBEDDED_DATA_DIR = path.join(REPO_ROOT, ".data", "postgres");
 
-const EMBEDDED_CONFIG = {
+const POSTGRES_DEFAULTS = {
   user: "amarok",
   password: "amarok",
-  port: Number(process.env.POSTGRES_PORT ?? 5433),
+  port: 5433,
   database: "amarok_one",
 } as const;
 
-const DEFAULT_DATABASE_URL = `postgresql://${EMBEDDED_CONFIG.user}:${EMBEDDED_CONFIG.password}@localhost:${EMBEDDED_CONFIG.port}/${EMBEDDED_CONFIG.database}?schema=public`;
+type PostgresConfig = {
+  user: string;
+  password: string;
+  port: number;
+  database: string;
+};
+
+function resolvePostgresPort(): number {
+  const port = Number(process.env.POSTGRES_PORT ?? POSTGRES_DEFAULTS.port);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error(`Invalid POSTGRES_PORT: ${process.env.POSTGRES_PORT}`);
+  }
+  return port;
+}
+
+function getPostgresConfig(): PostgresConfig {
+  return {
+    user: process.env.POSTGRES_USER ?? POSTGRES_DEFAULTS.user,
+    password: process.env.POSTGRES_PASSWORD ?? POSTGRES_DEFAULTS.password,
+    port: resolvePostgresPort(),
+    database: process.env.POSTGRES_DB ?? POSTGRES_DEFAULTS.database,
+  };
+}
+
+function buildDatabaseUrl(config: PostgresConfig): string {
+  return `postgresql://${config.user}:${config.password}@localhost:${config.port}/${config.database}?schema=public`;
+}
 
 function run(command: string, cwd: string = REPO_ROOT): void {
   console.log(`> ${command}`);
@@ -40,7 +66,24 @@ function runOptional(command: string, cwd: string = REPO_ROOT): boolean {
 }
 
 function resolveDatabaseUrl(): string {
-  return process.env.DATABASE_URL?.trim() || DEFAULT_DATABASE_URL;
+  const config = getPostgresConfig();
+  const configured = process.env.DATABASE_URL?.trim();
+
+  if (configured) {
+    try {
+      const url = new URL(configured.replace(/^postgresql:/, "http:"));
+      const configuredPort = url.port ? Number(url.port) : 5432;
+      if (configuredPort !== config.port) {
+        console.warn(
+          `DATABASE_URL uses port ${configuredPort} but POSTGRES_PORT is ${config.port}; using POSTGRES_PORT for local setup.`,
+        );
+      }
+    } catch {
+      console.warn("DATABASE_URL is invalid; deriving connection URL from POSTGRES_PORT.");
+    }
+  }
+
+  return buildDatabaseUrl(config);
 }
 
 async function isDatabaseReady(databaseUrl: string): Promise<boolean> {
@@ -86,7 +129,7 @@ async function startDockerPostgres(): Promise<void> {
   run(`docker compose -f "${COMPOSE_FILE}" up -d --wait`);
 }
 
-async function ensureApplicationDatabase(config: typeof EMBEDDED_CONFIG): Promise<void> {
+async function ensureApplicationDatabase(config: PostgresConfig): Promise<void> {
   for (const adminDatabase of ["postgres", config.user]) {
     const client = new pg.Client({
       host: "localhost",
@@ -124,8 +167,9 @@ async function startEmbeddedPostgres(): Promise<string> {
   console.log("Docker unavailable — starting embedded PostgreSQL...");
   fs.mkdirSync(EMBEDDED_DATA_DIR, { recursive: true });
 
+  const config = getPostgresConfig();
   const postgres = new EmbeddedPostgres({
-    ...EMBEDDED_CONFIG,
+    ...config,
     databaseDir: EMBEDDED_DATA_DIR,
     persistent: true,
   });
@@ -137,20 +181,18 @@ async function startEmbeddedPostgres(): Promise<string> {
     await postgres.initialise();
   }
 
-  if (
-    !(await isDatabaseReady(
-      `postgresql://${EMBEDDED_CONFIG.user}:${EMBEDDED_CONFIG.password}@localhost:${EMBEDDED_CONFIG.port}/postgres?schema=public`,
-    ))
-  ) {
+  const adminDatabaseUrl = buildDatabaseUrl({ ...config, database: "postgres" });
+
+  if (!(await isDatabaseReady(adminDatabaseUrl))) {
     await postgres.start();
-    console.log(`Embedded PostgreSQL started on port ${EMBEDDED_CONFIG.port}.`);
+    console.log(`Embedded PostgreSQL started on port ${config.port}.`);
   } else {
-    console.log("Embedded PostgreSQL is already running on port 5432.");
+    console.log(`Embedded PostgreSQL is already running on port ${config.port}.`);
   }
 
-  await ensureApplicationDatabase(EMBEDDED_CONFIG);
+  await ensureApplicationDatabase(config);
 
-  return `postgresql://${EMBEDDED_CONFIG.user}:${EMBEDDED_CONFIG.password}@localhost:${EMBEDDED_CONFIG.port}/${EMBEDDED_CONFIG.database}?schema=public`;
+  return buildDatabaseUrl(config);
 }
 
 async function ensurePostgresRunning(databaseUrl: string): Promise<string> {
@@ -186,10 +228,17 @@ async function main(): Promise<void> {
     console.warn("Prisma generate skipped — client may already be up to date.");
   }
 
+  console.log("Migrating organization memberships...");
+  run("pnpm exec tsx --env-file=../../.env scripts/migrate-organization-members.ts", API_ROOT);
+
   console.log("Seeding database...");
   run("pnpm exec tsx --env-file=../../.env prisma/seed.ts", API_ROOT);
 
+  console.log("Syncing service call workflow lifecycles...");
+  run("pnpm exec tsx --env-file=../../.env scripts/reconcile-service-call-workflows.ts", API_ROOT);
+
   console.log("Database setup complete.");
+  process.exit(0);
 }
 
 main().catch((error: unknown) => {

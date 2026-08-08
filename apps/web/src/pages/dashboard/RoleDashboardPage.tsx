@@ -54,7 +54,9 @@ export function RoleDashboardPage({ kind }: RoleDashboardPageProps) {
   }
 
   const quickLinks = pickDashboardQuickLinks(
-    buildNavigationItems(permissionSlugsFromCarrier(user), user.role.slug),
+    buildNavigationItems(permissionSlugsFromCarrier(user), user.role.slug, {
+      isOrganizationOwner: user.isOrganizationOwner,
+    }),
   );
 
   const title = {

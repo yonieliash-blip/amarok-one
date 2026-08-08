@@ -1,5 +1,7 @@
 /** Canonical permission slugs for AMAROK ONE RBAC. */
 export const PERMISSIONS = {
+  /** Cross-tenant platform operations (organization provisioning, cross-org administration). */
+  PLATFORM_ADMIN: "platform:admin",
   DASHBOARD_READ: "dashboard:read",
   ORGANIZATIONS_READ: "organizations:read",
   ORGANIZATIONS_WRITE: "organizations:write",
@@ -46,6 +48,11 @@ export interface PermissionDefinition {
 }
 
 export const ALL_PERMISSIONS: readonly PermissionDefinition[] = [
+  {
+    slug: PERMISSIONS.PLATFORM_ADMIN,
+    name: "Platform Administrator",
+    description: "Perform cross-tenant platform operations",
+  },
   {
     slug: PERMISSIONS.DASHBOARD_READ,
     name: "Read Dashboard",
@@ -225,4 +232,9 @@ export const ALL_PERMISSIONS: readonly PermissionDefinition[] = [
 
 export const ALL_PERMISSION_SLUGS: readonly PermissionSlug[] = ALL_PERMISSIONS.map(
   (permission) => permission.slug,
+);
+
+/** Tenant-scoped permissions (excludes cross-tenant platform administration). */
+export const TENANT_PERMISSION_SLUGS: readonly PermissionSlug[] = ALL_PERMISSION_SLUGS.filter(
+  (slug) => slug !== PERMISSIONS.PLATFORM_ADMIN,
 );

@@ -18,6 +18,9 @@ export interface AccessTokenPayload {
   roleSlug: string;
   roles: AccessTokenRole[];
   permissions: string[];
+  permissionsVersion?: number;
+  enabledModules?: string[];
+  isOrganizationOwner?: boolean;
   type: "access";
 }
 

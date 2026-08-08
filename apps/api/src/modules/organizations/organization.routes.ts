@@ -1,7 +1,14 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import { isPlatformAdmin } from "@amarok-one/permissions";
 import { createApiResponse } from "@amarok-one/utils";
 import { requirePermission } from "../../middleware/jwt-guard.js";
+import {
+  requireOrganizationReadAccess,
+  requireOrganizationWriteAccess,
+} from "../../middleware/organization-access-guard.js";
+import { requirePlatformAdmin } from "../../middleware/platform-admin-guard.js";
+import { runWithBypassTenantIsolation } from "../../lib/tenant-context.js";
 import {
   createOrganizationSchema,
   listOrganizationsQuerySchema,
@@ -12,6 +19,7 @@ import {
   createOrganization,
   getOrganizationById,
   listOrganizations,
+  listOrganizationsForTenant,
   softDeleteOrganization,
   updateOrganization,
 } from "./organization.service.js";
@@ -23,23 +31,34 @@ export const organizationRoutes = new Hono()
     zValidator("query", listOrganizationsQuerySchema),
     async (context) => {
       const query = context.req.valid("query");
-      const result = await listOrganizations(query.page?.toString(), query.pageSize?.toString());
+      const auth = context.get("auth");
+
+      const result = isPlatformAdmin(auth.user.permissions)
+        ? await runWithBypassTenantIsolation(() =>
+            listOrganizations(query.page?.toString(), query.pageSize?.toString()),
+          )
+        : await listOrganizationsForTenant(
+            auth.user.organizationId,
+            query.page?.toString(),
+            query.pageSize?.toString(),
+          );
+
       return context.json(createApiResponse(result.data, result.meta));
     },
   )
   .post(
     "/",
-    requirePermission("organizations:write"),
+    requirePlatformAdmin(),
     zValidator("json", createOrganizationSchema),
     async (context) => {
       const body = context.req.valid("json");
-      const organization = await createOrganization(body);
+      const organization = await runWithBypassTenantIsolation(() => createOrganization(body));
       return context.json(createApiResponse(organization), 201);
     },
   )
   .get(
     "/:organizationId",
-    requirePermission("organizations:read"),
+    requireOrganizationReadAccess(),
     zValidator("param", organizationIdParamSchema),
     async (context) => {
       const { organizationId } = context.req.valid("param");
@@ -49,7 +68,7 @@ export const organizationRoutes = new Hono()
   )
   .patch(
     "/:organizationId",
-    requirePermission("organizations:write"),
+    requireOrganizationWriteAccess(),
     zValidator("param", organizationIdParamSchema),
     zValidator("json", updateOrganizationSchema),
     async (context) => {
@@ -61,7 +80,7 @@ export const organizationRoutes = new Hono()
   )
   .delete(
     "/:organizationId",
-    requirePermission("organizations:write"),
+    requireOrganizationWriteAccess(),
     zValidator("param", organizationIdParamSchema),
     async (context) => {
       const { organizationId } = context.req.valid("param");

@@ -7,18 +7,21 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "node": "22.14.0",
       "ios": {
         "simulator": true
       }
     },
     "preview": {
       "distribution": "internal",
+      "node": "22.14.0",
       "ios": {
         "simulator": false
       }
     },
     "production": {
       "distribution": "store",
+      "node": "22.14.0",
       "ios": {
         "resourceClass": "m-medium"
       },

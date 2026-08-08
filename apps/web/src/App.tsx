@@ -25,6 +25,7 @@ import { EquipmentListPage } from "./pages/equipment/EquipmentListPage";
 import { CustomerDetailPage } from "./pages/customers/CustomerDetailPage";
 import { CustomerFormPage } from "./pages/customers/CustomerFormPage";
 import { CustomersListPage } from "./pages/customers/CustomersListPage";
+import { MemberAccessPage } from "./pages/administration/MemberAccessPage";
 
 export function App() {
   return (
@@ -84,6 +85,7 @@ export function App() {
                   element={<ModulePlaceholderPage titleKey="accounting" />}
                 />
                 <Route path="reports" element={<ModulePlaceholderPage titleKey="reports" />} />
+                <Route path="administration/member-access" element={<MemberAccessPage />} />
               </Route>
             </Route>
           </Route>

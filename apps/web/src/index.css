@@ -291,6 +291,98 @@ a {
   font-size: 0.875rem;
 }
 
+.member-access {
+  display: grid;
+  grid-template-columns: minmax(14rem, 20rem) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.member-access__members {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.member-access__member {
+  width: 100%;
+  text-align: start;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--amarok-border);
+  border-radius: 0.5rem;
+  background: var(--amarok-surface);
+  color: var(--amarok-text);
+  cursor: pointer;
+}
+
+.member-access__member:hover {
+  background: var(--amarok-bg-hover);
+}
+
+.member-access__member:focus-visible {
+  outline: 2px solid var(--amarok-accent);
+  outline-offset: 2px;
+}
+
+.member-access__member--active {
+  border-color: var(--amarok-accent);
+  background: color-mix(in srgb, var(--amarok-accent) 8%, var(--amarok-surface));
+  color: var(--amarok-text);
+}
+
+.member-access__member-name {
+  display: block;
+  font-weight: 600;
+  color: var(--amarok-text);
+}
+
+.member-access__member-meta {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--amarok-text-muted);
+  font-size: 0.875rem;
+}
+
+.member-access__modules {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.member-access__module {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.member-access__module-desc {
+  display: block;
+  color: var(--amarok-text-muted);
+  font-size: 0.875rem;
+}
+
+.member-access__hint,
+.member-access__owner-note p {
+  color: var(--amarok-text-muted);
+}
+
+.form-success {
+  color: var(--amarok-success, #15803d);
+  margin: 0 0 1rem;
+}
+
+@media (max-width: 900px) {
+  .member-access {
+    grid-template-columns: 1fr;
+  }
+}
+
 .customers-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -400,6 +492,20 @@ a {
 .customers-alert--success {
   background: rgba(34, 197, 94, 0.12);
   color: #86efac;
+}
+
+.customers-alert--info {
+  background: rgba(59, 130, 246, 0.12);
+  color: #93c5fd;
+}
+
+.service-calls-list__dashboard-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .customer-form {
@@ -524,10 +630,159 @@ a {
   }
 }
 
+.service-call-visit-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.service-call-history-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.service-call-history-timeline__event {
+  display: grid;
+  grid-template-columns: 2.75rem 1fr;
+  gap: 1rem;
+  position: relative;
+  padding-bottom: 1.5rem;
+}
+
+.service-call-history-timeline__event:not(.service-call-history-timeline__event--last)::after {
+  content: "";
+  position: absolute;
+  top: 2.75rem;
+  bottom: 0;
+  inset-inline-start: 1.3125rem;
+  width: 2px;
+  background: var(--amarok-border, rgba(255, 255, 255, 0.12));
+}
+
+.service-call-history-timeline__icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--amarok-primary) 14%, transparent);
+  color: var(--amarok-primary);
+  position: relative;
+  z-index: 1;
+}
+
+.service-call-history-timeline__icon--created {
+  background: color-mix(in srgb, var(--amarok-info, #60a5fa) 16%, transparent);
+  color: var(--amarok-info, #60a5fa);
+}
+
+.service-call-history-timeline__icon--technician_dispatched,
+.service-call-history-timeline__icon--additional_visit {
+  background: color-mix(in srgb, var(--amarok-primary) 16%, transparent);
+  color: var(--amarok-primary);
+}
+
+.service-call-history-timeline__icon--closed {
+  background: color-mix(in srgb, var(--amarok-success, #34d399) 16%, transparent);
+  color: var(--amarok-success, #34d399);
+}
+
+.service-call-history-timeline__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-top: 0.125rem;
+}
+
+.service-call-history-timeline__title {
+  margin: 0;
+  color: var(--amarok-text);
+  font-weight: 600;
+}
+
+.service-call-history-timeline__time {
+  color: var(--amarok-text-muted);
+  font-size: 0.875rem;
+}
+
+.service-call-history-timeline__detail {
+  margin: 0.125rem 0 0;
+  color: var(--amarok-text-muted);
+  font-size: 0.9375rem;
+}
+
 .customer-detail-notes {
   margin: 0;
   color: var(--amarok-text-muted);
   white-space: pre-wrap;
+}
+
+.customer-contacts-list__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.customer-detail-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.customer-detail-tabs__button {
+  border: 1px solid var(--amarok-border);
+  background: transparent;
+  color: var(--amarok-text-muted);
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+}
+
+.customer-detail-tabs__button--active {
+  background: var(--amarok-accent-soft);
+  border-color: var(--amarok-accent);
+  color: var(--amarok-text);
+}
+
+.customer-detail-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.customer-contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--amarok-border);
+}
+
+.customer-form__field--checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.customers-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.customers-pagination__status {
+  color: var(--amarok-text-muted);
+  font-size: 0.875rem;
 }
 
 .customer-contacts-list {

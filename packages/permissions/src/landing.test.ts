@@ -15,9 +15,9 @@ describe("role landing paths", () => {
         "system-administrator",
       ),
     ).toBe(ROLE_LANDING_PATHS["system-administrator"]);
-    expect(getDefaultLandingPath(getDefaultRolePermissions("company-owner"), "company-owner")).toBe(
-      ROLE_LANDING_PATHS["company-owner"],
-    );
+    expect(
+      getDefaultLandingPath(getDefaultRolePermissions("organization-owner"), "organization-owner"),
+    ).toBe(ROLE_LANDING_PATHS["organization-owner"]);
     expect(
       getDefaultLandingPath(getDefaultRolePermissions("service-manager"), "service-manager"),
     ).toBe(ROLE_LANDING_PATHS["service-manager"]);

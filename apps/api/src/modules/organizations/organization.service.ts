@@ -26,6 +26,22 @@ export async function listOrganizations(pageValue?: string, pageSizeValue?: stri
   return { data, meta };
 }
 
+export async function listOrganizationsForTenant(
+  organizationId: string,
+  pageValue?: string,
+  pageSizeValue?: string,
+) {
+  const { page, pageSize } = parsePagination(pageValue, pageSizeValue);
+  const organization = await prisma.organization.findFirst({
+    where: { id: organizationId, ...activeOnly },
+  });
+
+  const data: Organization[] = organization ? [toOrganizationDto(organization)] : [];
+  const meta: ApiMeta = paginationMeta(organization ? 1 : 0, page, pageSize);
+
+  return { data, meta };
+}
+
 export async function getOrganizationById(id: string): Promise<Organization> {
   const organization = await prisma.organization.findFirst({
     where: { id, ...activeOnly },

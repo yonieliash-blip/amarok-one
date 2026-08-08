@@ -25,6 +25,17 @@ export function formatDate(
   return new Intl.DateTimeFormat(getFormatLocale(locale), options).format(date);
 }
 
+/** Israeli date and time formatting (e.g. 18.07.2026, 14:30). */
+export function formatDateTime(value: string | Date, locale: Locale = DEFAULT_LOCALE): string {
+  return formatDate(value, locale, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 /** Israeli currency formatting (ILS). */
 export function formatCurrency(
   amount: number,

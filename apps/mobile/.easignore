@@ -1,4 +1,5 @@
 # Paths relative to apps/mobile (EAS project root).
+# Do NOT ignore pnpm-lock.yaml or pnpm-workspace.yaml at repo root — EAS needs them for pnpm monorepos.
 ../web
 ../api
 ../../infrastructure

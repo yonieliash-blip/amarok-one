@@ -17,11 +17,11 @@ export async function loginRequest(credentials: LoginCredentials): Promise<AuthS
 
 export async function refreshSessionRequest(
   refreshToken: string,
-  activeRoleId?: string,
+  organizationId?: string,
 ): Promise<AuthSession> {
   const response = await apiRequest<AuthSession>("/auth/refresh", {
     method: "POST",
-    body: JSON.stringify({ refreshToken, activeRoleId }),
+    body: JSON.stringify({ refreshToken, organizationId }),
   });
   return response.data;
 }

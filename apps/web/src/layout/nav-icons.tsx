@@ -33,6 +33,7 @@ const NAV_ICON_MAP: Record<string, LucideIcon> = {
   parts: Package,
   accounting: FileText,
   reports: BarChart3,
+  "member-access": UserCog,
 };
 
 interface NavIconProps {

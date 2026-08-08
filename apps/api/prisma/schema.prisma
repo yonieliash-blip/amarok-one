@@ -29,6 +29,8 @@ model Organization {
   serviceCallVisits ServiceCallVisit[]
   workflowEvents WorkflowEvent[]
   userRoles   UserRole[]
+  organizationMembers OrganizationMember[]
+  memberModuleAccess MemberModuleAccess[]
   roles       Role[]
   auditLogs   AuditLog[]
 
@@ -96,6 +98,7 @@ model User {
   deletedAt    DateTime?
 
   userRoles      UserRole[]
+  organizationMembers OrganizationMember[]
   refreshTokens  RefreshToken[]
   auditLogs      AuditLog[] @relation("AuditActor")
   assignedServiceCalls ServiceCall[] @relation("AssignedTechnician")
@@ -127,12 +130,15 @@ model Role {
   name           String
   slug           String
   description    String?
+  isSystem       Boolean   @default(false)
+  isOwner        Boolean   @default(false)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
 
   organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   userRoles       UserRole[]
+  organizationMembers OrganizationMember[] @relation("MemberPrimaryRole")
   rolePermissions RolePermission[]
 
   @@unique([organizationId, slug])
@@ -176,6 +182,55 @@ model UserRole {
   @@index([userId])
   @@index([organizationId, deletedAt])
   @@map("user_roles")
+}
+
+enum OrganizationMemberStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+/// Authoritative organization membership with modular access (one row per user per org).
+model OrganizationMember {
+  id                 String                   @id @default(uuid()) @db.Uuid
+  organizationId     String                   @db.Uuid
+  userId             String                   @db.Uuid
+  primaryRoleId      String                   @db.Uuid
+  isOrganizationOwner Boolean                 @default(false)
+  status             OrganizationMemberStatus @default(ACTIVE)
+  permissionsVersion Int                      @default(1)
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  deletedAt          DateTime?
+
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  primaryRole  Role                 @relation("MemberPrimaryRole", fields: [primaryRoleId], references: [id], onDelete: Restrict)
+  moduleAccess MemberModuleAccess[]
+
+  @@unique([organizationId, userId])
+  @@index([organizationId])
+  @@index([userId])
+  @@index([organizationId, deletedAt])
+  @@map("organization_members")
+}
+
+/// Per-member module entitlement (authoritative for non-owner users).
+model MemberModuleAccess {
+  id                   String   @id @default(uuid()) @db.Uuid
+  organizationId       String   @db.Uuid
+  organizationMemberId String   @db.Uuid
+  moduleKey            String
+  enabled              Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  organizationMember OrganizationMember @relation(fields: [organizationMemberId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationMemberId, moduleKey])
+  @@index([organizationId])
+  @@index([organizationMemberId])
+  @@map("member_module_access")
 }
 
 /// Hashed refresh token for JWT session rotation.

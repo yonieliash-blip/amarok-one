@@ -5,6 +5,7 @@ import { defineConfig } from "vite";
 const permissionsEntry = path.resolve(__dirname, "../../packages/permissions/src/index.ts");
 
 export default defineConfig({
+  envDir: path.resolve(__dirname, "../.."),
   plugins: [react()],
   resolve: {
     conditions: ["development", "import", "module", "browser", "default"],
@@ -14,10 +15,12 @@ export default defineConfig({
     },
   },
   server: {
+    host: true,
     port: 5173,
     strictPort: true,
   },
   preview: {
+    host: true,
     port: 4173,
     strictPort: true,
   },

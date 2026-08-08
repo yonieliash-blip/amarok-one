@@ -23,7 +23,8 @@ export type NavLabelKey =
   | "purchaseOrders"
   | "parts"
   | "accounting"
-  | "reports";
+  | "reports"
+  | "memberAccess";
 
 export interface NavigationItemDefinition {
   id: string;
@@ -115,7 +116,17 @@ export const NAVIGATION_ITEMS: readonly NavigationItemDefinition[] = [
     labelKey: "reports",
     permissions: [PERMISSIONS.REPORTS_READ],
   },
+  {
+    id: "member-access",
+    to: "/administration/member-access",
+    labelKey: "memberAccess",
+    permissions: [PERMISSIONS.USERS_READ],
+  },
 ] as const;
+
+export interface BuildNavigationOptions {
+  isOrganizationOwner?: boolean;
+}
 
 export interface ResolvedNavigationItem extends NavigationItemDefinition {
   enabled: boolean;
@@ -124,10 +135,13 @@ export interface ResolvedNavigationItem extends NavigationItemDefinition {
 export function buildNavigationItems(
   granted: Iterable<string>,
   activeRoleSlug?: string,
+  options?: BuildNavigationOptions,
 ): ResolvedNavigationItem[] {
   const items = NAVIGATION_ITEMS.map((item) => ({
     ...item,
-    enabled: hasAnyPermission(granted, item.permissions),
+    enabled:
+      hasAnyPermission(granted, item.permissions) &&
+      (item.id !== "member-access" || options?.isOrganizationOwner === true),
   })).filter((item) => item.enabled);
 
   const roleDashboard = getDashboardForRole(activeRoleSlug);

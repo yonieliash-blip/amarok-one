@@ -10,13 +10,17 @@ import { disconnectDatabase, verifyDatabaseConnection } from "./lib/database.js"
 import { isAppError } from "./lib/errors.js";
 import { mapWorkflowError } from "./lib/workflow-errors.js";
 import { prisma } from "./lib/prisma.js";
+import { runWithoutTenantIsolation } from "./lib/tenant-context.js";
 import { healthDbGuard } from "./middleware/health-db-guard.js";
 import { createApiRoutes } from "./routes.js";
 import { env } from "./env.js";
 import { createCompositionRoot } from "./composition-root.js";
 
 const compositionRoot = createCompositionRoot();
-const apiRoutes = createApiRoutes(compositionRoot.serviceCallService);
+const apiRoutes = createApiRoutes(
+  compositionRoot.serviceCallService,
+  compositionRoot.accessService,
+);
 
 const app = new Hono();
 
@@ -28,6 +32,7 @@ app.use(
     origin: env.CORS_ORIGIN,
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
+    exposeHeaders: ["X-Permissions-Stale", "X-Permissions-Version"],
   }),
 );
 
@@ -63,17 +68,19 @@ app.get("/health/db", healthDbGuard, async (context) => {
     );
   }
 
-  const counts = await prisma.$transaction([
-    prisma.organization.count({ where: { deletedAt: null } }),
-    prisma.company.count({ where: { deletedAt: null } }),
-    prisma.branch.count({ where: { deletedAt: null } }),
-    prisma.user.count({ where: { deletedAt: null } }),
-    prisma.role.count({ where: { deletedAt: null } }),
-    prisma.permission.count(),
-    prisma.userRole.count({ where: { deletedAt: null } }),
-    prisma.refreshToken.count({ where: { revokedAt: null, expiresAt: { gt: new Date() } } }),
-    prisma.auditLog.count(),
-  ]);
+  const counts = await runWithoutTenantIsolation(() =>
+    prisma.$transaction([
+      prisma.organization.count({ where: { deletedAt: null } }),
+      prisma.company.count({ where: { deletedAt: null } }),
+      prisma.branch.count({ where: { deletedAt: null } }),
+      prisma.user.count({ where: { deletedAt: null } }),
+      prisma.role.count({ where: { deletedAt: null } }),
+      prisma.permission.count(),
+      prisma.userRole.count({ where: { deletedAt: null } }),
+      prisma.refreshToken.count({ where: { revokedAt: null, expiresAt: { gt: new Date() } } }),
+      prisma.auditLog.count(),
+    ]),
+  );
 
   const response: ApiResponse<{
     connected: true;

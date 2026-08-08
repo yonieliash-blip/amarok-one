@@ -17,10 +17,10 @@ pnpm db:down        # Stop Docker PostgreSQL
 | [docker/docker-compose.postgres.yml](docker/docker-compose.postgres.yml) | Local PostgreSQL 16               |
 | [docker/docker-compose.yml](docker/docker-compose.yml)                   | Full stack (postgres + api + web) |
 
-Default connection (see `.env.example`):
+Default connection (see `.env.example`; host port defaults to `5433` via `POSTGRES_PORT`):
 
 ```
-postgresql://amarok:amarok@localhost:5432/amarok_one?schema=public
+postgresql://amarok:amarok@localhost:5433/amarok_one?schema=public
 ```
 
 When Docker is unavailable, `pnpm db:setup` falls back to **embedded PostgreSQL** (data stored in `.data/postgres/`).

@@ -4,6 +4,7 @@ import {
   createWorkflowClock,
   createWorkflowRuntimeIds,
 } from "./infrastructure/workflow/prisma-workflow-event-store.js";
+import { createAccessService } from "./modules/access/access.service.js";
 import { createServiceCallService } from "./modules/service-calls/service-call.service.js";
 import { ServiceCallWorkflowIntegration } from "./modules/service-calls/service-call-workflow.integration.js";
 
@@ -21,11 +22,13 @@ export function createCompositionRoot() {
     clock,
     ids,
   });
+  const accessService = createAccessService();
 
   return {
     eventStore,
     serviceCallWorkflow,
     serviceCallService,
+    accessService,
   };
 }
 

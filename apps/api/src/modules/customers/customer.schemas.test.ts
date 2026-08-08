@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createCustomerSchema, updateCustomerSchema } from "./customer.schemas.js";
+import {
+  createCustomerSchema,
+  listCustomersQuerySchema,
+  updateCustomerSchema,
+} from "./customer.schemas.js";
 
 describe("customer.schemas", () => {
   it("accepts valid create payloads", () => {
@@ -26,5 +30,16 @@ describe("customer.schemas", () => {
     const result = updateCustomerSchema.safeParse({});
 
     expect(result.success).toBe(false);
+  });
+
+  it("accepts list query sort parameters", () => {
+    const result = listCustomersQuerySchema.safeParse({
+      sortBy: "name",
+      sortOrder: "asc",
+      page: 2,
+      pageSize: 25,
+    });
+
+    expect(result.success).toBe(true);
   });
 });

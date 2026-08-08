@@ -22,6 +22,7 @@ import {
   startOfLocalDay,
   type ServiceManagerBucket,
 } from "../../lib/service-manager-dashboard";
+import { buildServiceCallsListUrl } from "../../lib/service-calls-list-url";
 import { hasServiceCallsWrite, listAssignableUsersRequest } from "../../lib/service-calls-api";
 import type { TranslationMessages } from "../../i18n/types";
 
@@ -272,7 +273,15 @@ export function ServiceManagerDashboardPage() {
                       })}
                 </p>
               </div>
-              <Link to="/service-calls" className="service-manager-dashboard__view-all">
+              <Link
+                to={buildServiceCallsListUrl({
+                  bucket: activeBucket,
+                  search: debouncedSearch,
+                  priority: priorityFilter,
+                  assigneeId: assigneeFilter,
+                })}
+                className="service-manager-dashboard__view-all"
+              >
                 {t("serviceManagerDashboard", "viewAllServiceCalls")}
               </Link>
             </div>

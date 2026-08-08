@@ -55,4 +55,23 @@ describe("groupTechnicianServiceCalls", () => {
     expect(grouped.today.map((entry) => entry.id)).toEqual(["active-1"]);
     expect(grouped.upcoming).toHaveLength(0);
   });
+
+  it("scopes calls to the active assignee when an id is provided", () => {
+    const grouped = groupTechnicianServiceCalls(
+      [
+        call({
+          id: "mine",
+          status: "scheduled",
+          assignedUserId: "tech-1",
+          openedAt: "2026-07-15T09:00:00.000Z",
+          scheduledAt: "2026-07-21T09:00:00.000Z",
+        }),
+        call({ id: "other", status: "open", assignedUserId: "tech-2" }),
+      ],
+      new Date("2026-07-19T12:00:00.000Z"),
+      "tech-1",
+    );
+
+    expect(grouped.upcoming.map((entry) => entry.id)).toEqual(["mine"]);
+  });
 });

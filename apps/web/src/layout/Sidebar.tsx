@@ -13,7 +13,9 @@ interface SidebarProps {
 export function Sidebar({ onNavigate }: SidebarProps) {
   const { user } = useAuth();
   const { t } = useTranslation();
-  const navItems = buildNavigationItems(permissionSlugsFromCarrier(user), user?.role.slug);
+  const navItems = buildNavigationItems(permissionSlugsFromCarrier(user), user?.role.slug, {
+    isOrganizationOwner: user?.isOrganizationOwner,
+  });
   const sections = groupNavigationItems(navItems);
 
   return (

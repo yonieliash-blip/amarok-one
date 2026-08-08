@@ -278,6 +278,9 @@ export interface AuthRole {
   name: string;
 }
 
+/** Module key granted to an organization member */
+export type MemberModuleKey = "core" | "service" | "inventory" | "finance" | "administration";
+
 /** Authenticated user profile with tenant context */
 export interface AuthUser {
   id: EntityId;
@@ -289,11 +292,18 @@ export interface AuthUser {
     slug: string;
     name: string;
   };
-  /** Primary role (first assigned role) for display compatibility */
+  /** Primary business role template */
   role: AuthRole;
   /** All roles assigned to the user within the current organization */
   roles: AuthRole[];
   permissions: Permission[];
+  /** Effective enabled modules for modular access */
+  enabledModules?: MemberModuleKey[];
+  /** Increments when module access changes (silent refresh) */
+  permissionsVersion?: number;
+  isOrganizationOwner?: boolean;
+  /** Organization membership id for access administration */
+  memberId?: EntityId;
 }
 
 /** Login / refresh token response */

@@ -9,7 +9,7 @@ export const loginSchema = z.object({
 
 export const refreshTokenSchema = z.object({
   refreshToken: z.string().min(32).max(2048),
-  activeRoleId: z.string().uuid().optional(),
+  organizationId: z.string().uuid().optional(),
 });
 
 export const logoutSchema = z.object({

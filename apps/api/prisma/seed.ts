@@ -1,5 +1,10 @@
 import { PrismaClient } from "@prisma/client";
-import { ALL_PERMISSIONS, DEFAULT_ROLES } from "@amarok-one/permissions";
+import {
+  ALL_PERMISSIONS,
+  DEFAULT_ROLES,
+  ORGANIZATION_OWNER_ROLE_SLUG,
+  getDefaultModulesForRole,
+} from "@amarok-one/permissions";
 import { hashPassword } from "../src/lib/password.js";
 
 const prisma = new PrismaClient();
@@ -10,29 +15,84 @@ const DEMO_USERS = [
   {
     email: "admin@demo.amarok.one",
     displayName: "Demo Owner",
-    roleSlugs: ["company-owner", "system-administrator"] as const,
+    roleSlugs: ["organization-owner"] as const,
+    isOrganizationOwner: true,
   },
   {
     email: "manager@demo.amarok.one",
     displayName: "Demo Service Manager",
     roleSlugs: ["service-manager"] as const,
+    isOrganizationOwner: false,
   },
   {
     email: "tech1@demo.amarok.one",
     displayName: "Demo Technician",
     roleSlugs: ["technician"] as const,
+    isOrganizationOwner: false,
   },
   {
     email: "warehouse@demo.amarok.one",
     displayName: "Demo Warehouse Employee",
     roleSlugs: ["warehouse-employee"] as const,
+    isOrganizationOwner: false,
   },
   {
     email: "accounting@demo.amarok.one",
     displayName: "Demo Accounting",
     roleSlugs: ["accounting"] as const,
+    isOrganizationOwner: false,
   },
 ] as const;
+
+async function ensureDemoOrganizationMember(input: {
+  organizationId: string;
+  userId: string;
+  primaryRoleId: string;
+  roleSlug: string;
+  isOrganizationOwner: boolean;
+}): Promise<void> {
+  const member = await prisma.organizationMember.upsert({
+    where: {
+      organizationId_userId: {
+        organizationId: input.organizationId,
+        userId: input.userId,
+      },
+    },
+    update: {
+      primaryRoleId: input.primaryRoleId,
+      isOrganizationOwner: input.isOrganizationOwner,
+      status: "ACTIVE",
+      deletedAt: null,
+    },
+    create: {
+      organizationId: input.organizationId,
+      userId: input.userId,
+      primaryRoleId: input.primaryRoleId,
+      isOrganizationOwner: input.isOrganizationOwner,
+      status: "ACTIVE",
+    },
+  });
+
+  for (const moduleKey of getDefaultModulesForRole(input.roleSlug)) {
+    await prisma.memberModuleAccess.upsert({
+      where: {
+        organizationMemberId_moduleKey: {
+          organizationMemberId: member.id,
+          moduleKey,
+        },
+      },
+      create: {
+        organizationId: input.organizationId,
+        organizationMemberId: member.id,
+        moduleKey,
+        enabled: true,
+      },
+      update: {
+        enabled: true,
+      },
+    });
+  }
+}
 
 async function main(): Promise<void> {
   console.log("Seeding database...");
@@ -75,12 +135,16 @@ async function main(): Promise<void> {
         update: {
           name: role.name,
           description: role.description,
+          isSystem: role.isSystem ?? false,
+          isOwner: role.isOwner ?? false,
         },
         create: {
           organizationId: organization.id,
           slug: role.slug,
           name: role.name,
           description: role.description,
+          isSystem: role.isSystem ?? false,
+          isOwner: role.isOwner ?? false,
         },
       }),
     ),
@@ -173,6 +237,64 @@ async function main(): Promise<void> {
         },
       });
     }
+
+    const primaryRoleSlug = demoUser.roleSlugs[0];
+    const primaryRole = roles.find((entry) => entry.slug === primaryRoleSlug);
+    if (!primaryRole) {
+      throw new Error(`Primary role '${primaryRoleSlug}' was not created during seed`);
+    }
+
+    await ensureDemoOrganizationMember({
+      organizationId: organization.id,
+      userId: user.id,
+      primaryRoleId: primaryRole.id,
+      roleSlug: primaryRole.slug,
+      isOrganizationOwner:
+        demoUser.isOrganizationOwner || primaryRole.slug === ORGANIZATION_OWNER_ROLE_SLUG,
+    });
+  }
+
+  await prisma.role.updateMany({
+    where: {
+      organizationId: organization.id,
+      slug: "company-owner",
+      deletedAt: null,
+    },
+    data: {
+      deletedAt: new Date(),
+    },
+  });
+
+  await prisma.user.updateMany({
+    where: {
+      OR: [
+        {
+          displayName: "Demo Technician",
+          email: { not: "tech1@demo.amarok.one" },
+        },
+        {
+          email: { in: ["tech@demo.amarok.one"] },
+        },
+      ],
+      deletedAt: null,
+    },
+    data: {
+      isActive: false,
+      deletedAt: new Date(),
+    },
+  });
+
+  const canonicalTechnician = seededUsers.get("tech1@demo.amarok.one");
+  if (canonicalTechnician) {
+    await prisma.userRole.updateMany({
+      where: {
+        organizationId: organization.id,
+        role: { slug: "technician" },
+        userId: { not: canonicalTechnician.id },
+        deletedAt: null,
+      },
+      data: { deletedAt: new Date() },
+    });
   }
 
   const owner = seededUsers.get("admin@demo.amarok.one");

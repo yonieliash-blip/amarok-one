@@ -4,6 +4,7 @@ import type {
   AuthUser,
   Permission as PermissionDto,
 } from "@amarok-one/types";
+import { ALL_PERMISSIONS } from "@amarok-one/permissions";
 import { unauthorized } from "../../lib/errors.js";
 import {
   createRefreshTokenId,
@@ -16,6 +17,13 @@ import {
 import { hashPassword, hashToken, verifyPassword, verifyTokenHash } from "../../lib/password.js";
 import { activeOnly } from "../../lib/mappers.js";
 import { prisma } from "../../lib/prisma.js";
+import { runWithoutTenantIsolation } from "../../lib/tenant-context.js";
+import {
+  loadOrganizationMember,
+  memberInclude,
+  resolveMemberAuthorization,
+  type LoadedOrganizationMember,
+} from "../../lib/member-access.js";
 import type {
   LoginInput,
   LogoutInput,
@@ -23,32 +31,24 @@ import type {
   SwitchRoleInput,
 } from "./auth.schemas.js";
 
-const userRoleInclude = {
-  role: {
-    include: {
-      rolePermissions: {
-        include: {
-          permission: true,
-        },
-      },
-    },
-  },
-  organization: true,
-} as const;
+const permissionCatalog = new Map(ALL_PERMISSIONS.map((entry) => [entry.slug, entry]));
 
-type LoadedUserRole = Awaited<ReturnType<typeof loadUserRolesForOrganization>>[number];
+function toPermissionDto(slug: string): PermissionDto {
+  const definition = permissionCatalog.get(slug as (typeof ALL_PERMISSIONS)[number]["slug"]);
+  if (definition) {
+    return {
+      id: definition.slug,
+      slug: definition.slug,
+      name: definition.name,
+      description: definition.description,
+    };
+  }
 
-function toPermissionDto(permission: {
-  id: string;
-  slug: string;
-  name: string;
-  description: string | null;
-}): PermissionDto {
   return {
-    id: permission.id,
-    slug: permission.slug,
-    name: permission.name,
-    description: permission.description ?? undefined,
+    id: slug,
+    slug,
+    name: slug,
+    description: undefined,
   };
 }
 
@@ -60,22 +60,12 @@ function toAuthRole(role: { id: string; slug: string; name: string }): AuthRole 
   };
 }
 
-function extractPermissionsForRole(userRole: LoadedUserRole): PermissionDto[] {
-  return userRole.role.rolePermissions.map((entry) => toPermissionDto(entry.permission));
-}
-
-function toAuthUser(
+function toAuthUserFromMember(
   user: { id: string; email: string; displayName: string; lastLoginAt: Date | null },
-  organization: { id: string; slug: string; name: string },
-  userRoles: LoadedUserRole[],
-  activeUserRole: LoadedUserRole,
+  member: LoadedOrganizationMember,
+  resolved: ReturnType<typeof resolveMemberAuthorization>,
 ): AuthUser {
-  const roles = userRoles.map((entry) => toAuthRole(entry.role));
-  const activeRole = toAuthRole(activeUserRole.role);
-
-  if (!activeRole) {
-    throw unauthorized("User has no active organization membership");
-  }
+  const role = toAuthRole(member.primaryRole);
 
   return {
     id: user.id,
@@ -83,100 +73,78 @@ function toAuthUser(
     displayName: user.displayName,
     lastLoginAt: user.lastLoginAt?.toISOString(),
     organization: {
-      id: organization.id,
-      slug: organization.slug,
-      name: organization.name,
+      id: member.organization.id,
+      slug: member.organization.slug,
+      name: member.organization.name,
     },
-    role: activeRole,
-    roles,
-    permissions: extractPermissionsForRole(activeUserRole),
+    role,
+    roles: [role],
+    permissions: resolved.permissions.map(toPermissionDto),
+    enabledModules: resolved.enabledModules,
+    permissionsVersion: resolved.permissionsVersion,
+    isOrganizationOwner: resolved.isOrganizationOwner,
+    memberId: member.id,
   };
 }
 
-async function loadUserRolesForOrganization(userId: string, organizationSlug?: string) {
-  const userRoles = await prisma.userRole.findMany({
+async function loadMemberForOrganization(userId: string, organizationSlug?: string) {
+  const members = await prisma.organizationMember.findMany({
     where: {
       userId,
       ...activeOnly,
-      role: activeOnly,
+      status: "ACTIVE",
+      user: activeOnly,
+      primaryRole: activeOnly,
       organization: activeOnly,
     },
-    include: userRoleInclude,
+    include: memberInclude,
     orderBy: [{ organizationId: "asc" }, { createdAt: "asc" }],
   });
 
-  if (userRoles.length === 0) {
+  if (members.length === 0) {
     throw unauthorized("User has no active organization membership");
   }
 
-  const organizationId = organizationSlug
-    ? userRoles.find((entry) => entry.organization.slug === organizationSlug)?.organizationId
-    : userRoles[0]?.organizationId;
+  const member = organizationSlug
+    ? members.find((entry) => entry.organization.slug === organizationSlug)
+    : members[0];
 
-  if (!organizationId) {
+  if (!member) {
     throw unauthorized("User is not a member of the requested organization");
   }
 
-  const scopedRoles = userRoles.filter((entry) => entry.organizationId === organizationId);
-  if (scopedRoles.length === 0) {
-    throw unauthorized("User has no active organization membership");
-  }
-
-  return scopedRoles;
+  return member;
 }
 
 function buildAccessTokenPayload(
   user: { id: string; email: string },
-  userRoles: LoadedUserRole[],
-  activeUserRole: LoadedUserRole,
+  member: LoadedOrganizationMember,
+  resolved: ReturnType<typeof resolveMemberAuthorization>,
 ) {
-  const organization = activeUserRole.organization;
-  const activeRole = activeUserRole.role;
-
-  const roles = userRoles.map((entry) => toAuthRole(entry.role));
-  const permissionSlugs = activeUserRole.role.rolePermissions.map(
-    (rolePermission) => rolePermission.permission.slug,
-  );
+  const role = toAuthRole(member.primaryRole);
 
   return {
     sub: user.id,
     email: user.email,
-    organizationId: organization.id,
-    organizationSlug: organization.slug,
-    roleId: activeRole.id,
-    roleSlug: activeRole.slug,
-    roles,
-    permissions: permissionSlugs,
+    organizationId: member.organizationId,
+    organizationSlug: member.organization.slug,
+    roleId: member.primaryRoleId,
+    roleSlug: member.primaryRole.slug,
+    roles: [role],
+    permissions: resolved.permissions,
+    permissionsVersion: resolved.permissionsVersion,
+    enabledModules: resolved.enabledModules,
+    isOrganizationOwner: resolved.isOrganizationOwner,
   };
 }
 
-function resolveActiveUserRole(userRoles: LoadedUserRole[], activeRoleId?: string): LoadedUserRole {
-  if (activeRoleId) {
-    const selected = userRoles.find((entry) => entry.role.id === activeRoleId);
-    if (!selected) {
-      throw unauthorized("Role is not assigned to the current user");
-    }
-    return selected;
-  }
-
-  const primary = userRoles[0];
-  if (!primary) {
-    throw unauthorized("User has no active organization membership");
-  }
-
-  return primary;
-}
-
-async function createSessionForUser(
+async function createSessionForMember(
   user: { id: string; email: string; displayName: string; lastLoginAt: Date | null },
-  userRoles: LoadedUserRole[],
-  activeRoleId?: string,
+  member: LoadedOrganizationMember,
   options?: { rotateRefreshToken?: string },
 ): Promise<AuthSession> {
-  const activeUserRole = resolveActiveUserRole(userRoles, activeRoleId);
-  const accessToken = await signAccessToken(
-    buildAccessTokenPayload(user, userRoles, activeUserRole),
-  );
+  const resolved = resolveMemberAuthorization(member);
+  const accessToken = await signAccessToken(buildAccessTokenPayload(user, member, resolved));
 
   let refreshToken: string;
   if (options?.rotateRefreshToken) {
@@ -201,109 +169,118 @@ async function createSessionForUser(
     refreshToken,
     expiresIn: getAccessTokenTtlSeconds(),
     tokenType: "Bearer",
-    user: toAuthUser(user, activeUserRole.organization, userRoles, activeUserRole),
+    user: toAuthUserFromMember(user, member, resolved),
   };
 }
 
 export async function login(input: LoginInput): Promise<AuthSession> {
-  const user = await prisma.user.findFirst({
-    where: {
-      email: input.email.toLowerCase(),
-      ...activeOnly,
-      isActive: true,
-    },
+  return runWithoutTenantIsolation(async () => {
+    const user = await prisma.user.findFirst({
+      where: {
+        email: input.email.toLowerCase(),
+        ...activeOnly,
+        isActive: true,
+      },
+    });
+
+    if (!user?.passwordHash) {
+      throw unauthorized("Invalid email or password");
+    }
+
+    const passwordValid = await verifyPassword(input.password, user.passwordHash);
+    if (!passwordValid) {
+      throw unauthorized("Invalid email or password");
+    }
+
+    const member = await loadMemberForOrganization(user.id, input.organizationSlug);
+    const session = await createSessionForMember(user, member);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+
+    return session;
   });
-
-  if (!user?.passwordHash) {
-    throw unauthorized("Invalid email or password");
-  }
-
-  const passwordValid = await verifyPassword(input.password, user.passwordHash);
-  if (!passwordValid) {
-    throw unauthorized("Invalid email or password");
-  }
-
-  const userRoles = await loadUserRolesForOrganization(user.id, input.organizationSlug);
-  const session = await createSessionForUser(user, userRoles);
-
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { lastLoginAt: new Date() },
-  });
-
-  return session;
 }
 
 export async function refreshSession(input: RefreshTokenInput): Promise<AuthSession> {
-  let payload;
-  try {
-    payload = await verifyRefreshToken(input.refreshToken);
-  } catch {
-    throw unauthorized("Invalid or expired refresh token");
-  }
-
-  const candidates = await prisma.refreshToken.findMany({
-    where: {
-      userId: payload.sub,
-      revokedAt: null,
-      expiresAt: { gt: new Date() },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 10,
-  });
-
-  let storedToken = null;
-  for (const candidate of candidates) {
-    if (await verifyTokenHash(input.refreshToken, candidate.tokenHash)) {
-      storedToken = candidate;
-      break;
+  return runWithoutTenantIsolation(async () => {
+    let payload;
+    try {
+      payload = await verifyRefreshToken(input.refreshToken);
+    } catch {
+      throw unauthorized("Invalid or expired refresh token");
     }
-  }
 
-  if (!storedToken) {
-    throw unauthorized("Invalid or expired refresh token");
-  }
-
-  const user = await prisma.user.findFirst({
-    where: { id: payload.sub, ...activeOnly, isActive: true },
-  });
-
-  if (!user) {
-    throw unauthorized("User account is inactive");
-  }
-
-  const userRoles = await loadUserRolesForOrganization(user.id);
-  const activeUserRole = resolveActiveUserRole(userRoles, input.activeRoleId);
-  const accessToken = await signAccessToken(
-    buildAccessTokenPayload(user, userRoles, activeUserRole),
-  );
-
-  const newRefreshTokenId = createRefreshTokenId();
-  const newRefreshToken = await signRefreshToken(user.id, newRefreshTokenId);
-  const newTokenHash = await hashToken(newRefreshToken);
-  const expiresAt = new Date(Date.now() + getRefreshTokenTtlSeconds() * 1000);
-
-  await prisma.$transaction([
-    prisma.refreshToken.update({
-      where: { id: storedToken.id },
-      data: { revokedAt: new Date() },
-    }),
-    prisma.refreshToken.create({
-      data: {
-        userId: user.id,
-        tokenHash: newTokenHash,
-        expiresAt,
+    const candidates = await prisma.refreshToken.findMany({
+      where: {
+        userId: payload.sub,
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
       },
-    }),
-  ]);
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    });
 
-  return {
-    accessToken,
-    refreshToken: newRefreshToken,
-    expiresIn: getAccessTokenTtlSeconds(),
-    tokenType: "Bearer",
-    user: toAuthUser(user, activeUserRole.organization, userRoles, activeUserRole),
-  };
+    let storedToken = null;
+    for (const candidate of candidates) {
+      if (await verifyTokenHash(input.refreshToken, candidate.tokenHash)) {
+        storedToken = candidate;
+        break;
+      }
+    }
+
+    if (!storedToken) {
+      throw unauthorized("Invalid or expired refresh token");
+    }
+
+    const user = await prisma.user.findFirst({
+      where: { id: payload.sub, ...activeOnly, isActive: true },
+    });
+
+    if (!user) {
+      throw unauthorized("User account is inactive");
+    }
+
+    const member = input.organizationId
+      ? await loadOrganizationMember(input.organizationId, user.id)
+      : await loadMemberForOrganization(user.id);
+
+    if (!member) {
+      throw unauthorized("User has no active organization membership");
+    }
+
+    const resolved = resolveMemberAuthorization(member);
+    const accessToken = await signAccessToken(buildAccessTokenPayload(user, member, resolved));
+
+    const newRefreshTokenId = createRefreshTokenId();
+    const newRefreshToken = await signRefreshToken(user.id, newRefreshTokenId);
+    const newTokenHash = await hashToken(newRefreshToken);
+    const expiresAt = new Date(Date.now() + getRefreshTokenTtlSeconds() * 1000);
+
+    await prisma.$transaction([
+      prisma.refreshToken.update({
+        where: { id: storedToken.id },
+        data: { revokedAt: new Date() },
+      }),
+      prisma.refreshToken.create({
+        data: {
+          userId: user.id,
+          tokenHash: newTokenHash,
+          expiresAt,
+        },
+      }),
+    ]);
+
+    return {
+      accessToken,
+      refreshToken: newRefreshToken,
+      expiresIn: getAccessTokenTtlSeconds(),
+      tokenType: "Bearer",
+      user: toAuthUserFromMember(user, member, resolved),
+    };
+  });
 }
 
 export async function logout(userId: string, input: LogoutInput): Promise<void> {
@@ -340,11 +317,7 @@ export async function logout(userId: string, input: LogoutInput): Promise<void> 
   });
 }
 
-export async function getCurrentUser(
-  userId: string,
-  organizationId: string,
-  activeRoleId?: string,
-): Promise<AuthUser> {
+export async function getCurrentUser(userId: string, organizationId: string): Promise<AuthUser> {
   const user = await prisma.user.findFirst({
     where: { id: userId, ...activeOnly, isActive: true },
   });
@@ -353,30 +326,19 @@ export async function getCurrentUser(
     throw unauthorized("User account is inactive");
   }
 
-  const userRoles = await prisma.userRole.findMany({
-    where: {
-      userId,
-      organizationId,
-      ...activeOnly,
-      role: activeOnly,
-      organization: activeOnly,
-    },
-    include: userRoleInclude,
-    orderBy: { createdAt: "asc" },
-  });
-
-  if (userRoles.length === 0) {
+  const member = await loadOrganizationMember(organizationId, userId);
+  if (!member) {
     throw unauthorized("User has no active membership in the current organization");
   }
 
-  const activeUserRole = resolveActiveUserRole(userRoles, activeRoleId);
-  return toAuthUser(user, activeUserRole.organization, userRoles, activeUserRole);
+  return toAuthUserFromMember(user, member, resolveMemberAuthorization(member));
 }
 
+/** Legacy role switch retained for compatibility — primary role is membership-bound. */
 export async function switchRole(
   userId: string,
   organizationId: string,
-  input: SwitchRoleInput,
+  _input: SwitchRoleInput,
 ): Promise<AuthSession> {
   const user = await prisma.user.findFirst({
     where: { id: userId, ...activeOnly, isActive: true },
@@ -386,33 +348,20 @@ export async function switchRole(
     throw unauthorized("User account is inactive");
   }
 
-  const userRoles = await prisma.userRole.findMany({
-    where: {
-      userId,
-      organizationId,
-      ...activeOnly,
-      role: activeOnly,
-      organization: activeOnly,
-    },
-    include: userRoleInclude,
-    orderBy: { createdAt: "asc" },
-  });
-
-  if (userRoles.length === 0) {
+  const member = await loadOrganizationMember(organizationId, userId);
+  if (!member) {
     throw unauthorized("User has no active membership in the current organization");
   }
 
-  const activeUserRole = resolveActiveUserRole(userRoles, input.roleId);
-  const accessToken = await signAccessToken(
-    buildAccessTokenPayload(user, userRoles, activeUserRole),
-  );
+  const resolved = resolveMemberAuthorization(member);
+  const accessToken = await signAccessToken(buildAccessTokenPayload(user, member, resolved));
 
   return {
     accessToken,
     refreshToken: "",
     expiresIn: getAccessTokenTtlSeconds(),
     tokenType: "Bearer",
-    user: toAuthUser(user, activeUserRole.organization, userRoles, activeUserRole),
+    user: toAuthUserFromMember(user, member, resolved),
   };
 }
 

@@ -12,7 +12,7 @@ export type DashboardNavLabelKey =
 /** Default landing path for each role slug. */
 export const ROLE_LANDING_PATHS: Readonly<Record<string, string>> = {
   "system-administrator": "/dashboard/management",
-  "company-owner": "/dashboard/executive",
+  "organization-owner": "/dashboard/executive",
   "service-manager": "/dashboard/service",
   "service-coordinator": "/dashboard/service",
   technician: "/my/service-calls",
@@ -47,7 +47,7 @@ export const ROLE_DASHBOARDS: readonly RoleDashboardDefinition[] = [
     kind: "executive",
     path: "/dashboard/executive",
     labelKey: "executiveDashboard",
-    roleSlugs: ["company-owner"],
+    roleSlugs: ["organization-owner"],
     permissions: [PERMISSIONS.DASHBOARD_READ],
   },
   {

@@ -19,6 +19,7 @@ out/
 .env.*.local
 .env.*
 !.env.example
+!.env.lan.example
 !.env.production.example
 
 # Local Docker Compose env (safe local defaults — not production secrets)

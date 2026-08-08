@@ -1,11 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { formatCurrency, formatDate, formatNumber, formatPhone } from "./format.js";
+import { formatCurrency, formatDate, formatDateTime, formatNumber, formatPhone } from "./format.js";
 
 describe("format", () => {
   it("formats dates for Hebrew locale", () => {
     const formatted = formatDate("2026-07-18T12:00:00.000Z", "he");
     expect(formatted).toMatch(/18/);
     expect(formatted).toMatch(/2026/);
+  });
+
+  it("formats date and time for Hebrew locale", () => {
+    const formatted = formatDateTime("2026-07-18T14:30:00.000Z", "he");
+    expect(formatted).toMatch(/18/);
+    expect(formatted).toMatch(/2026/);
+    expect(formatted).toMatch(/1[4-7]/);
   });
 
   it("formats Israeli phone numbers", () => {

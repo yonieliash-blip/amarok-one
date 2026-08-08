@@ -126,9 +126,9 @@ describe("navigation generation", () => {
     expect(getDefaultLandingPath(getDefaultRolePermissions("accounting"), "accounting")).toBe(
       "/dashboard/accounting",
     );
-    expect(getDefaultLandingPath(getDefaultRolePermissions("company-owner"), "company-owner")).toBe(
-      "/dashboard/executive",
-    );
+    expect(
+      getDefaultLandingPath(getDefaultRolePermissions("organization-owner"), "organization-owner"),
+    ).toBe("/dashboard/executive");
   });
 
   it("avoids redirecting to forbidden preferred paths", () => {

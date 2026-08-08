@@ -89,6 +89,7 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
       where: {
         organizationId,
         deletedAt: null,
+        role: { slug: "technician", deletedAt: null },
         user: { deletedAt: null, isActive: true },
       },
       include: {

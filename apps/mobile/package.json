@@ -3,6 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "main": "expo/AppEntry.js",
+  "expo": {
+    "install": {
+      "exclude": [
+        "typescript"
+      ]
+    }
+  },
   "scripts": {
     "dev": "expo start",
     "build": "tsc --noEmit -p tsconfig.json",
@@ -14,7 +21,11 @@
     "test": "vitest run",
     "clean": "rimraf dist .expo",
     "eas-build-pre-install": "cd ../.. && corepack enable && corepack prepare pnpm@10.12.4 --activate && pnpm install --frozen-lockfile",
-    "eas-build-post-install": "cd ../.. && pnpm exec turbo run build --filter=@amarok-one/types... --filter=@amarok-one/permissions... --filter=@amarok-one/utils..."
+    "eas-build-post-install": "cd ../.. && pnpm exec turbo run build --filter=@amarok-one/types... --filter=@amarok-one/permissions... --filter=@amarok-one/utils...",
+    "assets:fix-store": "node scripts/fix-store-assets.mjs",
+    "eas:whoami": "pnpm dlx eas-cli@16 whoami",
+    "eas:init": "pnpm dlx eas-cli@16 init",
+    "eas:build:ios": "pnpm dlx eas-cli@16 build --platform ios --profile production"
   },
   "dependencies": {
     "@amarok-one/permissions": "workspace:*",
@@ -38,6 +49,7 @@
     "babel-preset-expo": "~54.0.10",
     "eslint": "^10.6.0",
     "rimraf": "^6.0.1",
+    "sharp": "^0.35.3",
     "typescript": "~6.0.2",
     "vitest": "^3.2.4"
   }

@@ -46,6 +46,8 @@ export const customerRoutes = new Hono()
         query.pageSize?.toString(),
         query.search,
         query.status,
+        query.sortBy,
+        query.sortOrder,
       );
       return context.json(createApiResponse(result.data, result.meta));
     },

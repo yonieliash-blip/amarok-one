@@ -4,13 +4,14 @@ Central documentation for the AMAROK ONE project. **All agents must read every d
 
 ## Core documents
 
-| Document                                           | Description                                      |
-| -------------------------------------------------- | ------------------------------------------------ |
-| [ARCHITECTURE.md](ARCHITECTURE.md)                 | System design, modular monolith, multi-tenancy   |
-| [CODING_STANDARDS.md](CODING_STANDARDS.md)         | TypeScript, linting, testing, and package rules  |
-| [SECURITY.md](SECURITY.md)                         | Security requirements and secure defaults        |
-| [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md) | Branching, verification, and completion criteria |
-| [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)               | UI tokens, components, RTL, and accessibility    |
+| Document                                             | Description                                         |
+| ---------------------------------------------------- | --------------------------------------------------- |
+| [ARCHITECTURE_BASELINE.md](ARCHITECTURE_BASELINE.md) | **Reference architecture (authoritative snapshot)** |
+| [ARCHITECTURE.md](ARCHITECTURE.md)                   | Original system design (partially outdated)         |
+| [CODING_STANDARDS.md](CODING_STANDARDS.md)           | TypeScript, linting, testing, and package rules     |
+| [SECURITY.md](SECURITY.md)                           | Security requirements and secure defaults           |
+| [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md)   | Branching, verification, and completion criteria    |
+| [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)                 | UI tokens, components, RTL, and accessibility       |
 
 ## Operations
 

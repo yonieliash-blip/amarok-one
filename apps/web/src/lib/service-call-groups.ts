@@ -39,9 +39,11 @@ function isTodayCall(call: ServiceCall, now: Date): boolean {
 export function groupTechnicianServiceCalls(
   calls: ServiceCall[],
   now: Date = new Date(),
+  assigneeId?: string,
 ): GroupedServiceCalls {
-  const completed = calls.filter((call) => isCompleted(call.status));
-  const active = calls.filter((call) => !isCompleted(call.status));
+  const scoped = assigneeId ? calls.filter((call) => call.assignedUserId === assigneeId) : calls;
+  const completed = scoped.filter((call) => isCompleted(call.status));
+  const active = scoped.filter((call) => !isCompleted(call.status));
   const today = active.filter((call) => isTodayCall(call, now));
   const todayIds = new Set(today.map((call) => call.id));
   const upcoming = active.filter((call) => !todayIds.has(call.id));

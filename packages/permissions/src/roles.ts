@@ -1,10 +1,18 @@
-import { ALL_PERMISSION_SLUGS, PERMISSIONS, type PermissionSlug } from "./permissions.js";
+import { PERMISSIONS, TENANT_PERMISSION_SLUGS, type PermissionSlug } from "./permissions.js";
+
+/** Role slug for cross-tenant platform administrators. */
+export const PLATFORM_ADMIN_ROLE_SLUG = "platform-admin";
+
+/** Protected organization Owner/Master role slug. */
+export const ORGANIZATION_OWNER_ROLE_SLUG = "organization-owner";
 
 export interface DefaultRoleDefinition {
   slug: string;
   name: string;
   description: string;
   permissions: readonly PermissionSlug[];
+  isSystem?: boolean;
+  isOwner?: boolean;
 }
 
 const READ_ONLY_PERMISSIONS: readonly PermissionSlug[] = [
@@ -29,16 +37,25 @@ const READ_ONLY_PERMISSIONS: readonly PermissionSlug[] = [
 /** Default tenant roles and their permission sets (configurable via RolePermission in DB). */
 export const DEFAULT_ROLES: readonly DefaultRoleDefinition[] = [
   {
-    slug: "system-administrator",
-    name: "System Administrator",
-    description: "Full platform and organization access",
-    permissions: ALL_PERMISSION_SLUGS,
+    slug: PLATFORM_ADMIN_ROLE_SLUG,
+    name: "Platform Admin",
+    description: "Cross-tenant platform administration",
+    permissions: [PERMISSIONS.PLATFORM_ADMIN],
   },
   {
-    slug: "company-owner",
-    name: "Company Owner",
-    description: "Full organization operations access",
-    permissions: ALL_PERMISSION_SLUGS,
+    slug: "system-administrator",
+    name: "System Administrator",
+    description: "Delegated administrator with broad access via assigned modules (non-owner)",
+    permissions: TENANT_PERMISSION_SLUGS,
+    isSystem: true,
+  },
+  {
+    slug: ORGANIZATION_OWNER_ROLE_SLUG,
+    name: "Organization Owner",
+    description: "Protected organization master with full module access",
+    permissions: TENANT_PERMISSION_SLUGS,
+    isSystem: true,
+    isOwner: true,
   },
   {
     slug: "service-manager",

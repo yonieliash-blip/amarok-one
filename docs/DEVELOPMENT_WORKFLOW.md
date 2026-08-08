@@ -34,12 +34,14 @@ pnpm install
 # Build all packages (required before first run)
 pnpm build
 
-# Start individual apps
-pnpm --filter @amarok-one/web dev
-pnpm --filter @amarok-one/api dev
-pnpm --filter @amarok-one/mobile dev
+# First-time / after schema changes: database setup
+pnpm db:setup
 
-# Or start all dev servers via Turborepo
+# Start web + API (recommended — run in separate terminals)
+pnpm dev:web
+pnpm dev:api
+
+# Or start all dev servers via Turborepo (includes mobile + package watchers)
 pnpm dev
 ```
 
@@ -50,6 +52,25 @@ pnpm dev
 | Web    | http://localhost:5173                 |
 | API    | http://localhost:3000                 |
 | Mobile | Expo dev server (QR code in terminal) |
+
+### Same Wi-Fi / phone testing (optional)
+
+Normal development uses **localhost only** and does not depend on your Wi-Fi IP. When you need to test from a phone or tablet on the same network:
+
+1. Copy `.env.lan.example` to `.env.lan.local` at the repository root (gitignored).
+2. Replace `YOUR_LAN_IP` with your machine's Wi-Fi IPv4 address (Windows: `Get-NetIPAddress -AddressFamily IPv4` — use the **Wi-Fi** adapter, not Hyper-V/WSL).
+3. Start LAN dev servers (instead of the default commands):
+
+   ```bash
+   pnpm dev:api:lan
+   pnpm dev:web:lan
+   ```
+
+4. Open `http://<your-ip>:5173` on the device.
+
+Allow Node.js through **Windows Defender Firewall** for **Private** networks when prompted (ports **5173** and **3000**).
+
+Return to network-independent dev with `pnpm dev:api` and `pnpm dev:web` at `http://localhost:5173`.
 
 ## Making changes
 
