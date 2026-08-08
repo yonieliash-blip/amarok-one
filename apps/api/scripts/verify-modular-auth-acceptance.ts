@@ -17,12 +17,11 @@ const API_URL = process.env.VITE_API_URL?.trim() || "http://localhost:3000";
 
 const FINANCE_FRONTEND_ROUTES = ["/accounting", "/dashboard/accounting"] as const;
 
+const INVENTORY_FRONTEND_ROUTES = ["/inventory", "/purchase-orders", "/parts"] as const;
+
 const ALLOWED_MANAGER_ROUTES = [
   "/dashboard/service",
   "/service-calls",
-  "/inventory",
-  "/purchase-orders",
-  "/parts",
   "/equipment",
   "/customers",
 ] as const;
@@ -141,7 +140,7 @@ async function main(): Promise<void> {
   console.log(`Manager modules: ${manager.enabledModules.join(", ")}`);
   console.log(`Owner modules: ${owner.enabledModules.join(", ")}`);
 
-  const expectedManagerModules = new Set(["core", "service", "inventory", "administration"]);
+  const expectedManagerModules = new Set(["core", "service", "administration"]);
   for (const moduleKey of manager.enabledModules) {
     if (!expectedManagerModules.has(moduleKey)) {
       console.error(`Unexpected manager module enabled: ${moduleKey}`);
@@ -149,8 +148,8 @@ async function main(): Promise<void> {
       return;
     }
   }
-  if (!manager.enabledModules.includes("inventory")) {
-    console.error("Expected inventory module to be enabled for manager");
+  if (manager.enabledModules.includes("inventory")) {
+    console.error("Inventory module must not be enabled for manager");
     process.exitCode = 1;
     return;
   }
@@ -168,6 +167,18 @@ async function main(): Promise<void> {
     }
   }
   console.log("Manager lacks finance permissions: OK");
+
+  for (const route of INVENTORY_FRONTEND_ROUTES) {
+    const allowed = canAccessPath(route, manager.permissions, {
+      activeRoleSlug: manager.roleSlug,
+    });
+    console.log(`Manager frontend ${route}: ${allowed ? "ALLOWED" : "DENIED"}`);
+    if (allowed) {
+      console.error(`Inventory route must be denied: ${route}`);
+      process.exitCode = 1;
+      return;
+    }
+  }
 
   const registryFinanceRoutes = financeRoutesFromRegistry();
   const financeRoutes = [...new Set([...FINANCE_FRONTEND_ROUTES, ...registryFinanceRoutes])];
@@ -205,12 +216,22 @@ async function main(): Promise<void> {
     process.exitCode = 1;
     return;
   }
-  if (!navIds.includes("service-calls") || !navIds.includes("inventory")) {
-    console.error("Service and inventory nav items must be visible for manager");
+  if (navIds.includes("inventory") || navIds.includes("accounting")) {
+    console.error("Inventory and accounting nav items must be hidden for manager");
     process.exitCode = 1;
     return;
   }
-  console.log("Manager navigation: service + inventory visible, accounting hidden");
+  if (navIds.includes("member-access")) {
+    console.error("Owner-only member access navigation must be hidden for manager");
+    process.exitCode = 1;
+    return;
+  }
+  if (!navIds.includes("service-calls")) {
+    console.error("Service navigation must remain visible for manager");
+    process.exitCode = 1;
+    return;
+  }
+  console.log("Manager navigation: service visible; inventory, finance, and member access hidden");
 
   const mePermissions = await authMe(manager.accessToken);
   for (const permission of FINANCE_PERMISSIONS) {
