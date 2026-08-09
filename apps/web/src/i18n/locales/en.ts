@@ -509,6 +509,19 @@ export const en: TranslationMessages = {
     closeServiceCall: "Close service call",
     closeReason: "Close reason",
     closeReasonPlaceholder: "Optional note for audit trail",
+    closeUnavailableForCurrentState:
+      "This call cannot be closed while its workflow state is {{state}}. Complete the technician work and move the call to waiting for manager closure first.",
+    technicianWorkflowSection: "Technician visit workflow",
+    technicianActiveVisit: "Active visit #{{sequence}}",
+    technicianStartDriving: "Start driving",
+    technicianStartWorking: "Start work on site",
+    technicianCompleteForManager: "Complete visit for manager closure",
+    technicianWorkflowActionSuccess: "Visit workflow updated successfully.",
+    technicianWorkflowActionError: "Unable to update the visit workflow.",
+    technicianNoActiveVisit: "There is no active visit assigned to you on this call.",
+    technicianNoAvailableAction: "No technician action is available for this visit state.",
+    technicianWorkflowHint:
+      "Technicians can advance only their assigned visit. Assignment and service-call closure remain manager actions.",
     createLifecycleHint:
       "New calls enter the workflow queue automatically. Assign technicians from the service call detail page.",
     visitsSection: "Technician visits",

@@ -229,7 +229,7 @@ export function createServiceCallRoutes(serviceCallService: ServiceCallService):
     )
     .post(
       "/:serviceCallId/visits/:visitId/driving",
-      requirePermission("my_service_calls:read"),
+      requirePermission("my_service_calls:write"),
       zValidator("param", visitIdParamSchema),
       async (context) => {
         const { organizationId, serviceCallId, visitId } = context.req.valid("param");
@@ -249,7 +249,7 @@ export function createServiceCallRoutes(serviceCallService: ServiceCallService):
     )
     .post(
       "/:serviceCallId/visits/:visitId/working",
-      requirePermission("my_service_calls:read"),
+      requirePermission("my_service_calls:write"),
       zValidator("param", visitIdParamSchema),
       async (context) => {
         const { organizationId, serviceCallId, visitId } = context.req.valid("param");
@@ -269,7 +269,7 @@ export function createServiceCallRoutes(serviceCallService: ServiceCallService):
     )
     .post(
       "/:serviceCallId/visits/:visitId/finish",
-      requirePermission("my_service_calls:read"),
+      requirePermission("my_service_calls:write"),
       zValidator("param", visitIdParamSchema),
       zValidator("json", finishVisitSchema),
       async (context) => {

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { OrganizationMember, ServiceCall, ServiceCallLifecycleView } from "@amarok-one/types";
 import {
+  PERMISSIONS,
   canWriteServiceCalls,
   extractPermissionSlugs,
   isAssignedServiceCallsOnly,
@@ -10,6 +11,7 @@ import { Button } from "@amarok-one/ui";
 import { useAuth } from "../../auth/useAuth";
 import { ServiceCallLifecycleBadge } from "../../components/ServiceCallLifecycleBadge";
 import { ServiceCallLifecyclePanel } from "../../components/ServiceCallLifecyclePanel";
+import { ServiceCallTechnicianWorkflowPanel } from "../../components/ServiceCallTechnicianWorkflowPanel";
 import { ServiceCallPriorityBadge } from "../../components/ServiceCallPriorityBadge";
 import { ServiceCallVisitTimeline } from "../../components/ServiceCallVisitTimeline";
 import { EmptyState } from "../../components/EmptyState";
@@ -51,6 +53,8 @@ export function ServiceCallDetailPage() {
   const canAssign = hasServiceCallsAssign(user?.permissions ?? []);
   const canClose = hasServiceCallsClose(user?.permissions ?? []);
   const technicianOnly = isAssignedServiceCallsOnly(permissionSlugs);
+  const canUpdateAssignedVisit =
+    technicianOnly && permissionSlugs.includes(PERMISSIONS.MY_SERVICE_CALLS_WRITE);
   const listBackPath = technicianOnly ? "/my/service-calls" : "/service-calls";
   const emptyValue = t("common", "emptyValue");
 
@@ -215,9 +219,21 @@ export function ServiceCallDetailPage() {
           serviceCallId={serviceCall.id}
           accessToken={accessToken}
           serviceCall={serviceCall}
+          availableTransitions={lifecycle?.availableTransitions ?? []}
           assignees={assignees}
           canAssign={canAssign}
           canClose={canClose}
+          onUpdated={reloadDetail}
+        />
+      ) : null}
+
+      {canUpdateAssignedVisit && lifecycleStatus === "ready" && lifecycle ? (
+        <ServiceCallTechnicianWorkflowPanel
+          organizationId={user.organization.id}
+          serviceCallId={serviceCall.id}
+          technicianId={user.id}
+          accessToken={accessToken}
+          lifecycle={lifecycle}
           onUpdated={reloadDetail}
         />
       ) : null}

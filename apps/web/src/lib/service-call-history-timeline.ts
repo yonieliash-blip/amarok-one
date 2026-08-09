@@ -13,6 +13,7 @@ export interface ServiceCallHistoryEvent {
   id: string;
   type: ServiceCallHistoryEventType;
   occurredAt: string;
+  sequence: number;
   creatorName?: string;
   technicianName?: string;
   closedByName?: string;
@@ -53,6 +54,7 @@ export function buildServiceCallHistoryTimeline(
     id: "service-call-created",
     type: "created",
     occurredAt: serviceCall.openedAt ?? serviceCall.createdAt,
+    sequence: 0,
     creatorName,
   });
 
@@ -69,6 +71,7 @@ export function buildServiceCallHistoryTimeline(
         id: `visit-dispatched-${visit.id}`,
         type: "technician_dispatched",
         occurredAt,
+        sequence: findVisitScheduledSequence(visit.id, lifecycle.timeline) ?? visit.sequence,
         technicianName,
       });
       continue;
@@ -84,6 +87,7 @@ export function buildServiceCallHistoryTimeline(
       id: `visit-additional-${visit.id}`,
       type: "additional_visit",
       occurredAt,
+      sequence: findVisitScheduledSequence(visit.id, lifecycle.timeline) ?? visit.sequence,
       technicianName,
       isContinuationByOtherTechnician,
     });
@@ -98,15 +102,22 @@ export function buildServiceCallHistoryTimeline(
       type: "closed",
       occurredAt:
         closedEvent?.occurredAt ?? serviceCall.completedAt ?? sortedVisits.at(-1)?.finishedAt ?? "",
+      sequence: closedEvent?.sequence ?? Number.MAX_SAFE_INTEGER,
       closedByName,
     });
   }
 
   return events
     .filter((event) => event.occurredAt)
-    .sort(
-      (left, right) => new Date(left.occurredAt).getTime() - new Date(right.occurredAt).getTime(),
-    );
+    .sort((left, right) => {
+      const timestampDifference =
+        new Date(left.occurredAt).getTime() - new Date(right.occurredAt).getTime();
+      if (timestampDifference !== 0) {
+        return timestampDifference;
+      }
+      const sequenceDifference = left.sequence - right.sequence;
+      return sequenceDifference !== 0 ? sequenceDifference : left.id.localeCompare(right.id);
+    });
 }
 
 function findVisitScheduledAt(
@@ -117,6 +128,16 @@ function findVisitScheduledAt(
     (event) => event.type === "visit.scheduled" && event.payload.visitId === visitId,
   );
   return scheduledEvent?.occurredAt;
+}
+
+function findVisitScheduledSequence(
+  visitId: string,
+  timeline: ServiceCallTimelineEvent[],
+): number | undefined {
+  const scheduledEvent = timeline.find(
+    (event) => event.type === "visit.scheduled" && event.payload.visitId === visitId,
+  );
+  return scheduledEvent?.sequence;
 }
 
 function findCreatorActorId(timeline: ServiceCallTimelineEvent[]): string | undefined {

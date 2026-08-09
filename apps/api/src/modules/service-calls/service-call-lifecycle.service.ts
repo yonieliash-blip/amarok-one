@@ -9,6 +9,7 @@ import {
   asOrganizationId,
   asServiceCallId,
   asWorkflowCommandId,
+  getAllowedServiceCallLifecycleTransitions,
   isServiceCallLifecycleKey,
 } from "@amarok-one/workflow";
 import type { Prisma } from "@prisma/client";
@@ -229,6 +230,7 @@ export function createServiceCallLifecycleService(deps: ServiceCallLifecycleServ
     return {
       serviceCallId,
       lifecycleState,
+      availableTransitions: [...getAllowedServiceCallLifecycleTransitions(lifecycleState)],
       visits: visits.map(toVisitDto),
       timeline: events.map((row) => ({
         id: row.id,

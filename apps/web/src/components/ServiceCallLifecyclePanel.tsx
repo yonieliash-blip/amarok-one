@@ -5,7 +5,10 @@ import { useTranslation } from "../i18n/useTranslation";
 import { getApiErrorMessage } from "../lib/auth-errors";
 import { isApiRequestError } from "../lib/api-client";
 import { getServiceCallLifecycleLabel } from "../lib/service-call-lifecycle-labels";
-import { MANAGER_TRANSITION_LIFECYCLE_STATES } from "../lib/service-call-lifecycle-filter";
+import {
+  getAvailableManagerLifecycleTransitions,
+  isServiceCallClosureAvailable,
+} from "../lib/service-call-lifecycle-filter";
 import {
   assignTechnicianRequest,
   closeServiceCallLifecycleRequest,
@@ -18,6 +21,7 @@ interface ServiceCallLifecyclePanelProps {
   serviceCallId: string;
   accessToken: string;
   serviceCall: ServiceCall;
+  availableTransitions: readonly ServiceCallLifecycleState[];
   assignees: OrganizationMember[];
   canAssign: boolean;
   canClose: boolean;
@@ -29,6 +33,7 @@ export function ServiceCallLifecyclePanel({
   serviceCallId,
   accessToken,
   serviceCall,
+  availableTransitions = [],
   assignees,
   canAssign,
   canClose,
@@ -44,7 +49,10 @@ export function ServiceCallLifecyclePanel({
 
   const isClosed = serviceCall.lifecycleState === "closed";
 
-  async function runAction(action: () => Promise<void>): Promise<void> {
+  async function runAction(
+    action: () => Promise<void>,
+    invalidTransitionMessage?: string,
+  ): Promise<void> {
     setBusy(true);
     setErrorMessage(null);
     setSuccessMessage(null);
@@ -54,18 +62,28 @@ export function ServiceCallLifecyclePanel({
       await onUpdated();
     } catch (error) {
       setErrorMessage(
-        isApiRequestError(error)
-          ? getApiErrorMessage(error, t("serviceCalls", "lifecycleActionError"))
-          : t("serviceCalls", "lifecycleActionError"),
+        invalidTransitionMessage &&
+          isApiRequestError(error) &&
+          error.code === "VALIDATION_ERROR" &&
+          error.details?.to === "closed"
+          ? invalidTransitionMessage
+          : isApiRequestError(error)
+            ? getApiErrorMessage(error, t("serviceCalls", "lifecycleActionError"))
+            : t("serviceCalls", "lifecycleActionError"),
       );
     } finally {
       setBusy(false);
     }
   }
 
-  const transitionOptions = MANAGER_TRANSITION_LIFECYCLE_STATES.filter(
-    (state) => state !== serviceCall.lifecycleState,
+  const transitionOptions = getAvailableManagerLifecycleTransitions(
+    availableTransitions,
+    serviceCall.lifecycleState,
   );
+  const closureAvailable = isServiceCallClosureAvailable(availableTransitions);
+  const closeUnavailableMessage = t("serviceCalls", "closeUnavailableForCurrentState", {
+    state: getServiceCallLifecycleLabel(t, serviceCall.lifecycleState),
+  });
 
   return (
     <section className="customer-detail-card customer-detail-card--wide service-call-lifecycle-panel">
@@ -135,7 +153,7 @@ export function ServiceCallLifecyclePanel({
                   onChange={(event) =>
                     setTransitionState(event.target.value as ServiceCallLifecycleState | "")
                   }
-                  disabled={busy}
+                  disabled={busy || transitionOptions.length === 0}
                 >
                   <option value="">{t("serviceCalls", "selectLifecycleState")}</option>
                   {transitionOptions.map((state) => (
@@ -176,13 +194,17 @@ export function ServiceCallLifecyclePanel({
                   value={closeReason}
                   onChange={(event) => setCloseReason(event.target.value)}
                   placeholder={t("serviceCalls", "closeReasonPlaceholder")}
-                  disabled={busy}
+                  disabled={busy || !closureAvailable}
+                  maxLength={500}
+                  aria-describedby={
+                    !closureAvailable ? "service-call-close-unavailable" : undefined
+                  }
                 />
               </label>
               <Button
                 type="button"
                 variant="primary"
-                disabled={busy}
+                disabled={busy || !closureAvailable}
                 onClick={() =>
                   void runAction(async () => {
                     await closeServiceCallLifecycleRequest(
@@ -194,11 +216,19 @@ export function ServiceCallLifecyclePanel({
                       },
                     );
                     setCloseReason("");
-                  })
+                  }, closeUnavailableMessage)
                 }
               >
                 {t("serviceCalls", "closeServiceCall")}
               </Button>
+              {!closureAvailable ? (
+                <p
+                  className="service-call-lifecycle-panel__hint"
+                  id="service-call-close-unavailable"
+                >
+                  {closeUnavailableMessage}
+                </p>
+              ) : null}
             </div>
           ) : null}
         </div>

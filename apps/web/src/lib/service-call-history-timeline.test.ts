@@ -12,6 +12,7 @@ function lifecycle(overrides: Partial<ServiceCallLifecycleView> = {}): ServiceCa
   return {
     serviceCallId: "sc-1",
     lifecycleState: "driving",
+    availableTransitions: ["working", "assigned"],
     visits: [],
     timeline: [],
     ...overrides,
@@ -123,6 +124,18 @@ describe("buildServiceCallHistoryTimeline", () => {
         isContinuationByOtherTechnician: true,
       }),
     );
+    expect(
+      events.filter((event) => event.type.includes("visit") || event.type.includes("dispatched")),
+    ).toEqual([
+      expect.objectContaining({
+        type: "technician_dispatched",
+        technicianName: "Technician One",
+      }),
+      expect.objectContaining({
+        type: "additional_visit",
+        technicianName: "Technician Two",
+      }),
+    ]);
   });
 
   it("includes service call closed with actor name when available", () => {
@@ -175,5 +188,55 @@ describe("buildServiceCallHistoryTimeline", () => {
       type: "created",
       creatorName: "Demo Service Manager",
     });
+  });
+
+  it("orders equal-time activity by immutable workflow sequence", () => {
+    const events = buildServiceCallHistoryTimeline(
+      {
+        openedAt: "2026-07-15T07:15:00.000Z",
+        createdAt: "2026-07-15T07:15:00.000Z",
+        completedAt: "2026-07-15T07:15:00.000Z",
+      },
+      lifecycle({
+        lifecycleState: "closed",
+        visits: [
+          {
+            id: "visit-1",
+            organizationId: "org-1",
+            serviceCallId: "sc-1",
+            technicianId: "tech-1",
+            technician: { id: "tech-1", email: "tech@demo", displayName: "Technician One" },
+            sequence: 1,
+            status: "finished",
+            createdAt: "2026-07-15T07:15:00.000Z",
+            updatedAt: "2026-07-15T07:15:00.000Z",
+          },
+        ],
+        timeline: [
+          {
+            id: "scheduled-1",
+            type: "visit.scheduled",
+            sequence: 3,
+            occurredAt: "2026-07-15T07:15:00.000Z",
+            payload: { visitId: "visit-1" },
+          },
+          {
+            id: "closed-1",
+            type: "service_call.closed",
+            sequence: 8,
+            occurredAt: "2026-07-15T07:15:00.000Z",
+            payload: {},
+          },
+        ],
+      }),
+      new Map(),
+    );
+
+    expect(events.map((event) => event.type)).toEqual([
+      "created",
+      "technician_dispatched",
+      "closed",
+    ]);
+    expect(events.map((event) => event.sequence)).toEqual([0, 3, 8]);
   });
 });

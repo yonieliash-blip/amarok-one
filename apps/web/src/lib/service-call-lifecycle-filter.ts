@@ -35,3 +35,18 @@ export const MANAGER_TRANSITION_LIFECYCLE_STATES: readonly ServiceCallLifecycleS
   "waiting_specialist",
   "waiting_manager_closure",
 ];
+
+export function isServiceCallClosureAvailable(
+  availableTransitions: readonly ServiceCallLifecycleState[] = [],
+): boolean {
+  return availableTransitions.includes("closed");
+}
+
+export function getAvailableManagerLifecycleTransitions(
+  availableTransitions: readonly ServiceCallLifecycleState[] = [],
+  currentState: ServiceCallLifecycleState,
+): ServiceCallLifecycleState[] {
+  return MANAGER_TRANSITION_LIFECYCLE_STATES.filter(
+    (state) => state !== currentState && availableTransitions.includes(state),
+  );
+}

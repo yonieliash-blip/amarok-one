@@ -192,6 +192,63 @@ export async function closeServiceCallLifecycleRequest(
   return response.data;
 }
 
+async function runVisitWorkflowRequest(
+  organizationId: string,
+  serviceCallId: string,
+  visitId: string,
+  action: "driving" | "working" | "finish",
+  accessToken: string,
+  body?: { nextLifecycleState: "waiting_manager_closure" },
+): Promise<ServiceCallLifecycleView> {
+  const response = await apiRequest<ServiceCallLifecycleView>(
+    `${serviceCallsBase(organizationId)}/${serviceCallId}/visits/${visitId}/${action}`,
+    {
+      method: "POST",
+      accessToken,
+      body: JSON.stringify(body ?? {}),
+    },
+  );
+  if (!response.data) {
+    throw new Error("Visit workflow update failed");
+  }
+  return response.data;
+}
+
+export async function startServiceCallVisitDrivingRequest(
+  organizationId: string,
+  serviceCallId: string,
+  visitId: string,
+  accessToken: string,
+): Promise<ServiceCallLifecycleView> {
+  return runVisitWorkflowRequest(organizationId, serviceCallId, visitId, "driving", accessToken);
+}
+
+export async function startServiceCallVisitWorkingRequest(
+  organizationId: string,
+  serviceCallId: string,
+  visitId: string,
+  accessToken: string,
+): Promise<ServiceCallLifecycleView> {
+  return runVisitWorkflowRequest(organizationId, serviceCallId, visitId, "working", accessToken);
+}
+
+export async function finishServiceCallVisitRequest(
+  organizationId: string,
+  serviceCallId: string,
+  visitId: string,
+  accessToken: string,
+  payload: { nextLifecycleState: "waiting_manager_closure" },
+): Promise<ServiceCallLifecycleView> {
+  return runVisitWorkflowRequest(
+    organizationId,
+    serviceCallId,
+    visitId,
+    "finish",
+    accessToken,
+    payload,
+  );
+}
+
 export async function createServiceCallRequest(
   organizationId: string,
   accessToken: string,

@@ -79,6 +79,12 @@ const ALLOWED_LIFECYCLE_TRANSITIONS: Record<
   closed: [],
 };
 
+export function getAllowedServiceCallLifecycleTransitions(
+  from: ServiceCallLifecycleKey,
+): readonly ServiceCallLifecycleKey[] {
+  return ALLOWED_LIFECYCLE_TRANSITIONS[from];
+}
+
 export function assertServiceCallLifecycleTransition(
   from: ServiceCallLifecycleKey,
   to: ServiceCallLifecycleKey,
@@ -86,7 +92,7 @@ export function assertServiceCallLifecycleTransition(
   if (from === to) {
     return;
   }
-  if (!ALLOWED_LIFECYCLE_TRANSITIONS[from].includes(to)) {
+  if (!getAllowedServiceCallLifecycleTransitions(from).includes(to)) {
     throw new WorkflowDomainError(
       "INVALID_STATE_TRANSITION",
       `Lifecycle transition ${from} → ${to} is not allowed`,

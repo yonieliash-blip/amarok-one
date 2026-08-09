@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   assertServiceCallLifecycleTransition,
+  getAllowedServiceCallLifecycleTransitions,
   ServiceCallLifecycle,
 } from "./domain/service-call-lifecycle.js";
 import { WorkflowDomainError } from "./domain/domain-error.js";
@@ -27,6 +28,14 @@ describe("ServiceCallLifecycle", () => {
     const next = lifecycle.withKey("waiting_assignment", "2026-07-29T01:00:00.000Z");
     expect(next.key).toBe("waiting_assignment");
     expect(next.enteredAt).toBe("2026-07-29T01:00:00.000Z");
+  });
+
+  it("exposes the same allowed transitions used by backend validation", () => {
+    expect(getAllowedServiceCallLifecycleTransitions("driving")).toEqual(["working", "assigned"]);
+    expect(getAllowedServiceCallLifecycleTransitions("driving")).not.toContain("closed");
+    expect(getAllowedServiceCallLifecycleTransitions("waiting_manager_closure")).toContain(
+      "closed",
+    );
   });
 });
 

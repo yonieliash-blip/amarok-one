@@ -509,6 +509,17 @@ export interface TranslationMessages {
     closeServiceCall: string;
     closeReason: string;
     closeReasonPlaceholder: string;
+    closeUnavailableForCurrentState: string;
+    technicianWorkflowSection: string;
+    technicianActiveVisit: string;
+    technicianStartDriving: string;
+    technicianStartWorking: string;
+    technicianCompleteForManager: string;
+    technicianWorkflowActionSuccess: string;
+    technicianWorkflowActionError: string;
+    technicianNoActiveVisit: string;
+    technicianNoAvailableAction: string;
+    technicianWorkflowHint: string;
     createLifecycleHint: string;
     visitsSection: string;
     noVisits: string;

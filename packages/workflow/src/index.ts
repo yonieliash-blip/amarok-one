@@ -2,6 +2,7 @@
 export {
   ServiceCallLifecycle,
   assertServiceCallLifecycleTransition,
+  getAllowedServiceCallLifecycleTransitions,
   isServiceCallLifecycleKey,
   type ServiceCallLifecycleKey,
   type ServiceCallLifecycleProps,

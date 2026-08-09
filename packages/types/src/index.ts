@@ -215,6 +215,7 @@ export interface ServiceCallTimelineEvent {
 export interface ServiceCallLifecycleView {
   serviceCallId: EntityId;
   lifecycleState: ServiceCallLifecycleState;
+  availableTransitions: ServiceCallLifecycleState[];
   visits: ServiceCallVisit[];
   timeline: ServiceCallTimelineEvent[];
 }

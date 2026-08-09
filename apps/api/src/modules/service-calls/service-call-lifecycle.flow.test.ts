@@ -23,7 +23,9 @@ import {
 const orgId = asOrganizationId("11111111-1111-1111-1111-111111111111");
 const callId = asServiceCallId("22222222-2222-2222-2222-222222222222");
 const techId = "33333333-3333-3333-3333-333333333333";
+const followUpTechId = "44444444-4444-4444-8444-444444444444";
 const visitId = "66666666-6666-6666-6666-666666666666";
+const followUpVisitId = "77777777-7777-4777-8777-777777777777";
 
 function harness() {
   const store = new InMemoryWorkflowEventStore();
@@ -69,7 +71,59 @@ function harness() {
 }
 
 describe("Service call lifecycle flow (workflow engine)", () => {
-  it("runs assign → driving → working → finish → dispatcher queue → close", async () => {
+  it("runs assign → driving → working → finish → manager closure queue → close", async () => {
+    const { store, dispatch } = harness();
+
+    await dispatch("InitializeServiceCallWorkflow", {
+      externalServiceCallId: callId,
+      initialLifecycleKey: "new",
+    });
+    await dispatch("TransitionServiceCallLifecycle", {
+      toLifecycleKey: "waiting_assignment",
+    });
+    await dispatch("AssignTechnicianToVisit", {
+      visitId,
+      technicianId: techId,
+      sequence: 1,
+    });
+    await dispatch("StartVisitDriving", { visitId, technicianId: techId });
+    await dispatch("StartVisitWorking", { visitId, technicianId: techId });
+    await dispatch("FinishVisit", {
+      visitId,
+      technicianId: techId,
+      nextLifecycleKey: "waiting_manager_closure",
+    });
+    await dispatch("CloseServiceCall", { reason: "manager_review_complete" });
+
+    const events = await store.loadEvents(orgId, callId);
+    const aggregate = applyWorkflowEvent.rehydrate(events);
+
+    expect(aggregate.lifecycle.key).toBe("closed");
+    expect(aggregate.visits).toHaveLength(1);
+    expect(aggregate.visits[0]?.status).toBe("finished");
+    expect(events.some((event) => event.type === "visit.driving_started")).toBe(true);
+    const closedEvent = events.find((event) => event.type === "service_call.closed");
+    expect(closedEvent?.occurredAt).toMatch(/^2026-07-29T10:00:/);
+
+    const eventsAfterReload = await store.loadEvents(orgId, callId);
+    expect(eventsAfterReload.find((event) => event.type === "service_call.closed")).toEqual(
+      closedEvent,
+    );
+  });
+
+  it("rejects invalid lifecycle transition", async () => {
+    const { dispatch } = harness();
+    await dispatch("InitializeServiceCallWorkflow", {
+      externalServiceCallId: callId,
+      initialLifecycleKey: "new",
+    });
+
+    await expect(
+      dispatch("TransitionServiceCallLifecycle", { toLifecycleKey: "working" }),
+    ).rejects.toBeInstanceOf(WorkflowDomainError);
+  });
+
+  it("preserves the first technician visit when another technician follows up", async () => {
     const { store, dispatch } = harness();
 
     await dispatch("InitializeServiceCallWorkflow", {
@@ -91,28 +145,32 @@ describe("Service call lifecycle flow (workflow engine)", () => {
       technicianId: techId,
       nextLifecycleKey: "waiting_assignment",
     });
-    await dispatch("CloseServiceCall", { reason: "manager_review_complete" });
+    await dispatch("AssignTechnicianToVisit", {
+      visitId: followUpVisitId,
+      technicianId: followUpTechId,
+      sequence: 2,
+    });
 
     const events = await store.loadEvents(orgId, callId);
     const aggregate = applyWorkflowEvent.rehydrate(events);
+    const assignmentEvents = events.filter((event) => event.type === "visit.scheduled");
 
-    expect(aggregate.lifecycle.key).toBe("closed");
-    expect(aggregate.visits).toHaveLength(1);
-    expect(aggregate.visits[0]?.status).toBe("finished");
-    expect(events.some((event) => event.type === "visit.driving_started")).toBe(true);
-    expect(events.some((event) => event.type === "service_call.closed")).toBe(true);
-  });
-
-  it("rejects invalid lifecycle transition", async () => {
-    const { dispatch } = harness();
-    await dispatch("InitializeServiceCallWorkflow", {
-      externalServiceCallId: callId,
-      initialLifecycleKey: "new",
-    });
-
-    await expect(
-      dispatch("TransitionServiceCallLifecycle", { toLifecycleKey: "working" }),
-    ).rejects.toBeInstanceOf(WorkflowDomainError);
+    expect(aggregate.visits).toHaveLength(2);
+    expect(aggregate.visits).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: visitId, assignedTechnicianId: techId, sequence: 1 }),
+        expect.objectContaining({
+          id: followUpVisitId,
+          assignedTechnicianId: followUpTechId,
+          sequence: 2,
+        }),
+      ]),
+    );
+    expect(assignmentEvents).toHaveLength(2);
+    expect(assignmentEvents.map((event) => event.payload.assignedTechnicianId)).toEqual([
+      techId,
+      followUpTechId,
+    ]);
   });
 
   it("rejects visit driving when technician does not own visit", async () => {
