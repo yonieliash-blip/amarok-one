@@ -1,0 +1,111 @@
+workflows:
+  ios-production:
+    name: AMAROK ONE - iOS production
+    instance_type: mac_mini_m2
+    max_build_duration: 120
+
+    environment:
+      groups:
+        # Create this group in Codemagic and add EXPO_PUBLIC_API_URL with the
+        # public HTTPS API endpoint used by TestFlight builds.
+        - amarok_one_mobile
+        # Add APP_STORE_CONNECT_PRIVATE_KEY, APP_STORE_CONNECT_KEY_IDENTIFIER,
+        # and APP_STORE_CONNECT_ISSUER_ID as protected variables.
+        - appstore_credentials
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.amarokone.mobile
+      node: 22.14.0
+      xcode: latest
+      cocoapods: default
+      vars:
+        BUNDLE_ID: com.amarokone.mobile
+        MOBILE_APP_DIR: apps/mobile
+
+    cache:
+      cache_paths:
+        - $HOME/Library/Caches/CocoaPods
+        - $HOME/Library/pnpm/store
+        - $CM_BUILD_DIR/node_modules
+
+    scripts:
+      - name: Validate build environment
+        script: |
+          set -euo pipefail
+          : "${EXPO_PUBLIC_API_URL:?Set EXPO_PUBLIC_API_URL in the amarok_one_mobile variable group}"
+          case "$EXPO_PUBLIC_API_URL" in
+            https://*) ;;
+            *) echo "EXPO_PUBLIC_API_URL must use HTTPS for production builds" >&2; exit 1 ;;
+          esac
+
+      - name: Install workspace dependencies
+        script: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@10.12.4 --activate
+          pnpm install --frozen-lockfile
+
+      - name: Verify mobile workspace
+        script: |
+          set -euo pipefail
+          pnpm exec turbo run build \
+            --filter=@amarok-one/types... \
+            --filter=@amarok-one/permissions... \
+            --filter=@amarok-one/utils...
+          pnpm --filter @amarok-one/mobile lint
+          pnpm --filter @amarok-one/mobile typecheck
+          pnpm --filter @amarok-one/mobile test
+          cd "$MOBILE_APP_DIR"
+          pnpm dlx expo-doctor@1.20.1
+
+      - name: Set the Expo iOS build number
+        script: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+
+          const appConfigPath = `${process.env.MOBILE_APP_DIR}/app.json`;
+          const appConfig = JSON.parse(fs.readFileSync(appConfigPath, "utf8"));
+          appConfig.expo.ios.buildNumber = process.env.BUILD_NUMBER;
+          fs.writeFileSync(appConfigPath, `${JSON.stringify(appConfig, null, 2)}\n`);
+          NODE
+
+      - name: Generate the native iOS project
+        script: |
+          set -euo pipefail
+          cd "$MOBILE_APP_DIR"
+          pnpm exec expo prebuild --platform ios --clean --no-install
+          cd ios
+          pod install
+
+      - name: Apply App Store signing profiles
+        script: |
+          set -euo pipefail
+          cd "$MOBILE_APP_DIR"
+          xcode-project use-profiles
+
+      - name: Build the signed IPA
+        script: |
+          set -euo pipefail
+          cd "$MOBILE_APP_DIR"
+          XCODE_WORKSPACE=$(find ios -maxdepth 1 -name '*.xcworkspace' -print -quit)
+          if [ -z "$XCODE_WORKSPACE" ]; then
+            echo "Expo prebuild did not generate an Xcode workspace" >&2
+            exit 1
+          fi
+          XCODE_SCHEME=$(basename "$XCODE_WORKSPACE" .xcworkspace)
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+
+    artifacts:
+      - apps/mobile/build/ios/ipa/*.ipa
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
