@@ -10,11 +10,9 @@ workflows:
         # public HTTPS API endpoint used by TestFlight builds.
         - amarok_one_mobile
         # Add APP_STORE_CONNECT_PRIVATE_KEY, APP_STORE_CONNECT_KEY_IDENTIFIER,
-        # and APP_STORE_CONNECT_ISSUER_ID as protected variables.
+        # APP_STORE_CONNECT_ISSUER_ID, and CERTIFICATE_PRIVATE_KEY as protected
+        # variables for automatic App Store signing.
         - appstore_credentials
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.amarokone.mobile
       node: 22.14.0
       xcode: latest
       cocoapods: default
@@ -33,6 +31,7 @@ workflows:
         script: |
           set -euo pipefail
           : "${EXPO_PUBLIC_API_URL:?Set EXPO_PUBLIC_API_URL in the amarok_one_mobile variable group}"
+          : "${CERTIFICATE_PRIVATE_KEY:?Set CERTIFICATE_PRIVATE_KEY in the appstore_credentials variable group}"
           case "$EXPO_PUBLIC_API_URL" in
             https://*) ;;
             *) echo "EXPO_PUBLIC_API_URL must use HTTPS for production builds" >&2; exit 1 ;;
@@ -78,7 +77,20 @@ workflows:
           cd ios
           pod install
 
-      - name: Apply App Store signing profiles
+      - name: Initialize the signing keychain
+        script: keychain initialize
+
+      - name: Fetch or create App Store signing files
+        script: |
+          set -euo pipefail
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+
+      - name: Add the signing certificate to the keychain
+        script: keychain add-certificates
+
+      - name: Apply the App Store provisioning profile
         script: |
           set -euo pipefail
           cd "$MOBILE_APP_DIR"
