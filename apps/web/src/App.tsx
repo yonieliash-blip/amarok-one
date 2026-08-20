@@ -26,6 +26,7 @@ import { CustomerDetailPage } from "./pages/customers/CustomerDetailPage";
 import { CustomerFormPage } from "./pages/customers/CustomerFormPage";
 import { CustomersListPage } from "./pages/customers/CustomersListPage";
 import { MemberAccessPage } from "./pages/administration/MemberAccessPage";
+import { TechniciansListPage } from "./pages/technicians/TechniciansListPage";
 
 export function App() {
   return (
@@ -69,10 +70,7 @@ export function App() {
                   path="my/schedule"
                   element={<ModulePlaceholderPage titleKey="mySchedule" />}
                 />
-                <Route
-                  path="technicians"
-                  element={<ModulePlaceholderPage titleKey="technicians" />}
-                />
+                <Route path="technicians" element={<TechniciansListPage />} />
                 <Route path="calendar" element={<ModulePlaceholderPage titleKey="calendar" />} />
                 <Route path="inventory" element={<ModulePlaceholderPage titleKey="inventory" />} />
                 <Route
