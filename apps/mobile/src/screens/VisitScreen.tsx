@@ -3,6 +3,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
   ScrollView,
   StyleSheet,
@@ -21,7 +22,7 @@ import {
   startVisitDriving,
   startVisitWorking,
 } from "../api/service-calls";
-import { Button, Card, ScreenSubtitle, ScreenTitle } from "../components/ui";
+import { Button, Card, Eyebrow, ScreenSubtitle, ScreenTitle, StatusPill } from "../components/ui";
 import { mergeTimeline } from "../lib/timeline";
 import { selectTechnicianActiveVisit } from "../lib/visit-selection";
 import {
@@ -37,6 +38,25 @@ import { colors, spacing } from "../theme";
 import type { RootStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Visit">;
+
+function visitStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    assigned: "Assigned",
+    planned: "Planned",
+    checked_in: "Checked in",
+    driving: "Driving",
+    working: "Working on site",
+    in_progress: "Work in progress",
+    completed: "Visit completed",
+  };
+  return labels[status] ?? status.replace(/_/g, " ");
+}
+
+function visitStatusTone(status: string): "neutral" | "success" | "warning" {
+  if (status === "working" || status === "in_progress") return "success";
+  if (status === "driving") return "warning";
+  return "neutral";
+}
 
 export function VisitScreen({ route, navigation }: Props) {
   const { serviceCallId, title } = route.params;
@@ -177,6 +197,28 @@ export function VisitScreen({ route, navigation }: Props) {
   const canWork = visit && visit.status === "driving";
   const canFinish = visit && (visit.status === "working" || visit.status === "in_progress");
 
+  function confirmFinish(destination: "dispatcher" | "waiting_for_parts"): void {
+    if (!visit || !user || !accessToken) return;
+    const waitingForParts = destination === "waiting_for_parts";
+    Alert.alert(
+      waitingForParts ? "Finish and wait for parts?" : "Finish this visit?",
+      waitingForParts
+        ? "The visit will end and the service call will be marked as waiting for parts."
+        : "The visit will end and return to the service dispatcher for the next decision.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Finish visit",
+          style: waitingForParts ? "default" : "destructive",
+          onPress: () =>
+            void runWorkflow(() =>
+              finishVisit(user.organization.id, serviceCallId, visit.id, accessToken, destination),
+            ).then(() => navigation.goBack()),
+        },
+      ],
+    );
+  }
+
   if (loading && !lifecycle) {
     return (
       <View style={styles.centered}>
@@ -187,6 +229,7 @@ export function VisitScreen({ route, navigation }: Props) {
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+      <Eyebrow>Service call · field visit</Eyebrow>
       <ScreenTitle>{title}</ScreenTitle>
       {call ? (
         <ScreenSubtitle>
@@ -201,113 +244,160 @@ export function VisitScreen({ route, navigation }: Props) {
         </Text>
       ) : null}
 
-      <Card>
-        <Text style={styles.sectionLabel}>Visit</Text>
+      <Card accent={Boolean(canWork || canFinish)}>
         {visit ? (
           <>
-            <Text style={styles.body}>Status: {visit.status.replace(/_/g, " ")}</Text>
-            <Text style={styles.body}>Sequence #{visit.sequence}</Text>
+            <View style={styles.cardHeading}>
+              <View style={styles.headingCopy}>
+                <Text style={styles.cardLabel}>CURRENT VISIT</Text>
+                <Text style={styles.cardTitle}>{visitStatusLabel(visit.status)}</Text>
+              </View>
+              <StatusPill label={`Visit ${visit.sequence}`} tone={visitStatusTone(visit.status)} />
+            </View>
+            <Text style={styles.cardHint}>
+              {canDrive
+                ? "Confirm when you leave for the customer."
+                : canWork
+                  ? "You are on the way. Confirm when work begins on site."
+                  : canFinish
+                    ? "Work is active. Add notes and photos before finishing the visit."
+                    : "This visit has no available field action."}
+            </Text>
+            {canDrive ? (
+              <Button
+                label="Start driving"
+                loading={busy}
+                onPress={() =>
+                  void runWorkflow(() =>
+                    startVisitDriving(user!.organization.id, serviceCallId, visit.id, accessToken!),
+                  )
+                }
+              />
+            ) : null}
+            {canWork ? (
+              <Button
+                label="Start work on site"
+                loading={busy}
+                onPress={() =>
+                  void runWorkflow(() =>
+                    startVisitWorking(user!.organization.id, serviceCallId, visit.id, accessToken!),
+                  )
+                }
+              />
+            ) : null}
           </>
         ) : (
           <Text style={styles.body}>No visit assigned to you on this call.</Text>
         )}
       </Card>
 
-      {call?.description ? (
+      {call ? (
         <Card>
-          <Text style={styles.sectionLabel}>Description</Text>
-          <Text style={styles.body}>{call.description}</Text>
+          <View style={styles.sectionHeader}>
+            <View>
+              <Eyebrow>Job details</Eyebrow>
+              <Text style={styles.sectionTitle}>Customer and equipment</Text>
+            </View>
+            <StatusPill
+              label={call.priority}
+              tone={
+                call.priority === "urgent"
+                  ? "danger"
+                  : call.priority === "high"
+                    ? "warning"
+                    : "neutral"
+              }
+            />
+          </View>
+          <DetailRow label="Customer" value={call.customer?.name ?? "Not provided"} />
+          <DetailRow
+            label="Equipment"
+            value={
+              call.equipment
+                ? `${call.equipment.name}${call.equipment.internalNumber ? ` · ${call.equipment.internalNumber}` : ""}`
+                : "Not provided"
+            }
+          />
+          {call.location ? <DetailRow label="Location" value={call.location} /> : null}
+          {call.contactName || call.contactPhone ? (
+            <DetailRow
+              label="Contact"
+              value={[call.contactName, call.contactPhone].filter(Boolean).join(" · ")}
+            />
+          ) : null}
+          {call.description ? (
+            <View style={styles.descriptionBlock}>
+              <Text style={styles.detailLabel}>SERVICE REQUEST</Text>
+              <Text style={styles.description}>{call.description}</Text>
+            </View>
+          ) : null}
         </Card>
       ) : null}
 
-      <Text style={styles.sectionLabel}>Technician timeline</Text>
-      <VisitTimeline lifecycle={lifecycle} localTimeline={localTimeline} />
-
-      <Text style={styles.sectionLabel}>Field note</Text>
-      <TextInput
-        multiline
-        value={noteDraft}
-        onChangeText={setNoteDraft}
-        style={styles.noteInput}
-        placeholder="Add notes for the service manager…"
-        placeholderTextColor={colors.textMuted}
-      />
-      <Button
-        label="Save note"
-        variant="secondary"
-        loading={busy}
-        onPress={() => void handleAddNote()}
-      />
-
-      <Text style={styles.sectionLabel}>Photos (on device)</Text>
-      <View style={styles.photoRow}>
-        {photos.map((photo) => (
-          <Image key={photo.id} source={{ uri: photo.uri }} style={styles.thumbnail} />
-        ))}
-      </View>
-      <Button
-        label="Add photo"
-        variant="secondary"
-        loading={busy}
-        onPress={() => void handleAddPhoto()}
-      />
-
-      {visit && canDrive ? (
-        <Button
-          label="Start driving"
-          loading={busy}
-          onPress={() =>
-            void runWorkflow(() =>
-              startVisitDriving(user!.organization.id, serviceCallId, visit.id, accessToken!),
-            )
-          }
+      <Card>
+        <Eyebrow>Field report</Eyebrow>
+        <Text style={styles.sectionTitle}>Work notes</Text>
+        <TextInput
+          multiline
+          value={noteDraft}
+          onChangeText={setNoteDraft}
+          style={styles.noteInput}
+          placeholder="Describe the fault, work performed and next action…"
+          placeholderTextColor={colors.textMuted}
+          accessibilityLabel="Field work notes"
         />
-      ) : null}
-
-      {visit && canWork ? (
         <Button
-          label="Start work on site"
+          label="Save work notes"
+          variant="secondary"
           loading={busy}
-          onPress={() =>
-            void runWorkflow(() =>
-              startVisitWorking(user!.organization.id, serviceCallId, visit.id, accessToken!),
-            )
-          }
+          onPress={() => void handleAddNote()}
         />
-      ) : null}
+      </Card>
+
+      <Card>
+        <View style={styles.sectionHeader}>
+          <View>
+            <Eyebrow>Attachments</Eyebrow>
+            <Text style={styles.sectionTitle}>Visit photos</Text>
+          </View>
+          <Text style={styles.photoCount}>{photos.length}</Text>
+        </View>
+        {photos.length > 0 ? (
+          <View style={styles.photoRow}>
+            {photos.map((photo) => (
+              <Image key={photo.id} source={{ uri: photo.uri }} style={styles.thumbnail} />
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.bodyMuted}>No photos added on this device.</Text>
+        )}
+        <Button
+          label="Add photo"
+          variant="secondary"
+          loading={busy}
+          onPress={() => void handleAddPhoto()}
+        />
+      </Card>
+
+      <Card>
+        <Eyebrow>Activity</Eyebrow>
+        <Text style={styles.sectionTitle}>Technician timeline</Text>
+        <VisitTimeline lifecycle={lifecycle} localTimeline={localTimeline} />
+      </Card>
 
       {visit && canFinish ? (
         <>
           <Button
             label="Finish visit — return to dispatcher"
+            variant="danger"
             loading={busy}
-            onPress={() =>
-              void runWorkflow(() =>
-                finishVisit(
-                  user!.organization.id,
-                  serviceCallId,
-                  visit.id,
-                  accessToken!,
-                  "dispatcher",
-                ),
-              ).then(() => navigation.goBack())
-            }
+            onPress={() => confirmFinish("dispatcher")}
           />
           <Button
             label="Finish visit — waiting for parts"
             variant="secondary"
             loading={busy}
-            onPress={() =>
-              void runWorkflow(() =>
-                finishVisit(
-                  user!.organization.id,
-                  serviceCallId,
-                  visit.id,
-                  accessToken!,
-                  "waiting_for_parts",
-                ),
-              ).then(() => navigation.goBack())
-            }
+            onPress={() => confirmFinish("waiting_for_parts")}
           />
         </>
       ) : null}
@@ -317,6 +407,15 @@ export function VisitScreen({ route, navigation }: Props) {
         the call.
       </Text>
     </ScrollView>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.detailRow}>
+      <Text style={styles.detailLabel}>{label}</Text>
+      <Text style={styles.detailValue}>{value}</Text>
+    </View>
   );
 }
 
@@ -350,7 +449,17 @@ const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: colors.bg },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl * 2 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.bg },
-  sectionLabel: { color: colors.text, fontWeight: "600", fontSize: 16 },
+  cardHeading: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  headingCopy: { flex: 1, paddingRight: spacing.sm },
+  cardLabel: { color: colors.textMuted, fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
+  cardTitle: { color: colors.text, fontSize: 22, fontWeight: "800", marginTop: spacing.xs },
+  cardHint: { color: colors.textMuted, fontSize: 14, lineHeight: 21 },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  sectionTitle: { color: colors.text, fontSize: 19, fontWeight: "800", marginTop: spacing.xs },
   body: { color: colors.text, lineHeight: 22 },
   bodyMuted: { color: colors.textMuted },
   error: {
@@ -364,13 +473,42 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.bgPanel,
-    borderRadius: 12,
+    borderRadius: 14,
     padding: spacing.md,
     color: colors.text,
     textAlignVertical: "top",
+    fontSize: 15,
+    lineHeight: 22,
   },
   photoRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  thumbnail: { width: 88, height: 88, borderRadius: 8, backgroundColor: colors.bgElevated },
+  thumbnail: { width: 88, height: 88, borderRadius: 12, backgroundColor: colors.bgElevated },
+  photoCount: {
+    color: colors.primaryOn,
+    backgroundColor: colors.primary,
+    minWidth: 30,
+    height: 30,
+    borderRadius: 15,
+    textAlign: "center",
+    textAlignVertical: "center",
+    fontWeight: "800",
+  },
+  detailRow: {
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    gap: spacing.xs,
+  },
+  detailLabel: { color: colors.textSubtle, fontSize: 10, fontWeight: "800", letterSpacing: 1 },
+  detailValue: { color: colors.text, fontSize: 15, fontWeight: "600", lineHeight: 21 },
+  descriptionBlock: {
+    backgroundColor: colors.bg,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  description: { color: colors.text, fontSize: 15, lineHeight: 23 },
   timeline: { gap: spacing.sm },
   timelineRow: {
     borderLeftWidth: 2,
