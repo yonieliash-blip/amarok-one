@@ -32,6 +32,119 @@ function serializeWorkDay<
 
 const includeBreaks = { breaks: { orderBy: { startedAt: "asc" as const } } };
 
+const ISRAEL_TIME_ZONE = "Asia/Jerusalem";
+
+function israelMidnightUtc(year: number, monthIndex: number, day: number): Date {
+  const guess = Date.UTC(year, monthIndex, day);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: ISRAEL_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(guess));
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value);
+  const displayedAsUtc = Date.UTC(
+    value("year"),
+    value("month") - 1,
+    value("day"),
+    value("hour"),
+    value("minute"),
+    value("second"),
+  );
+  return new Date(guess - (displayedAsUtc - guess));
+}
+
+function durationMinutes(startedAt: Date, endedAt: Date | null, now: Date): number {
+  return Math.max(0, Math.round(((endedAt ?? now).getTime() - startedAt.getTime()) / 60_000));
+}
+
+export async function getMonthlyAttendanceReport(
+  organizationId: string,
+  month: string,
+  now = new Date(),
+) {
+  const [year, monthNumber] = month.split("-").map(Number) as [number, number];
+  const from = israelMidnightUtc(year, monthNumber - 1, 1);
+  const to = israelMidnightUtc(year, monthNumber, 1);
+  const rows = await prisma.workDay.findMany({
+    where: { organizationId, startedAt: { gte: from, lt: to } },
+    include: { user: true, breaks: { orderBy: { startedAt: "asc" } } },
+    orderBy: [{ user: { displayName: "asc" } }, { startedAt: "asc" }],
+  });
+
+  const employees = new Map<
+    string,
+    {
+      userId: string;
+      displayName: string;
+      email: string;
+      workDays: number;
+      grossMinutes: number;
+      breakMinutes: number;
+      netMinutes: number;
+      days: Array<{
+        id: string;
+        status: string;
+        startedAt: Date;
+        endedAt: Date | null;
+        grossMinutes: number;
+        breakMinutes: number;
+        netMinutes: number;
+        locationCaptured: boolean;
+      }>;
+    }
+  >();
+
+  for (const row of rows) {
+    const grossMinutes = durationMinutes(row.startedAt, row.endedAt, now);
+    const breakMinutes = row.breaks.reduce(
+      (total, entry) => total + durationMinutes(entry.startedAt, entry.endedAt, now),
+      0,
+    );
+    const netMinutes = Math.max(0, grossMinutes - breakMinutes);
+    const employee = employees.get(row.userId) ?? {
+      userId: row.userId,
+      displayName: row.user.displayName,
+      email: row.user.email,
+      workDays: 0,
+      grossMinutes: 0,
+      breakMinutes: 0,
+      netMinutes: 0,
+      days: [],
+    };
+    employee.workDays += 1;
+    employee.grossMinutes += grossMinutes;
+    employee.breakMinutes += breakMinutes;
+    employee.netMinutes += netMinutes;
+    employee.days.push({
+      id: row.id,
+      status: row.status,
+      startedAt: row.startedAt,
+      endedAt: row.endedAt,
+      grossMinutes,
+      breakMinutes,
+      netMinutes,
+      locationCaptured: Boolean(row.startLatitude || row.endLatitude),
+    });
+    employees.set(row.userId, employee);
+  }
+
+  const employeeRows = Array.from(employees.values());
+  return {
+    month,
+    timeZone: ISRAEL_TIME_ZONE,
+    employeeCount: employeeRows.length,
+    totalWorkDays: employeeRows.reduce((sum, employee) => sum + employee.workDays, 0),
+    totalNetMinutes: employeeRows.reduce((sum, employee) => sum + employee.netMinutes, 0),
+    employees: employeeRows,
+  };
+}
+
 export async function getCurrentWorkDay(organizationId: string, userId: string) {
   const row = await prisma.workDay.findFirst({
     where: { organizationId, userId, status: "ACTIVE" },

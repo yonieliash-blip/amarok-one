@@ -213,6 +213,23 @@ export interface TranslationMessages {
     active: string;
     inactive: string;
   };
+  attendanceReport: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    loading: string;
+    month: string;
+    emptyTitle: string;
+    emptyMessage: string;
+    employee: string;
+    days: string;
+    gross: string;
+    breaks: string;
+    net: string;
+    active: string;
+    yes: string;
+    no: string;
+  };
   customers: {
     accountsEyebrow: string;
     title: string;
