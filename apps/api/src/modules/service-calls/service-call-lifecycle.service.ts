@@ -48,7 +48,7 @@ function visitInclude() {
   } as const;
 }
 
-function toVisitDto(
+export function toVisitDto(
   row: Prisma.ServiceCallVisitGetPayload<{ include: ReturnType<typeof visitInclude> }>,
 ): ServiceCallVisit {
   return {

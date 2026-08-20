@@ -3,9 +3,8 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../auth/AuthContext";
 import { isApiRequestError } from "../api/client";
-import { getServiceCallLifecycle, listMyServiceCalls } from "../api/service-calls";
+import { getTechnicianCurrentTask } from "../api/service-calls";
 import { Button, ScreenSubtitle, ScreenTitle } from "../components/ui";
-import { selectTechnicianActiveVisit } from "../lib/visit-selection";
 import { colors, spacing } from "../theme";
 import type { RootStackParamList } from "../navigation/types";
 
@@ -15,8 +14,7 @@ export function CurrentTaskScreen({ navigation }: Props) {
   const { user, accessToken } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [task, setTask] = useState<{ serviceCallId: string; title: string } | null>(null);
-  const [visitStatus, setVisitStatus] = useState<string | null>(null);
+  const [task, setTask] = useState<Awaited<ReturnType<typeof getTechnicianCurrentTask>>>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
@@ -28,26 +26,9 @@ export function CurrentTaskScreen({ navigation }: Props) {
       setError(null);
 
       try {
-        const calls = await listMyServiceCalls(user.organization.id, accessToken);
-        const open = calls.filter((call) => call.lifecycleState !== "closed");
-
-        for (const call of open) {
-          const lifecycle = await getServiceCallLifecycle(
-            user.organization.id,
-            call.id,
-            accessToken,
-          );
-          const visit = selectTechnicianActiveVisit(lifecycle.visits, user.id);
-          if (visit) {
-            if (cancelled) return;
-            setTask({ serviceCallId: call.id, title: call.title });
-            setVisitStatus(visit.status);
-            return;
-          }
-        }
+        const currentTask = await getTechnicianCurrentTask(user.organization.id, accessToken);
         if (cancelled) return;
-        setTask(null);
-        setVisitStatus(null);
+        setTask(currentTask);
       } catch (err) {
         if (cancelled) return;
         setError(isApiRequestError(err) ? err.message : "Unable to load current task");
@@ -75,16 +56,29 @@ export function CurrentTaskScreen({ navigation }: Props) {
         <ActivityIndicator color={colors.primary} />
       ) : task ? (
         <View style={styles.card}>
-          <Text style={styles.taskTitle}>{task.title}</Text>
-          {visitStatus ? (
-            <Text style={styles.meta}>Visit status: {visitStatus.replace(/_/g, " ")}</Text>
+          <Text style={styles.taskTitle}>{task.serviceCall.title}</Text>
+          <Text style={styles.meta}>{task.serviceCall.serviceCallNumber}</Text>
+          <Text style={styles.meta}>Visit status: {task.visit.status.replace(/_/g, " ")}</Text>
+          {task.serviceCall.customer ? (
+            <Text style={styles.meta}>Customer: {task.serviceCall.customer.name}</Text>
+          ) : null}
+          {task.serviceCall.equipment ? (
+            <Text style={styles.meta}>
+              Equipment: {task.serviceCall.equipment.name}
+              {task.serviceCall.equipment.internalNumber
+                ? ` · ${task.serviceCall.equipment.internalNumber}`
+                : ""}
+            </Text>
+          ) : null}
+          {task.serviceCall.location ? (
+            <Text style={styles.meta}>Location: {task.serviceCall.location}</Text>
           ) : null}
           <Button
             label="Open visit"
             onPress={() =>
               navigation.navigate("Visit", {
-                serviceCallId: task.serviceCallId,
-                title: task.title,
+                serviceCallId: task.serviceCall.id,
+                title: task.serviceCall.title,
               })
             }
           />

@@ -220,6 +220,12 @@ export interface ServiceCallLifecycleView {
   timeline: ServiceCallTimelineEvent[];
 }
 
+/** Single-call projection used by a technician's current-task screen. */
+export interface TechnicianCurrentTask {
+  serviceCall: ServiceCall;
+  visit: ServiceCallVisit;
+}
+
 /** Service call urgency */
 export type ServiceCallPriority = "low" | "normal" | "high" | "urgent";
 
