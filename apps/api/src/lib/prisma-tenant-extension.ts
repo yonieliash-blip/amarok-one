@@ -21,6 +21,8 @@ const TENANT_SCOPED_MODELS = new Set([
   "MemberModuleAccess",
   "Role",
   "AuditLog",
+  "WorkDay",
+  "WorkBreak",
 ]);
 
 const GLOBAL_MODELS = new Set(["User", "Permission", "RolePermission", "RefreshToken"]);

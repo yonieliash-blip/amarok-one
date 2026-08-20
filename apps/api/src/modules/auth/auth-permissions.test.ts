@@ -12,6 +12,7 @@ describe("RBAC permission merge", () => {
     expect(merged).toContain("my_service_calls:read");
     expect(merged).toContain("customers:read");
     expect(new Set(merged).size).toBe(merged.length);
+    expect(merged).toContain("my_attendance:write");
   });
 
   it("expands manager permissions with coordinator capabilities when both roles assigned", () => {
@@ -23,5 +24,6 @@ describe("RBAC permission merge", () => {
     expect(merged).toContain("service_calls:write");
     expect(merged).toContain("calendar:read");
     expect(merged).toContain("technicians:read");
+    expect(merged).toContain("attendance:read");
   });
 });

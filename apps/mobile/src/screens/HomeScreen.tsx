@@ -13,13 +13,16 @@ import type { ServiceCall } from "@amarok-one/types";
 import { useAuth } from "../auth/AuthContext";
 import { listMyServiceCalls } from "../api/service-calls";
 import { isApiRequestError } from "../api/client";
-import { Button, ScreenSubtitle, ScreenTitle } from "../components/ui";
 import {
+  endBreak,
   endWorkDay,
-  loadWorkDay,
+  getCurrentWorkDay,
+  startBreak,
   startWorkDay,
-  type WorkDayRecord,
-} from "../storage/technician-storage";
+  type WorkDay,
+} from "../api/attendance";
+import { Button, ScreenSubtitle, ScreenTitle } from "../components/ui";
+import { captureClockLocation } from "../location/clock-location";
 import { colors, spacing } from "../theme";
 import type { RootStackParamList } from "../navigation/types";
 
@@ -27,7 +30,8 @@ type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
 export function HomeScreen({ navigation }: Props) {
   const { user, accessToken, logout } = useAuth();
-  const [workDay, setWorkDay] = useState<WorkDayRecord | null>(null);
+  const [workDay, setWorkDay] = useState<WorkDay | null>(null);
+  const [clocking, setClocking] = useState(false);
   const [calls, setCalls] = useState<ServiceCall[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -44,7 +48,7 @@ export function HomeScreen({ navigation }: Props) {
 
       try {
         const [day, list] = await Promise.all([
-          loadWorkDay(user.id),
+          getCurrentWorkDay(user.organization.id, accessToken),
           listMyServiceCalls(user.organization.id, accessToken),
         ]);
         if (cancelled) return;
@@ -70,15 +74,38 @@ export function HomeScreen({ navigation }: Props) {
   const workDayActive = Boolean(workDay?.startedAt && !workDay.endedAt);
 
   async function handleStartWorkDay(): Promise<void> {
-    if (!user) return;
-    const record = await startWorkDay(user.id);
-    setWorkDay(record);
+    if (!user || !accessToken) return;
+    await runClockAction((location) => startWorkDay(user.organization.id, accessToken, location));
   }
 
   async function handleEndWorkDay(): Promise<void> {
-    if (!user) return;
-    const record = await endWorkDay(user.id);
-    setWorkDay(record);
+    if (!user || !accessToken) return;
+    await runClockAction((location) => endWorkDay(user.organization.id, accessToken, location));
+  }
+
+  async function runClockAction(
+    action: (location: Awaited<ReturnType<typeof captureClockLocation>>) => Promise<WorkDay>,
+  ): Promise<void> {
+    setClocking(true);
+    setError(null);
+    try {
+      setWorkDay(await action(await captureClockLocation()));
+    } catch (err) {
+      setError(isApiRequestError(err) ? err.message : "Unable to update work day");
+    } finally {
+      setClocking(false);
+    }
+  }
+
+  const activeBreak = workDay?.breaks.find((entry) => entry.status === "ACTIVE");
+
+  async function handleBreak(): Promise<void> {
+    if (!user || !accessToken) return;
+    await runClockAction((location) =>
+      activeBreak
+        ? endBreak(user.organization.id, accessToken, location)
+        : startBreak(user.organization.id, accessToken, location),
+    );
   }
 
   function handleRefresh(): void {
@@ -102,15 +129,26 @@ export function HomeScreen({ navigation }: Props) {
             </Text>
             <Button label="Current task" onPress={() => navigation.navigate("CurrentTask")} />
             <Button
+              label={activeBreak ? "End break" : "Start break"}
+              variant="secondary"
+              disabled={clocking}
+              onPress={() => void handleBreak()}
+            />
+            <Button
               label="End work day"
               variant="secondary"
+              disabled={clocking}
               onPress={() => void handleEndWorkDay()}
             />
           </>
         ) : (
           <>
             <Text style={styles.cardBody}>Start your shift to begin field visits.</Text>
-            <Button label="Start work day" onPress={() => void handleStartWorkDay()} />
+            <Button
+              label="Start work day"
+              disabled={clocking}
+              onPress={() => void handleStartWorkDay()}
+            />
           </>
         )}
       </View>

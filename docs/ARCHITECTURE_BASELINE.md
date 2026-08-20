@@ -196,6 +196,7 @@ Each feature lives under `apps/api/src/modules/<feature>/`:
 | **customers**     | `/organizations/:organizationId/customers`     | Yes                          | CRUD + nested contacts                     |
 | **equipment**     | `/organizations/:organizationId/equipment`     | Yes                          | Types + assets                             |
 | **service-calls** | `/organizations/:organizationId/service-calls` | Yes                          | CRUD, lifecycle, visits                    |
+| **attendance**    | `/organizations/:organizationId/attendance`    | Yes                          | Employee workday and break clock actions   |
 
 ### Cross-cutting libraries
 

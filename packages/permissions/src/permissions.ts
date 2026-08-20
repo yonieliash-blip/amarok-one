@@ -23,6 +23,9 @@ export const PERMISSIONS = {
   MY_SCHEDULE_READ: "my_schedule:read",
   TECHNICIANS_READ: "technicians:read",
   TECHNICIANS_WRITE: "technicians:write",
+  ATTENDANCE_READ: "attendance:read",
+  MY_ATTENDANCE_READ: "my_attendance:read",
+  MY_ATTENDANCE_WRITE: "my_attendance:write",
   CALENDAR_READ: "calendar:read",
   INVENTORY_READ: "inventory:read",
   INVENTORY_WRITE: "inventory:write",
@@ -157,6 +160,21 @@ export const ALL_PERMISSIONS: readonly PermissionDefinition[] = [
     slug: PERMISSIONS.TECHNICIANS_WRITE,
     name: "Write Technicians",
     description: "Manage technicians",
+  },
+  {
+    slug: PERMISSIONS.ATTENDANCE_READ,
+    name: "Read Attendance",
+    description: "View employee attendance records and reports",
+  },
+  {
+    slug: PERMISSIONS.MY_ATTENDANCE_READ,
+    name: "Read My Attendance",
+    description: "View personal attendance records",
+  },
+  {
+    slug: PERMISSIONS.MY_ATTENDANCE_WRITE,
+    name: "Write My Attendance",
+    description: "Start and end personal work days and breaks",
   },
   {
     slug: PERMISSIONS.CALENDAR_READ,
