@@ -21,6 +21,9 @@ Central documentation for the AMAROK ONE project. **All agents must read every d
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Deployment procedures                      |
 | [BACKUP.md](BACKUP.md)         | Backup and recovery procedures             |
 
+The budget-controlled staging proposal is documented in
+[STAGING_DEPLOYMENT_PLAN.md](STAGING_DEPLOYMENT_PLAN.md).
+
 ## Agent instructions
 
 | Document                  | Description                           |
