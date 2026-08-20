@@ -17,6 +17,10 @@ export function isApiRequestError(error: unknown): error is ApiRequestError {
   return error instanceof ApiRequestError;
 }
 
+function isDevelopmentBuild(): boolean {
+  return process.env.NODE_ENV !== "production";
+}
+
 async function parseErrorResponse(response: Response): Promise<ApiRequestError> {
   try {
     const payload = (await response.json()) as ApiError;
@@ -40,16 +44,34 @@ export async function apiRequest<T>(
   options: RequestInit & { accessToken?: string } = {},
 ): Promise<ApiResponse<T>> {
   const { accessToken, headers, ...rest } = options;
+
+  if (!env.isApiConfigured && !isDevelopmentBuild()) {
+    throw new ApiRequestError(
+      "API_NOT_CONFIGURED",
+      "The app server is not configured. Please contact your administrator.",
+      0,
+    );
+  }
+
   const url = `${env.apiUrl}${path}`;
 
-  const response = await fetch(url, {
-    ...rest,
-    headers: {
-      "Content-Type": "application/json",
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-      ...headers,
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...rest,
+      headers: {
+        "Content-Type": "application/json",
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        ...headers,
+      },
+    });
+  } catch {
+    throw new ApiRequestError(
+      "NETWORK_UNAVAILABLE",
+      "Cannot reach the app server. Check your internet connection and try again.",
+      0,
+    );
+  }
 
   if (!response.ok) {
     throw await parseErrorResponse(response);
