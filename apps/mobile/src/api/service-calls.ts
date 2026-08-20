@@ -2,6 +2,7 @@ import type {
   ServiceCall,
   ServiceCallLifecycleState,
   ServiceCallLifecycleView,
+  TechnicianCurrentTask,
 } from "@amarok-one/types";
 import { apiRequest } from "./client";
 
@@ -37,6 +38,17 @@ export async function getServiceCallLifecycle(
 ): Promise<ServiceCallLifecycleView> {
   const response = await apiRequest<ServiceCallLifecycleView>(
     `${base(organizationId)}/${serviceCallId}/lifecycle`,
+    { accessToken },
+  );
+  return response.data;
+}
+
+export async function getTechnicianCurrentTask(
+  organizationId: string,
+  accessToken: string,
+): Promise<TechnicianCurrentTask | null> {
+  const response = await apiRequest<TechnicianCurrentTask | null>(
+    `${base(organizationId)}/current-task`,
     { accessToken },
   );
   return response.data;

@@ -95,6 +95,19 @@ export function createServiceCallRoutes(serviceCallService: ServiceCallService):
       },
     )
     .get(
+      "/current-task",
+      requireAnyPermission("service_calls:read", "my_service_calls:read"),
+      zValidator("param", organizationIdParamSchema),
+      async (context) => {
+        const { organizationId } = context.req.valid("param");
+        const task = await serviceCallService.getTechnicianCurrentTask(
+          organizationId,
+          actorId(context),
+        );
+        return context.json(createApiResponse(task));
+      },
+    )
+    .get(
       "/:serviceCallId",
       requireAnyPermission("service_calls:read", "my_service_calls:read"),
       zValidator("param", serviceCallIdParamSchema),

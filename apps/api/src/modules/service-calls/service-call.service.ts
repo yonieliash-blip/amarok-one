@@ -4,6 +4,7 @@ import type {
   ServiceCall,
   ServiceCallPriority,
   ServiceCallStatus,
+  TechnicianCurrentTask,
 } from "@amarok-one/types";
 import { Prisma } from "@prisma/client";
 import { writeAuditLog } from "../../lib/audit.js";
@@ -34,12 +35,22 @@ import {
 import { projectServiceCallFromWorkflow } from "./service-call-workflow-projection.js";
 import {
   createServiceCallLifecycleService,
+  toVisitDto,
   type ServiceCallLifecycleServiceDeps,
 } from "./service-call-lifecycle.service.js";
 
 export interface ServiceCallServiceDeps extends ServiceCallLifecycleServiceDeps {
   workflow: ServiceCallWorkflowPort;
 }
+
+const currentTaskStatusPriority: Record<string, number> = {
+  WORKING: 6,
+  IN_PROGRESS: 5,
+  CHECKED_IN: 4,
+  DRIVING: 3,
+  ASSIGNED: 2,
+  PLANNED: 1,
+};
 
 export function createServiceCallService(deps: ServiceCallServiceDeps) {
   const { workflow } = deps;
@@ -175,6 +186,39 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
     serviceCallId: string,
   ): Promise<ServiceCall> {
     return loadServiceCallDto(organizationId, serviceCallId);
+  }
+
+  async function getTechnicianCurrentTask(
+    organizationId: string,
+    technicianId: string,
+  ): Promise<TechnicianCurrentTask | null> {
+    await assertOrganizationExists(organizationId);
+    const visits = await prisma.serviceCallVisit.findMany({
+      where: {
+        organizationId,
+        technicianId,
+        deletedAt: null,
+        status: { in: ["ASSIGNED", "DRIVING", "WORKING", "PLANNED", "CHECKED_IN", "IN_PROGRESS"] },
+        serviceCall: { deletedAt: null, lifecycleState: { not: "CLOSED" } },
+      },
+      include: {
+        technician: { select: { id: true, email: true, displayName: true } },
+        serviceCall: { include: serviceCallInclude },
+      },
+      orderBy: [{ updatedAt: "desc" }],
+      take: 100,
+    });
+
+    const visit = visits.sort(
+      (left, right) =>
+        (currentTaskStatusPriority[right.status] ?? 0) -
+        (currentTaskStatusPriority[left.status] ?? 0),
+    )[0];
+    if (!visit) return null;
+    return {
+      serviceCall: toServiceCallDto(visit.serviceCall),
+      visit: toVisitDto(visit),
+    };
   }
 
   async function reconcileServiceCallWorkflow(
@@ -388,6 +432,7 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
     listAssignableUsers,
     listServiceCalls,
     getServiceCallById,
+    getTechnicianCurrentTask,
     reconcileServiceCallWorkflow,
     createServiceCall,
     updateServiceCall,

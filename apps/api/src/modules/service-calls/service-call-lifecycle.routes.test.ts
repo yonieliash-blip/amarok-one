@@ -1,5 +1,5 @@
 import { PERMISSIONS } from "@amarok-one/permissions";
-import type { ServiceCallLifecycleView } from "@amarok-one/types";
+import type { ServiceCallLifecycleView, TechnicianCurrentTask } from "@amarok-one/types";
 import { Hono } from "hono";
 import { describe, expect, it, vi } from "vitest";
 import { AppError } from "../../lib/errors.js";
@@ -29,6 +29,11 @@ const lifecycleView: ServiceCallLifecycleView = {
   timeline: [],
 };
 
+const currentTask = {
+  serviceCall: { id: serviceCallId, title: "Hydraulic leak", serviceCallNumber: "SC-100" },
+  visit: { id: visitId, status: "working" },
+} as TechnicianCurrentTask;
+
 function createTestApp(input: {
   permissions: string[];
   tokenOrganizationId?: string;
@@ -39,11 +44,13 @@ function createTestApp(input: {
     input.assertAssignedServiceCallAccess ?? vi.fn().mockResolvedValue(undefined);
   const startVisitWorking = vi.fn().mockResolvedValue(lifecycleView);
   const finishVisit = vi.fn().mockResolvedValue(lifecycleView);
+  const getTechnicianCurrentTask = vi.fn().mockResolvedValue(currentTask);
   const service = {
     getServiceCallLifecycle,
     assertAssignedServiceCallAccess,
     startVisitWorking,
     finishVisit,
+    getTechnicianCurrentTask,
   } as unknown as ServiceCallService;
 
   const user: AccessTokenPayload = {
@@ -83,9 +90,41 @@ function createTestApp(input: {
     assertAssignedServiceCallAccess,
     startVisitWorking,
     finishVisit,
+    getTechnicianCurrentTask,
     user,
   };
 }
+
+describe("technician current task route", () => {
+  it("returns the actor's active visit in one response", async () => {
+    const { app, getTechnicianCurrentTask, user } = createTestApp({
+      permissions: [PERMISSIONS.MY_SERVICE_CALLS_READ],
+    });
+
+    const response = await app.request(
+      `/organizations/${organizationId}/service-calls/current-task`,
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      data: { serviceCall: { id: serviceCallId }, visit: { id: visitId } },
+    });
+    expect(getTechnicianCurrentTask).toHaveBeenCalledWith(organizationId, user.sub);
+  });
+
+  it("denies users without assigned-call or service-call read access", async () => {
+    const { app, getTechnicianCurrentTask } = createTestApp({
+      permissions: [PERMISSIONS.CUSTOMERS_READ],
+    });
+
+    const response = await app.request(
+      `/organizations/${organizationId}/service-calls/current-task`,
+    );
+
+    expect(response.status).toBe(403);
+    expect(getTechnicianCurrentTask).not.toHaveBeenCalled();
+  });
+});
 
 function lifecycleUrl(targetOrganizationId = organizationId): string {
   return `/organizations/${targetOrganizationId}/service-calls/${serviceCallId}/lifecycle`;

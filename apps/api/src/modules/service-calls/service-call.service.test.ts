@@ -29,6 +29,9 @@ vi.mock("../../lib/prisma.js", () => ({
     serviceCall: {
       findFirst: vi.fn(),
     },
+    serviceCallVisit: {
+      findMany: vi.fn(),
+    },
     customer: {
       findFirst: vi.fn(),
     },
@@ -61,6 +64,16 @@ vi.mock("./service-call-workflow-projection.js", () => ({
 }));
 
 vi.mock("./service-call-lifecycle.service.js", () => ({
+  toVisitDto: vi.fn((visit) => ({
+    id: visit.id,
+    organizationId: visit.organizationId,
+    serviceCallId: visit.serviceCallId,
+    technicianId: visit.technicianId,
+    sequence: visit.sequence,
+    status: "working",
+    createdAt: visit.createdAt.toISOString(),
+    updatedAt: visit.updatedAt.toISOString(),
+  })),
   createServiceCallLifecycleService: vi.fn(() => ({
     enqueueAfterCreate: vi.fn().mockResolvedValue(undefined),
     getServiceCallLifecycle: vi.fn(),
@@ -156,6 +169,47 @@ describe("createServiceCallService production hardening", () => {
     expect(workflow.reconcileServiceCallWorkflow).not.toHaveBeenCalled();
     expect(workflow.syncAfterCreate).not.toHaveBeenCalled();
     expect(workflow.syncAfterUpdate).not.toHaveBeenCalled();
+  });
+
+  it("loads the technician current task with one visit query", async () => {
+    const workflow: ServiceCallWorkflowPort = {
+      reconcileServiceCallWorkflow: vi.fn(),
+      syncAfterCreate: vi.fn(),
+      syncAfterUpdate: vi.fn(),
+    };
+    vi.mocked(prisma.serviceCallVisit.findMany).mockResolvedValue([
+      {
+        id: "visit-assigned",
+        organizationId,
+        serviceCallId,
+        technicianId: "tech-1",
+        sequence: 3,
+        status: "ASSIGNED",
+        createdAt: new Date("2026-07-29T10:00:00.000Z"),
+        updatedAt: new Date("2026-07-29T10:00:00.000Z"),
+        serviceCall: mockServiceCallRow(),
+      },
+      {
+        id: "visit-working",
+        organizationId,
+        serviceCallId,
+        technicianId: "tech-1",
+        sequence: 2,
+        status: "WORKING",
+        createdAt: new Date("2026-07-29T08:00:00.000Z"),
+        updatedAt: new Date("2026-07-29T09:00:00.000Z"),
+        serviceCall: mockServiceCallRow(),
+      },
+    ] as never);
+
+    const service = createServiceCallService(testServiceDeps(workflow));
+    const task = await service.getTechnicianCurrentTask(organizationId, "tech-1");
+
+    expect(prisma.serviceCallVisit.findMany).toHaveBeenCalledTimes(1);
+    expect(task).toMatchObject({
+      serviceCall: { id: serviceCallId },
+      visit: { id: "visit-working", status: "working" },
+    });
   });
 
   it("runs workflow sync inside the prisma transaction on create", async () => {
