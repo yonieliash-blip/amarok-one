@@ -2,6 +2,13 @@
 
 Expo React Native mobile app for AMAROK ONE field technicians.
 
+## Background shift location
+
+Employees can explicitly enable background GPS during an active work day. Sampling stops at
+clock-out or sign-out, and samples collected while the app cannot reach the API remain in a bounded
+device queue. Background location uses native iOS/Android capabilities, so it must be tested in a
+development or TestFlight build rather than Expo Go.
+
 ## Apple Developer & TestFlight
 
 See [APPLE_DEVELOPER.md](./APPLE_DEVELOPER.md) for the Sprint 5.3 readiness checklist and owner actions (Apple Developer Program, App Store Connect, EAS).

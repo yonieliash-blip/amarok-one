@@ -124,6 +124,9 @@ Soft-deleted records must not appear in default queries and must not be accessib
 - Keep attendance usable if location permission is denied, while showing that tracking is unavailable
 - Sample by time/distance instead of continuously to reduce battery use and unnecessary collection
 - Do not collect shift locations before clock-in or after clock-out
+- Background location requires an explicit employee action after a plain-language explanation
+- Stop the native background location task after clock-out and before sign-out
+- Keep queued samples on the device until the authenticated app can upload them; never persist an access token in the background task
 - A production retention period and employee privacy notice are required before background tracking is enabled
 
 ## Infrastructure

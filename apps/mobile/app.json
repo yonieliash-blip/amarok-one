@@ -19,6 +19,9 @@
       "buildNumber": "1",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Attach visit photos stored on this device for your records.",
+        "NSLocationWhenInUseUsageDescription": "AMAROK ONE records your location only during an active work day for attendance and field travel.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "AMAROK ONE can continue recording your location in the background only during an active work day.",
+        "UIBackgroundModes": ["location"],
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -38,7 +41,16 @@
           "photosPermission": "Attach visit photos stored on this device for your records."
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "AMAROK ONE records your location only during an active work day for attendance and field travel.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ]
     ],
     "web": {
       "bundler": "metro"
