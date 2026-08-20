@@ -19,8 +19,10 @@ Central documentation for the AMAROK ONE project. **All agents must read every d
 | ------------------------------ | ------------------------------------------ |
 | [MONOREPO.md](MONOREPO.md)     | Monorepo layout, commands, and conventions |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Deployment procedures                      |
-| [STAGING_DEPLOYMENT_PLAN.md](STAGING_DEPLOYMENT_PLAN.md) | Budget-controlled staging proposal |
 | [BACKUP.md](BACKUP.md)         | Backup and recovery procedures             |
+
+The budget-controlled staging proposal is documented in
+[STAGING_DEPLOYMENT_PLAN.md](STAGING_DEPLOYMENT_PLAN.md).
 
 ## Agent instructions
 
