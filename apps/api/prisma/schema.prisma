@@ -19,22 +19,23 @@ model Organization {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  companies   Company[]
-  branches    Branch[]
-  customers   Customer[]
-  customerContacts CustomerContact[]
-  equipmentTypes EquipmentType[]
-  equipment   Equipment[]
-  serviceCalls ServiceCall[]
-  serviceCallVisits ServiceCallVisit[]
-  workflowEvents WorkflowEvent[]
-  userRoles   UserRole[]
-  organizationMembers OrganizationMember[]
-  memberModuleAccess MemberModuleAccess[]
-  roles       Role[]
-  auditLogs   AuditLog[]
-  workDays    WorkDay[]
-  workBreaks  WorkBreak[]
+  companies             Company[]
+  branches              Branch[]
+  customers             Customer[]
+  customerContacts      CustomerContact[]
+  equipmentTypes        EquipmentType[]
+  equipment             Equipment[]
+  serviceCalls          ServiceCall[]
+  serviceCallVisits     ServiceCallVisit[]
+  workflowEvents        WorkflowEvent[]
+  userRoles             UserRole[]
+  organizationMembers   OrganizationMember[]
+  memberModuleAccess    MemberModuleAccess[]
+  roles                 Role[]
+  auditLogs             AuditLog[]
+  workDays              WorkDay[]
+  workBreaks            WorkBreak[]
+  attendancePeriodLocks AttendancePeriodLock[]
 
   @@index([deletedAt])
   @@map("organizations")
@@ -75,8 +76,8 @@ model Branch {
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  company      Company      @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Restrict)
   equipment    Equipment[]
   serviceCalls ServiceCall[]
 
@@ -99,14 +100,16 @@ model User {
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
 
-  userRoles      UserRole[]
-  organizationMembers OrganizationMember[]
-  refreshTokens  RefreshToken[]
-  auditLogs      AuditLog[] @relation("AuditActor")
-  assignedServiceCalls ServiceCall[] @relation("AssignedTechnician")
-  serviceCallVisits    ServiceCallVisit[] @relation("VisitTechnician")
-  workDays             WorkDay[]
-  approvedWorkDays     WorkDay[] @relation("WorkDayApprover")
+  userRoles                 UserRole[]
+  organizationMembers       OrganizationMember[]
+  refreshTokens             RefreshToken[]
+  auditLogs                 AuditLog[]             @relation("AuditActor")
+  assignedServiceCalls      ServiceCall[]          @relation("AssignedTechnician")
+  serviceCallVisits         ServiceCallVisit[]     @relation("VisitTechnician")
+  workDays                  WorkDay[]
+  approvedWorkDays          WorkDay[]              @relation("WorkDayApprover")
+  lockedAttendancePeriods   AttendancePeriodLock[] @relation("AttendancePeriodLocker")
+  unlockedAttendancePeriods AttendancePeriodLock[] @relation("AttendancePeriodUnlocker")
 
   @@index([deletedAt])
   @@index([isActive])
@@ -140,10 +143,10 @@ model Role {
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
 
-  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  userRoles       UserRole[]
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  userRoles           UserRole[]
   organizationMembers OrganizationMember[] @relation("MemberPrimaryRole")
-  rolePermissions RolePermission[]
+  rolePermissions     RolePermission[]
 
   @@unique([organizationId, slug])
   @@index([organizationId])
@@ -195,16 +198,16 @@ enum OrganizationMemberStatus {
 
 /// Authoritative organization membership with modular access (one row per user per org).
 model OrganizationMember {
-  id                 String                   @id @default(uuid()) @db.Uuid
-  organizationId     String                   @db.Uuid
-  userId             String                   @db.Uuid
-  primaryRoleId      String                   @db.Uuid
-  isOrganizationOwner Boolean                 @default(false)
-  status             OrganizationMemberStatus @default(ACTIVE)
-  permissionsVersion Int                      @default(1)
-  createdAt          DateTime                 @default(now())
-  updatedAt          DateTime                 @updatedAt
-  deletedAt          DateTime?
+  id                  String                   @id @default(uuid()) @db.Uuid
+  organizationId      String                   @db.Uuid
+  userId              String                   @db.Uuid
+  primaryRoleId       String                   @db.Uuid
+  isOrganizationOwner Boolean                  @default(false)
+  status              OrganizationMemberStatus @default(ACTIVE)
+  permissionsVersion  Int                      @default(1)
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+  deletedAt           DateTime?
 
   organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   user         User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
@@ -290,23 +293,23 @@ enum AttendanceReviewStatus {
 
 /// Employee-owned attendance record. Location is captured only at explicit clock actions.
 model WorkDay {
-  id             String        @id @default(uuid()) @db.Uuid
-  organizationId String        @db.Uuid
-  userId         String        @db.Uuid
-  status         WorkDayStatus @default(ACTIVE)
+  id             String                 @id @default(uuid()) @db.Uuid
+  organizationId String                 @db.Uuid
+  userId         String                 @db.Uuid
+  status         WorkDayStatus          @default(ACTIVE)
   startedAt      DateTime
-  startLatitude  Decimal?      @db.Decimal(9, 6)
-  startLongitude Decimal?      @db.Decimal(9, 6)
+  startLatitude  Decimal?               @db.Decimal(9, 6)
+  startLongitude Decimal?               @db.Decimal(9, 6)
   startAccuracy  Float?
   endedAt        DateTime?
-  endLatitude    Decimal?      @db.Decimal(9, 6)
-  endLongitude   Decimal?      @db.Decimal(9, 6)
+  endLatitude    Decimal?               @db.Decimal(9, 6)
+  endLongitude   Decimal?               @db.Decimal(9, 6)
   endAccuracy    Float?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
   reviewStatus   AttendanceReviewStatus @default(PENDING)
   approvedAt     DateTime?
-  approvedById   String?       @db.Uuid
+  approvedById   String?                @db.Uuid
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   user         User         @relation(fields: [userId], references: [id], onDelete: Restrict)
@@ -341,6 +344,28 @@ model WorkBreak {
   @@index([organizationId, workDayId])
   @@index([organizationId, status])
   @@map("work_breaks")
+}
+
+/// Tenant-scoped payroll boundary. An active lock has no unlockedAt value.
+model AttendancePeriodLock {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @db.Uuid
+  month          String
+  lockedAt       DateTime  @default(now())
+  lockedById     String    @db.Uuid
+  unlockedAt     DateTime?
+  unlockedById   String?   @db.Uuid
+  unlockReason   String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  lockedBy     User         @relation("AttendancePeriodLocker", fields: [lockedById], references: [id], onDelete: Restrict)
+  unlockedBy   User?        @relation("AttendancePeriodUnlocker", fields: [unlockedById], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, month])
+  @@index([organizationId, unlockedAt])
+  @@map("attendance_period_locks")
 }
 
 /// Customer lifecycle status.
@@ -521,34 +546,34 @@ enum ServiceCallVisitStatus {
 
 /// Tenant-scoped field service work order.
 model ServiceCall {
-  id                String              @id @default(uuid()) @db.Uuid
-  organizationId    String              @db.Uuid
+  id                String                    @id @default(uuid()) @db.Uuid
+  organizationId    String                    @db.Uuid
   serviceCallNumber String
   title             String
   description       String?
-  status            ServiceCallStatus   @default(OPEN)
+  status            ServiceCallStatus         @default(OPEN)
   lifecycleState    ServiceCallLifecycleState @default(NEW)
-  priority          ServiceCallPriority @default(NORMAL)
-  openedAt          DateTime            @default(now())
+  priority          ServiceCallPriority       @default(NORMAL)
+  openedAt          DateTime                  @default(now())
   scheduledAt       DateTime?
   completedAt       DateTime?
-  customerId        String              @db.Uuid
-  equipmentId       String              @db.Uuid
-  branchId          String?             @db.Uuid
-  assignedUserId    String?             @db.Uuid
+  customerId        String                    @db.Uuid
+  equipmentId       String                    @db.Uuid
+  branchId          String?                   @db.Uuid
+  assignedUserId    String?                   @db.Uuid
   contactName       String?
   contactPhone      String?
   location          String?
   notes             String?
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
   deletedAt         DateTime?
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  equipment    Equipment    @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
-  branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  assignedUser User?        @relation("AssignedTechnician", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  customer     Customer           @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  equipment    Equipment          @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+  branch       Branch?            @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  assignedUser User?              @relation("AssignedTechnician", fields: [assignedUserId], references: [id], onDelete: SetNull)
   visits       ServiceCallVisit[]
 
   @@unique([organizationId, serviceCallNumber])

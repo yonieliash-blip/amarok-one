@@ -6,10 +6,12 @@ import { requirePermission } from "../../middleware/jwt-guard.js";
 import { tenantGuard } from "../../middleware/tenant-guard.js";
 import {
   attendanceParamsSchema,
+  attendancePeriodParamsSchema,
   clockActionSchema,
   monthlyAttendanceQuerySchema,
   correctWorkDaySchema,
   workDayParamsSchema,
+  unlockAttendancePeriodSchema,
 } from "./attendance.schemas.js";
 import {
   endBreak,
@@ -20,6 +22,8 @@ import {
   startWorkDay,
   approveWorkDay,
   correctWorkDay,
+  lockAttendancePeriod,
+  unlockAttendancePeriod,
 } from "./attendance.service.js";
 
 function userId(context: Parameters<typeof getAuth>[0]): string {
@@ -53,6 +57,36 @@ export const attendanceRoutes = new Hono()
           await correctWorkDay(
             organizationId,
             workDayId,
+            userId(context),
+            context.req.valid("json"),
+          ),
+        ),
+      );
+    },
+  )
+  .post(
+    "/periods/:month/lock",
+    requirePermission("attendance:write"),
+    zValidator("param", attendancePeriodParamsSchema),
+    async (context) => {
+      const { organizationId, month } = context.req.valid("param");
+      return context.json(
+        createApiResponse(await lockAttendancePeriod(organizationId, month, userId(context))),
+      );
+    },
+  )
+  .post(
+    "/periods/:month/unlock",
+    requirePermission("attendance:write"),
+    zValidator("param", attendancePeriodParamsSchema),
+    zValidator("json", unlockAttendancePeriodSchema),
+    async (context) => {
+      const { organizationId, month } = context.req.valid("param");
+      return context.json(
+        createApiResponse(
+          await unlockAttendancePeriod(
+            organizationId,
+            month,
             userId(context),
             context.req.valid("json"),
           ),

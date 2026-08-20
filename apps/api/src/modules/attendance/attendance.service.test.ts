@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   endWorkDay,
+  correctWorkDay,
   getMonthlyAttendanceReport,
+  lockAttendancePeriod,
   startBreak,
   startWorkDay,
 } from "./attendance.service.js";
@@ -14,6 +16,9 @@ const mocks = vi.hoisted(() => ({
   workBreakFindFirst: vi.fn(),
   workBreakCreate: vi.fn(),
   workBreakUpdateMany: vi.fn(),
+  attendancePeriodLockFindFirst: vi.fn(),
+  attendancePeriodLockUpsert: vi.fn(),
+  attendancePeriodLockUpdate: vi.fn(),
   audit: vi.fn(),
 }));
 
@@ -30,6 +35,11 @@ vi.mock("../../lib/prisma.js", () => ({
       create: mocks.workBreakCreate,
       updateMany: mocks.workBreakUpdateMany,
     },
+    attendancePeriodLock: {
+      findFirst: mocks.attendancePeriodLockFindFirst,
+      upsert: mocks.attendancePeriodLockUpsert,
+      update: mocks.attendancePeriodLockUpdate,
+    },
   },
 }));
 vi.mock("../../lib/audit.js", () => ({ writeAuditLog: mocks.audit }));
@@ -44,7 +54,10 @@ const emptyLocation = {
 };
 
 describe("attendance.service", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.attendancePeriodLockFindFirst.mockResolvedValue(null);
+  });
 
   it("rejects a second active work day for the same tenant user", async () => {
     mocks.workDayFindFirst.mockResolvedValue({ id: "day-1", ...emptyLocation, breaks: [] });
@@ -129,5 +142,54 @@ describe("attendance.service", () => {
         where: expect.objectContaining({ organizationId: org, startedAt: expect.any(Object) }),
       }),
     );
+  });
+
+  it("does not lock a month that contains an active work day", async () => {
+    mocks.workDayFindMany.mockResolvedValue([
+      { id: "day-1", status: "ACTIVE", endedAt: null, reviewStatus: "PENDING" },
+    ]);
+    await expect(lockAttendancePeriod(org, "2026-08", user)).rejects.toMatchObject({
+      code: "VALIDATION_ERROR",
+    });
+    expect(mocks.attendancePeriodLockUpsert).not.toHaveBeenCalled();
+  });
+
+  it("locks a month only after all work days are approved and audits it", async () => {
+    mocks.workDayFindMany.mockResolvedValue([
+      {
+        id: "day-1",
+        status: "COMPLETED",
+        endedAt: new Date("2026-08-10T14:00:00.000Z"),
+        reviewStatus: "APPROVED",
+      },
+    ]);
+    mocks.attendancePeriodLockUpsert.mockResolvedValue({
+      id: "33333333-3333-4333-8333-333333333333",
+      organizationId: org,
+      month: "2026-08",
+    });
+    await lockAttendancePeriod(org, "2026-08", user);
+    expect(mocks.attendancePeriodLockUpsert).toHaveBeenCalled();
+    expect(mocks.audit).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "attendance.period_locked", actorId: user }),
+    );
+  });
+
+  it("rejects corrections to a locked month", async () => {
+    mocks.workDayFindFirst.mockResolvedValue({
+      id: "day-1",
+      startedAt: new Date("2026-08-10T05:00:00.000Z"),
+      endedAt: new Date("2026-08-10T14:00:00.000Z"),
+      reviewStatus: "APPROVED",
+    });
+    mocks.attendancePeriodLockFindFirst.mockResolvedValue({ id: "lock-1" });
+    await expect(
+      correctWorkDay(org, "day-1", user, {
+        startedAt: "2026-08-10T05:10:00.000Z",
+        endedAt: "2026-08-10T14:00:00.000Z",
+        reason: "Manager correction",
+      }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+    expect(mocks.workDayUpdate).not.toHaveBeenCalled();
   });
 });

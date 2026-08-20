@@ -236,6 +236,11 @@ export const en: TranslationMessages = {
     endTime: "Full end time",
     correctionReason: "Correction reason",
     exportCsv: "Export to Excel (CSV)",
+    locked: "Month locked for payroll",
+    open: "Month open for editing",
+    lock: "Lock month",
+    unlock: "Reopen month",
+    unlockReason: "Enter the reason for reopening this month",
   },
   customers: {
     accountsEyebrow: "Accounts",
