@@ -15,6 +15,10 @@ Repository-side preparation for the **first successful EAS iOS build**. Complete
 | Apple distribution credentials                                | **Required — owner action**                                                             |
 | `EXPO_PUBLIC_API_URL` (HTTPS staging)                         | **Required in EAS env before production build**                                         |
 
+Run `pnpm release:check:ios` for repository configuration checks. Before a TestFlight build, run
+`EXPO_PUBLIC_API_URL=https://your-staging-api pnpm release:check:ios:staging`; this stricter check
+fails when the release API is missing, local, or not HTTPS.
+
 ## 1. Install EAS CLI (do not add to package.json)
 
 From any directory:
