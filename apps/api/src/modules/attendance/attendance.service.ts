@@ -1,7 +1,7 @@
-import { conflict, notFound } from "../../lib/errors.js";
+import { badRequest, conflict, notFound } from "../../lib/errors.js";
 import { prisma } from "../../lib/prisma.js";
 import { writeAuditLog } from "../../lib/audit.js";
-import type { ClockActionInput } from "./attendance.schemas.js";
+import type { ClockActionInput, CorrectWorkDayInput } from "./attendance.schemas.js";
 
 function locationData(prefix: "start" | "end", input: ClockActionInput) {
   const location = input.location;
@@ -90,6 +90,8 @@ export async function getMonthlyAttendanceReport(
       days: Array<{
         id: string;
         status: string;
+        reviewStatus: string;
+        approvedAt: Date | null;
         startedAt: Date;
         endedAt: Date | null;
         grossMinutes: number;
@@ -124,6 +126,8 @@ export async function getMonthlyAttendanceReport(
     employee.days.push({
       id: row.id,
       status: row.status,
+      reviewStatus: row.reviewStatus,
+      approvedAt: row.approvedAt,
       startedAt: row.startedAt,
       endedAt: row.endedAt,
       grossMinutes,
@@ -143,6 +147,74 @@ export async function getMonthlyAttendanceReport(
     totalNetMinutes: employeeRows.reduce((sum, employee) => sum + employee.netMinutes, 0),
     employees: employeeRows,
   };
+}
+
+export async function correctWorkDay(
+  organizationId: string,
+  workDayId: string,
+  actorId: string,
+  input: CorrectWorkDayInput,
+) {
+  const existing = await prisma.workDay.findFirst({
+    where: { organizationId, id: workDayId },
+  });
+  if (!existing) throw notFound("Work day", workDayId);
+  const before = {
+    startedAt: existing.startedAt.toISOString(),
+    endedAt: existing.endedAt?.toISOString() ?? null,
+    reviewStatus: existing.reviewStatus,
+  };
+  const updated = await prisma.workDay.update({
+    where: { id: workDayId },
+    data: {
+      startedAt: new Date(input.startedAt),
+      endedAt: new Date(input.endedAt),
+      status: "COMPLETED",
+      reviewStatus: "PENDING",
+      approvedAt: null,
+      approvedById: null,
+    },
+    include: includeBreaks,
+  });
+  await writeAuditLog({
+    organizationId,
+    actorId,
+    action: "attendance.work_day_corrected",
+    entityType: "WorkDay",
+    entityId: workDayId,
+    metadata: {
+      reason: input.reason,
+      before,
+      after: { startedAt: input.startedAt, endedAt: input.endedAt, reviewStatus: "PENDING" },
+    },
+  });
+  return serializeWorkDay(updated);
+}
+
+export async function approveWorkDay(organizationId: string, workDayId: string, actorId: string) {
+  const existing = await prisma.workDay.findFirst({
+    where: { organizationId, id: workDayId },
+  });
+  if (!existing) throw notFound("Work day", workDayId);
+  if (existing.status !== "COMPLETED" || !existing.endedAt) {
+    throw badRequest("An active work day cannot be approved");
+  }
+  if (existing.reviewStatus === "APPROVED") return existing;
+  const approvedAt = new Date();
+  const updated = await prisma.workDay.update({
+    where: { id: workDayId },
+    data: { reviewStatus: "APPROVED", approvedAt, approvedById: actorId },
+    include: includeBreaks,
+  });
+  await writeAuditLog({
+    organizationId,
+    actorId,
+    action: "attendance.work_day_approved",
+    entityType: "WorkDay",
+    entityId: workDayId,
+    metadata: { approvedAt: approvedAt.toISOString(), employeeId: existing.userId },
+  });
+  return serializeWorkDay(updated);
 }
 
 export async function getCurrentWorkDay(organizationId: string, userId: string) {

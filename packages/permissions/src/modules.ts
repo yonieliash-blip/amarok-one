@@ -70,7 +70,7 @@ export const MODULE_DEFINITIONS: readonly ModuleDefinition[] = [
       ],
       create: [PERMISSIONS.SERVICE_CALLS_WRITE],
       edit: [PERMISSIONS.SERVICE_CALLS_WRITE, PERMISSIONS.SERVICE_CALLS_ASSIGN],
-      approve: [PERMISSIONS.SERVICE_CALLS_CLOSE],
+      approve: [PERMISSIONS.SERVICE_CALLS_CLOSE, PERMISSIONS.ATTENDANCE_WRITE],
       delete: [],
     },
   },

@@ -229,6 +229,13 @@ export interface TranslationMessages {
     active: string;
     yes: string;
     no: string;
+    approved: string;
+    pending: string;
+    approve: string;
+    correct: string;
+    startTime: string;
+    endTime: string;
+    correctionReason: string;
   };
   customers: {
     accountsEyebrow: string;

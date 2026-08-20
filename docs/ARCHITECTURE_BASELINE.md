@@ -187,16 +187,16 @@ Each feature lives under `apps/api/src/modules/<feature>/`:
 
 ### Feature modules
 
-| Module            | Route prefix                                   | Tenant guard                 | Notes                                      |
-| ----------------- | ---------------------------------------------- | ---------------------------- | ------------------------------------------ |
-| **auth**          | `/auth`                                        | N/A (mixed public/protected) | Login, refresh, logout, `/me`, switch-role |
-| **organizations** | `/organizations`                               | Custom access guards         | A1: strict tenant + platform admin         |
-| **companies**     | `/organizations/:organizationId/companies`     | Yes                          |                                            |
-| **branches**      | `.../companies/:companyId/branches`            | Yes                          |                                            |
-| **customers**     | `/organizations/:organizationId/customers`     | Yes                          | CRUD + nested contacts                     |
-| **equipment**     | `/organizations/:organizationId/equipment`     | Yes                          | Types + assets                             |
-| **service-calls** | `/organizations/:organizationId/service-calls` | Yes                          | CRUD, lifecycle, visits                    |
-| **attendance**    | `/organizations/:organizationId/attendance`    | Yes                          | Employee clock actions + monthly reporting |
+| Module            | Route prefix                                   | Tenant guard                 | Notes                                       |
+| ----------------- | ---------------------------------------------- | ---------------------------- | ------------------------------------------- |
+| **auth**          | `/auth`                                        | N/A (mixed public/protected) | Login, refresh, logout, `/me`, switch-role  |
+| **organizations** | `/organizations`                               | Custom access guards         | A1: strict tenant + platform admin          |
+| **companies**     | `/organizations/:organizationId/companies`     | Yes                          |                                             |
+| **branches**      | `.../companies/:companyId/branches`            | Yes                          |                                             |
+| **customers**     | `/organizations/:organizationId/customers`     | Yes                          | CRUD + nested contacts                      |
+| **equipment**     | `/organizations/:organizationId/equipment`     | Yes                          | Types + assets                              |
+| **service-calls** | `/organizations/:organizationId/service-calls` | Yes                          | CRUD, lifecycle, visits                     |
+| **attendance**    | `/organizations/:organizationId/attendance`    | Yes                          | Clock actions, reports, correction + review |
 
 ### Cross-cutting libraries
 
