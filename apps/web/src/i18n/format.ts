@@ -2,6 +2,7 @@ import { DEFAULT_LOCALE } from "./translate.js";
 import type { Locale } from "./types.js";
 
 const HEBREW_LOCALE = "he-IL";
+const ISRAEL_TIME_ZONE = "Asia/Jerusalem";
 
 export function getFormatLocale(locale: Locale = DEFAULT_LOCALE): string {
   return locale === "he" ? HEBREW_LOCALE : "en-IL";
@@ -33,6 +34,7 @@ export function formatDateTime(value: string | Date, locale: Locale = DEFAULT_LO
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: ISRAEL_TIME_ZONE,
   });
 }
 

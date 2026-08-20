@@ -519,6 +519,9 @@ The Prisma Client extension intercepts all operations on tenant-scoped models vi
 
 Seed script (`prisma/seed.ts`) uses its own raw `PrismaClient` instance, outside the extension.
 
+Unique update, delete, and upsert selectors retain their unique key and also include the active
+`organizationId`. This prevents a leaked record ID from bypassing tenant isolation at the data layer.
+
 ---
 
 ## 14. Workflow and event sourcing
@@ -696,6 +699,7 @@ Technician field app only — 4 screens:
 ### Turbo pipeline
 
 - `build` depends on `^build` (upstream packages build first)
+- `typecheck` depends on upstream package builds and type checks
 - `@amarok-one/mobile#build` produces no artifacts (typecheck-only)
 - `dev` is uncached and persistent
 

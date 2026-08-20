@@ -6,7 +6,7 @@ const organizationId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const visitId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 
 describe("prisma tenant extension query scoping", () => {
-  it("preserves unique id selector on upsert", () => {
+  it("adds tenant scope to a unique id selector on upsert", () => {
     runWithTenantContext({ organizationId }, () => {
       const scoped = scopeTenantQueryArgsForTests("ServiceCallVisit", "upsert", {
         where: { id: visitId },
@@ -14,7 +14,7 @@ describe("prisma tenant extension query scoping", () => {
         update: { status: "ASSIGNED" },
       });
 
-      expect(scoped.where).toEqual({ id: visitId });
+      expect(scoped.where).toEqual({ id: visitId, organizationId });
       expect(scoped.create).toMatchObject({ organizationId });
     });
   });
@@ -33,14 +33,39 @@ describe("prisma tenant extension query scoping", () => {
     });
   });
 
-  it("preserves unique id selector on update", () => {
+  it("adds tenant scope to a unique id selector on update", () => {
     runWithTenantContext({ organizationId }, () => {
       const scoped = scopeTenantQueryArgsForTests("ServiceCall", "update", {
         where: { id: visitId },
         data: { lifecycleState: "CLOSED" },
       });
 
-      expect(scoped.where).toEqual({ id: visitId });
+      expect(scoped.where).toEqual({ id: visitId, organizationId });
+    });
+  });
+
+  it("rejects an explicit cross-tenant unique update", () => {
+    runWithTenantContext({ organizationId }, () => {
+      expect(() =>
+        scopeTenantQueryArgsForTests("ServiceCall", "update", {
+          where: {
+            id: visitId,
+            organizationId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+          },
+          data: { lifecycleState: "CLOSED" },
+        }),
+      ).toThrow("Cross-tenant write is not allowed for ServiceCall");
+    });
+  });
+
+  it("rejects an organization update outside the active tenant", () => {
+    runWithTenantContext({ organizationId }, () => {
+      expect(() =>
+        scopeTenantQueryArgsForTests("Organization", "update", {
+          where: { id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee" },
+          data: { name: "Other organization" },
+        }),
+      ).toThrow("Cross-tenant write is not allowed for Organization");
     });
   });
 
@@ -68,6 +93,7 @@ describe("prisma tenant extension query scoping", () => {
           organizationMemberId: memberId,
           moduleKey: "inventory",
         },
+        organizationId,
       });
       expect(scoped.create).toMatchObject({ organizationId, moduleKey: "inventory" });
     });
@@ -96,6 +122,7 @@ describe("prisma tenant extension query scoping", () => {
           organizationId,
           userId,
         },
+        organizationId,
       });
     });
   });

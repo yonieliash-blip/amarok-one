@@ -12,7 +12,7 @@ describe("format", () => {
     const formatted = formatDateTime("2026-07-18T14:30:00.000Z", "he");
     expect(formatted).toMatch(/18/);
     expect(formatted).toMatch(/2026/);
-    expect(formatted).toMatch(/1[4-7]/);
+    expect(formatted).toContain("17:30");
   });
 
   it("formats Israeli phone numbers", () => {
