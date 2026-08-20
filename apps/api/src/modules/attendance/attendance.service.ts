@@ -1,7 +1,11 @@
 import { badRequest, conflict, notFound } from "../../lib/errors.js";
 import { prisma } from "../../lib/prisma.js";
 import { writeAuditLog } from "../../lib/audit.js";
-import type { ClockActionInput, CorrectWorkDayInput } from "./attendance.schemas.js";
+import type {
+  ClockActionInput,
+  CorrectWorkDayInput,
+  UnlockAttendancePeriodInput,
+} from "./attendance.schemas.js";
 
 function locationData(prefix: "start" | "end", input: ClockActionInput) {
   const location = input.location;
@@ -59,6 +63,30 @@ function israelMidnightUtc(year: number, monthIndex: number, day: number): Date 
   return new Date(guess - (displayedAsUtc - guess));
 }
 
+function monthRange(month: string): { from: Date; to: Date } {
+  const [year, monthNumber] = month.split("-").map(Number) as [number, number];
+  return {
+    from: israelMidnightUtc(year, monthNumber - 1, 1),
+    to: israelMidnightUtc(year, monthNumber, 1),
+  };
+}
+
+function israelMonth(date: Date): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: ISRAEL_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(date);
+  return `${parts.find((part) => part.type === "year")?.value}-${parts.find((part) => part.type === "month")?.value}`;
+}
+
+async function assertAttendancePeriodOpen(organizationId: string, date: Date): Promise<void> {
+  const lock = await prisma.attendancePeriodLock.findFirst({
+    where: { organizationId, month: israelMonth(date), unlockedAt: null },
+  });
+  if (lock) throw conflict("The attendance month is locked");
+}
+
 function durationMinutes(startedAt: Date, endedAt: Date | null, now: Date): number {
   return Math.max(0, Math.round(((endedAt ?? now).getTime() - startedAt.getTime()) / 60_000));
 }
@@ -68,14 +96,15 @@ export async function getMonthlyAttendanceReport(
   month: string,
   now = new Date(),
 ) {
-  const [year, monthNumber] = month.split("-").map(Number) as [number, number];
-  const from = israelMidnightUtc(year, monthNumber - 1, 1);
-  const to = israelMidnightUtc(year, monthNumber, 1);
-  const rows = await prisma.workDay.findMany({
-    where: { organizationId, startedAt: { gte: from, lt: to } },
-    include: { user: true, breaks: { orderBy: { startedAt: "asc" } } },
-    orderBy: [{ user: { displayName: "asc" } }, { startedAt: "asc" }],
-  });
+  const { from, to } = monthRange(month);
+  const [rows, periodLock] = await Promise.all([
+    prisma.workDay.findMany({
+      where: { organizationId, startedAt: { gte: from, lt: to } },
+      include: { user: true, breaks: { orderBy: { startedAt: "asc" } } },
+      orderBy: [{ user: { displayName: "asc" } }, { startedAt: "asc" }],
+    }),
+    prisma.attendancePeriodLock.findFirst({ where: { organizationId, month } }),
+  ]);
 
   const employees = new Map<
     string,
@@ -145,8 +174,78 @@ export async function getMonthlyAttendanceReport(
     employeeCount: employeeRows.length,
     totalWorkDays: employeeRows.reduce((sum, employee) => sum + employee.workDays, 0),
     totalNetMinutes: employeeRows.reduce((sum, employee) => sum + employee.netMinutes, 0),
+    locked: Boolean(periodLock && !periodLock.unlockedAt),
+    periodLock,
     employees: employeeRows,
   };
+}
+
+export async function lockAttendancePeriod(organizationId: string, month: string, actorId: string) {
+  const { from, to } = monthRange(month);
+  const existingLock = await prisma.attendancePeriodLock.findFirst({
+    where: { organizationId, month, unlockedAt: null },
+  });
+  if (existingLock) return existingLock;
+
+  const rows = await prisma.workDay.findMany({
+    where: { organizationId, startedAt: { gte: from, lt: to } },
+    select: { id: true, status: true, endedAt: true, reviewStatus: true },
+  });
+  if (rows.length === 0) throw badRequest("A month without attendance records cannot be locked");
+  if (rows.some((row) => row.status === "ACTIVE" || !row.endedAt)) {
+    throw badRequest("All work days must be completed before locking the month");
+  }
+  if (rows.some((row) => row.reviewStatus !== "APPROVED")) {
+    throw badRequest("All work days must be approved before locking the month");
+  }
+
+  const lockedAt = new Date();
+  const lock = await prisma.attendancePeriodLock.upsert({
+    where: { organizationId_month: { organizationId, month } },
+    create: { organizationId, month, lockedAt, lockedById: actorId },
+    update: {
+      lockedAt,
+      lockedById: actorId,
+      unlockedAt: null,
+      unlockedById: null,
+      unlockReason: null,
+    },
+  });
+  await writeAuditLog({
+    organizationId,
+    actorId,
+    action: "attendance.period_locked",
+    entityType: "AttendancePeriodLock",
+    entityId: lock.id,
+    metadata: { month, workDayCount: rows.length },
+  });
+  return lock;
+}
+
+export async function unlockAttendancePeriod(
+  organizationId: string,
+  month: string,
+  actorId: string,
+  input: UnlockAttendancePeriodInput,
+) {
+  const lock = await prisma.attendancePeriodLock.findFirst({
+    where: { organizationId, month, unlockedAt: null },
+  });
+  if (!lock) throw notFound("Active attendance period lock");
+  const unlockedAt = new Date();
+  const updated = await prisma.attendancePeriodLock.update({
+    where: { id: lock.id },
+    data: { unlockedAt, unlockedById: actorId, unlockReason: input.reason },
+  });
+  await writeAuditLog({
+    organizationId,
+    actorId,
+    action: "attendance.period_unlocked",
+    entityType: "AttendancePeriodLock",
+    entityId: lock.id,
+    metadata: { month, reason: input.reason },
+  });
+  return updated;
 }
 
 export async function correctWorkDay(
@@ -159,6 +258,8 @@ export async function correctWorkDay(
     where: { organizationId, id: workDayId },
   });
   if (!existing) throw notFound("Work day", workDayId);
+  await assertAttendancePeriodOpen(organizationId, existing.startedAt);
+  await assertAttendancePeriodOpen(organizationId, new Date(input.startedAt));
   const before = {
     startedAt: existing.startedAt.toISOString(),
     endedAt: existing.endedAt?.toISOString() ?? null,
@@ -196,6 +297,7 @@ export async function approveWorkDay(organizationId: string, workDayId: string, 
     where: { organizationId, id: workDayId },
   });
   if (!existing) throw notFound("Work day", workDayId);
+  await assertAttendancePeriodOpen(organizationId, existing.startedAt);
   if (existing.status !== "COMPLETED" || !existing.endedAt) {
     throw badRequest("An active work day cannot be approved");
   }
@@ -231,6 +333,7 @@ export async function startWorkDay(
   userId: string,
   input: ClockActionInput,
 ) {
+  await assertAttendancePeriodOpen(organizationId, new Date());
   if (await getCurrentWorkDay(organizationId, userId)) {
     throw conflict("A work day is already active");
   }

@@ -236,6 +236,11 @@ export const he: TranslationMessages = {
     endTime: "שעת סיום בפורמט מלא",
     correctionReason: "סיבת התיקון",
     exportCsv: "ייצוא ל־Excel (CSV)",
+    locked: "החודש נעול לשכר",
+    open: "החודש פתוח לעריכה",
+    lock: "נעילת חודש",
+    unlock: "פתיחת חודש מחדש",
+    unlockReason: "יש להזין סיבה לפתיחת החודש מחדש",
   },
   customers: {
     accountsEyebrow: "חשבונות",

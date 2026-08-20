@@ -23,6 +23,16 @@ export const monthlyAttendanceQuerySchema = z.object({
   month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "month must use YYYY-MM format"),
 });
 
+export const attendancePeriodParamsSchema = organizationIdParamSchema.extend({
+  month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "month must use YYYY-MM format"),
+});
+
+export const unlockAttendancePeriodSchema = z
+  .object({ reason: z.string().trim().min(5).max(500) })
+  .strict();
+
+export type UnlockAttendancePeriodInput = z.infer<typeof unlockAttendancePeriodSchema>;
+
 export const workDayParamsSchema = organizationIdParamSchema.extend({
   workDayId: z.string().uuid(),
 });

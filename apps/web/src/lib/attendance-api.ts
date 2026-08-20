@@ -30,6 +30,14 @@ export interface MonthlyAttendanceReport {
   employeeCount: number;
   totalWorkDays: number;
   totalNetMinutes: number;
+  locked: boolean;
+  periodLock: {
+    id: string;
+    lockedAt: string;
+    lockedById: string;
+    unlockedAt: string | null;
+    unlockReason: string | null;
+  } | null;
   employees: AttendanceEmployee[];
 }
 
@@ -43,6 +51,29 @@ export async function getMonthlyAttendanceReportRequest(
     { accessToken },
   );
   return response.data;
+}
+
+export async function lockAttendancePeriodRequest(
+  organizationId: string,
+  accessToken: string,
+  month: string,
+): Promise<void> {
+  await apiRequest(
+    `/organizations/${organizationId}/attendance/periods/${encodeURIComponent(month)}/lock`,
+    { method: "POST", accessToken },
+  );
+}
+
+export async function unlockAttendancePeriodRequest(
+  organizationId: string,
+  accessToken: string,
+  month: string,
+  reason: string,
+): Promise<void> {
+  await apiRequest(
+    `/organizations/${organizationId}/attendance/periods/${encodeURIComponent(month)}/unlock`,
+    { method: "POST", accessToken, body: JSON.stringify({ reason }) },
+  );
 }
 
 export async function approveWorkDayRequest(

@@ -8,6 +8,8 @@ import {
   approveWorkDayRequest,
   correctWorkDayRequest,
   getMonthlyAttendanceReportRequest,
+  lockAttendancePeriodRequest,
+  unlockAttendancePeriodRequest,
   type AttendanceDay,
   type MonthlyAttendanceReport,
 } from "../../lib/attendance-api";
@@ -99,6 +101,34 @@ export function AttendanceReportPage() {
     }
   }
 
+  async function lockPeriod(): Promise<void> {
+    if (!user || !accessToken) return;
+    setSaving(true);
+    try {
+      await lockAttendancePeriodRequest(user.organization.id, accessToken, month);
+      setRetryKey((key) => key + 1);
+    } catch (cause) {
+      setError(getAuthErrorMessage(cause));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function unlockPeriod(): Promise<void> {
+    if (!user || !accessToken) return;
+    const reason = window.prompt(t("attendanceReport", "unlockReason"));
+    if (!reason || reason.trim().length < 5) return;
+    setSaving(true);
+    try {
+      await unlockAttendancePeriodRequest(user.organization.id, accessToken, month, reason);
+      setRetryKey((key) => key + 1);
+    } catch (cause) {
+      setError(getAuthErrorMessage(cause));
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (loading) return <LoadingState message={t("attendanceReport", "loading")} />;
   if (error) return <ErrorState message={error} onRetry={() => setRetryKey((key) => key + 1)} />;
 
@@ -115,9 +145,23 @@ export function AttendanceReportPage() {
           <input type="month" value={month} onChange={(event) => setMonth(event.target.value)} />
         </label>
         {report ? (
-          <button type="button" onClick={() => downloadAttendanceCsv(report)}>
-            {t("attendanceReport", "exportCsv")}
-          </button>
+          <>
+            <strong>
+              {report.locked ? t("attendanceReport", "locked") : t("attendanceReport", "open")}
+            </strong>
+            <button type="button" onClick={() => downloadAttendanceCsv(report)}>
+              {t("attendanceReport", "exportCsv")}
+            </button>
+            {report.locked ? (
+              <button type="button" disabled={saving} onClick={() => void unlockPeriod()}>
+                {t("attendanceReport", "unlock")}
+              </button>
+            ) : (
+              <button type="button" disabled={saving} onClick={() => void lockPeriod()}>
+                {t("attendanceReport", "lock")}
+              </button>
+            )}
+          </>
         ) : null}
       </header>
 
@@ -168,7 +212,7 @@ export function AttendanceReportPage() {
                                 {" "}
                                 <button
                                   type="button"
-                                  disabled={saving}
+                                  disabled={saving || report.locked}
                                   onClick={() => void correct(day)}
                                 >
                                   {t("attendanceReport", "correct")}
@@ -178,7 +222,7 @@ export function AttendanceReportPage() {
                                     {" "}
                                     <button
                                       type="button"
-                                      disabled={saving}
+                                      disabled={saving || report.locked}
                                       onClick={() => void approve(day)}
                                     >
                                       {t("attendanceReport", "approve")}

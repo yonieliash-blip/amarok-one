@@ -237,6 +237,11 @@ export interface TranslationMessages {
     endTime: string;
     correctionReason: string;
     exportCsv: string;
+    locked: string;
+    open: string;
+    lock: string;
+    unlock: string;
+    unlockReason: string;
   };
   customers: {
     accountsEyebrow: string;
