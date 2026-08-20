@@ -3,7 +3,9 @@ import {
   endWorkDay,
   correctWorkDay,
   getMonthlyAttendanceReport,
+  getWorkDayLocations,
   lockAttendancePeriod,
+  recordWorkDayLocations,
   startBreak,
   startWorkDay,
 } from "./attendance.service.js";
@@ -19,6 +21,8 @@ const mocks = vi.hoisted(() => ({
   attendancePeriodLockFindFirst: vi.fn(),
   attendancePeriodLockUpsert: vi.fn(),
   attendancePeriodLockUpdate: vi.fn(),
+  workDayLocationCreateMany: vi.fn(),
+  workDayLocationFindMany: vi.fn(),
   audit: vi.fn(),
 }));
 
@@ -39,6 +43,10 @@ vi.mock("../../lib/prisma.js", () => ({
       findFirst: mocks.attendancePeriodLockFindFirst,
       upsert: mocks.attendancePeriodLockUpsert,
       update: mocks.attendancePeriodLockUpdate,
+    },
+    workDayLocation: {
+      createMany: mocks.workDayLocationCreateMany,
+      findMany: mocks.workDayLocationFindMany,
     },
   },
 }));
@@ -121,6 +129,7 @@ describe("attendance.service", () => {
         startLatitude: 32,
         endLatitude: 32,
         user: { displayName: "Dana", email: "dana@example.com" },
+        _count: { locations: 2 },
         breaks: [
           {
             startedAt: new Date("2026-08-10T09:00:00.000Z"),
@@ -191,5 +200,59 @@ describe("attendance.service", () => {
       }),
     ).rejects.toMatchObject({ code: "CONFLICT" });
     expect(mocks.workDayUpdate).not.toHaveBeenCalled();
+  });
+
+  it("records sampled locations only against the employee's active work day", async () => {
+    mocks.workDayFindFirst.mockResolvedValue({
+      id: "33333333-3333-4333-8333-333333333333",
+      startedAt: new Date("2026-08-20T05:00:00.000Z"),
+    });
+    mocks.workDayLocationCreateMany.mockResolvedValue({ count: 1 });
+    const result = await recordWorkDayLocations(org, user, {
+      points: [
+        {
+          recordedAt: "2026-08-20T06:00:00.000Z",
+          latitude: 32.0853,
+          longitude: 34.7818,
+          accuracy: 20,
+        },
+      ],
+    });
+    expect(result).toEqual({ acceptedCount: 1 });
+    expect(mocks.workDayLocationCreateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: [
+          expect.objectContaining({
+            organizationId: org,
+            workDayId: "33333333-3333-4333-8333-333333333333",
+          }),
+        ],
+        skipDuplicates: true,
+      }),
+    );
+  });
+
+  it("rejects location samples when no work day is active", async () => {
+    mocks.workDayFindFirst.mockResolvedValue(null);
+    await expect(
+      recordWorkDayLocations(org, user, {
+        points: [{ recordedAt: new Date().toISOString(), latitude: 32, longitude: 34 }],
+      }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("returns a tenant-scoped route for an existing work day", async () => {
+    mocks.workDayFindFirst.mockResolvedValue({ id: "day-1" });
+    mocks.workDayLocationFindMany.mockResolvedValue([
+      { id: "point-1", latitude: "32.085300", longitude: "34.781800" },
+    ]);
+    const points = await getWorkDayLocations(org, "day-1");
+    expect(points).toEqual([
+      expect.objectContaining({ id: "point-1", latitude: 32.0853, longitude: 34.7818 }),
+    ]);
+    expect(mocks.workDayLocationFindMany).toHaveBeenCalledWith({
+      where: { organizationId: org, workDayId: "day-1" },
+      orderBy: { recordedAt: "asc" },
+    });
   });
 });

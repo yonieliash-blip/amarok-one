@@ -12,18 +12,21 @@ import {
   correctWorkDaySchema,
   workDayParamsSchema,
   unlockAttendancePeriodSchema,
+  workDayLocationsSchema,
 } from "./attendance.schemas.js";
 import {
   endBreak,
   endWorkDay,
   getCurrentWorkDay,
   getMonthlyAttendanceReport,
+  getWorkDayLocations,
   startBreak,
   startWorkDay,
   approveWorkDay,
   correctWorkDay,
   lockAttendancePeriod,
   unlockAttendancePeriod,
+  recordWorkDayLocations,
 } from "./attendance.service.js";
 
 function userId(context: Parameters<typeof getAuth>[0]): string {
@@ -62,6 +65,15 @@ export const attendanceRoutes = new Hono()
           ),
         ),
       );
+    },
+  )
+  .get(
+    "/work-days/:workDayId/locations",
+    requirePermission("attendance:read"),
+    zValidator("param", workDayParamsSchema),
+    async (context) => {
+      const { organizationId, workDayId } = context.req.valid("param");
+      return context.json(createApiResponse(await getWorkDayLocations(organizationId, workDayId)));
     },
   )
   .post(
@@ -113,6 +125,21 @@ export const attendanceRoutes = new Hono()
       const { organizationId } = context.req.valid("param");
       return context.json(
         createApiResponse(await getCurrentWorkDay(organizationId, userId(context))),
+      );
+    },
+  )
+  .post(
+    "/locations/batch",
+    requirePermission("my_attendance:write"),
+    zValidator("param", attendanceParamsSchema),
+    zValidator("json", workDayLocationsSchema),
+    async (context) => {
+      const { organizationId } = context.req.valid("param");
+      return context.json(
+        createApiResponse(
+          await recordWorkDayLocations(organizationId, userId(context), context.req.valid("json")),
+        ),
+        201,
       );
     },
   )

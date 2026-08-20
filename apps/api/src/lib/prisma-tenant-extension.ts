@@ -24,6 +24,7 @@ const TENANT_SCOPED_MODELS = new Set([
   "WorkDay",
   "WorkBreak",
   "AttendancePeriodLock",
+  "WorkDayLocation",
 ]);
 
 const GLOBAL_MODELS = new Set(["User", "Permission", "RolePermission", "RefreshToken"]);

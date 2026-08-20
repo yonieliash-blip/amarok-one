@@ -11,6 +11,7 @@ export interface AttendanceDay {
   breakMinutes: number;
   netMinutes: number;
   locationCaptured: boolean;
+  locationSampleCount: number;
 }
 
 export interface AttendanceEmployee {

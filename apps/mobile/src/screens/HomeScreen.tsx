@@ -23,6 +23,10 @@ import {
 } from "../api/attendance";
 import { Button, ScreenSubtitle, ScreenTitle } from "../components/ui";
 import { captureClockLocation } from "../location/clock-location";
+import {
+  flushTrackedLocations,
+  startForegroundShiftTracking,
+} from "../location/shift-location-tracking";
 import { colors, spacing } from "../theme";
 import type { RootStackParamList } from "../navigation/types";
 
@@ -32,6 +36,7 @@ export function HomeScreen({ navigation }: Props) {
   const { user, accessToken, logout } = useAuth();
   const [workDay, setWorkDay] = useState<WorkDay | null>(null);
   const [clocking, setClocking] = useState(false);
+  const [gpsTracking, setGpsTracking] = useState(false);
   const [calls, setCalls] = useState<ServiceCall[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -71,7 +76,28 @@ export function HomeScreen({ navigation }: Props) {
     };
   }, [user, accessToken, reloadToken]);
 
-  const workDayActive = Boolean(workDay?.startedAt && !workDay.endedAt);
+  const workDayStartedAt = workDay?.startedAt ?? null;
+  const workDayActive = Boolean(workDayStartedAt && !workDay?.endedAt);
+
+  useEffect(() => {
+    if (!workDayActive || !workDayStartedAt || !user || !accessToken) return;
+    let disposed = false;
+    let subscription: Awaited<ReturnType<typeof startForegroundShiftTracking>> = null;
+    void startForegroundShiftTracking(user.organization.id, accessToken, workDayStartedAt).then(
+      (result) => {
+        if (disposed) result?.remove();
+        else {
+          subscription = result;
+          setGpsTracking(Boolean(result));
+        }
+      },
+    );
+    return () => {
+      disposed = true;
+      subscription?.remove();
+      setGpsTracking(false);
+    };
+  }, [accessToken, user, workDayActive, workDayStartedAt]);
 
   async function handleStartWorkDay(): Promise<void> {
     if (!user || !accessToken) return;
@@ -80,6 +106,9 @@ export function HomeScreen({ navigation }: Props) {
 
   async function handleEndWorkDay(): Promise<void> {
     if (!user || !accessToken) return;
+    await flushTrackedLocations(user.organization.id, accessToken, workDay?.startedAt).catch(
+      () => undefined,
+    );
     await runClockAction((location) => endWorkDay(user.organization.id, accessToken, location));
   }
 
@@ -126,6 +155,9 @@ export function HomeScreen({ navigation }: Props) {
           <>
             <Text style={styles.cardBody}>
               Started {new Date(workDay!.startedAt).toLocaleTimeString()}
+            </Text>
+            <Text style={gpsTracking ? styles.trackingActive : styles.trackingUnavailable}>
+              {gpsTracking ? "Shift GPS tracking is active" : "GPS tracking is unavailable"}
             </Text>
             <Button label="Current task" onPress={() => navigation.navigate("CurrentTask")} />
             <Button
@@ -206,6 +238,8 @@ const styles = StyleSheet.create({
   },
   cardTitle: { color: colors.text, fontWeight: "700", fontSize: 16 },
   cardBody: { color: colors.textMuted },
+  trackingActive: { color: colors.success, fontSize: 12 },
+  trackingUnavailable: { color: colors.warning, fontSize: 12 },
   sectionTitle: { color: colors.text, fontWeight: "600", fontSize: 16 },
   list: { gap: spacing.sm, paddingBottom: spacing.lg },
   row: {

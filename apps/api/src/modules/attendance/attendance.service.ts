@@ -5,6 +5,7 @@ import type {
   ClockActionInput,
   CorrectWorkDayInput,
   UnlockAttendancePeriodInput,
+  WorkDayLocationsInput,
 } from "./attendance.schemas.js";
 
 function locationData(prefix: "start" | "end", input: ClockActionInput) {
@@ -100,7 +101,11 @@ export async function getMonthlyAttendanceReport(
   const [rows, periodLock] = await Promise.all([
     prisma.workDay.findMany({
       where: { organizationId, startedAt: { gte: from, lt: to } },
-      include: { user: true, breaks: { orderBy: { startedAt: "asc" } } },
+      include: {
+        user: true,
+        breaks: { orderBy: { startedAt: "asc" } },
+        _count: { select: { locations: true } },
+      },
       orderBy: [{ user: { displayName: "asc" } }, { startedAt: "asc" }],
     }),
     prisma.attendancePeriodLock.findFirst({ where: { organizationId, month } }),
@@ -127,6 +132,7 @@ export async function getMonthlyAttendanceReport(
         breakMinutes: number;
         netMinutes: number;
         locationCaptured: boolean;
+        locationSampleCount: number;
       }>;
     }
   >();
@@ -162,7 +168,8 @@ export async function getMonthlyAttendanceReport(
       grossMinutes,
       breakMinutes,
       netMinutes,
-      locationCaptured: Boolean(row.startLatitude || row.endLatitude),
+      locationCaptured: Boolean(row.startLatitude || row.endLatitude || row._count.locations),
+      locationSampleCount: row._count.locations,
     });
     employees.set(row.userId, employee);
   }
@@ -178,6 +185,20 @@ export async function getMonthlyAttendanceReport(
     periodLock,
     employees: employeeRows,
   };
+}
+
+export async function getWorkDayLocations(organizationId: string, workDayId: string) {
+  const workDay = await prisma.workDay.findFirst({ where: { organizationId, id: workDayId } });
+  if (!workDay) throw notFound("Work day", workDayId);
+  const points = await prisma.workDayLocation.findMany({
+    where: { organizationId, workDayId },
+    orderBy: { recordedAt: "asc" },
+  });
+  return points.map((point) => ({
+    ...point,
+    latitude: Number(point.latitude),
+    longitude: Number(point.longitude),
+  }));
 }
 
 export async function lockAttendancePeriod(organizationId: string, month: string, actorId: string) {
@@ -326,6 +347,51 @@ export async function getCurrentWorkDay(organizationId: string, userId: string) 
     orderBy: { startedAt: "desc" },
   });
   return row ? serializeWorkDay(row) : null;
+}
+
+export async function recordWorkDayLocations(
+  organizationId: string,
+  userId: string,
+  input: WorkDayLocationsInput,
+) {
+  const workDay = await prisma.workDay.findFirst({
+    where: { organizationId, userId, status: "ACTIVE" },
+  });
+  if (!workDay) throw notFound("Active work day");
+
+  const latestAllowed = Date.now() + 5 * 60_000;
+  const points = input.points.map((point) => ({
+    ...point,
+    recordedAt: new Date(point.recordedAt),
+  }));
+  if (
+    points.some(
+      (point) => point.recordedAt < workDay.startedAt || point.recordedAt.getTime() > latestAllowed,
+    )
+  ) {
+    throw badRequest("Location timestamps must fall within the active work day");
+  }
+
+  const result = await prisma.workDayLocation.createMany({
+    data: points.map((point) => ({
+      organizationId,
+      workDayId: workDay.id,
+      recordedAt: point.recordedAt,
+      latitude: point.latitude,
+      longitude: point.longitude,
+      accuracy: point.accuracy,
+    })),
+    skipDuplicates: true,
+  });
+  await writeAuditLog({
+    organizationId,
+    actorId: userId,
+    action: "attendance.locations_recorded",
+    entityType: "WorkDay",
+    entityId: workDay.id,
+    metadata: { acceptedCount: result.count, submittedCount: points.length },
+  });
+  return { acceptedCount: result.count };
 }
 
 export async function startWorkDay(

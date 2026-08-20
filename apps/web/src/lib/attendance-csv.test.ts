@@ -30,6 +30,7 @@ describe("attendance CSV", () => {
               breakMinutes: 30,
               netMinutes: 450,
               locationCaptured: true,
+              locationSampleCount: 0,
             },
           ],
         },

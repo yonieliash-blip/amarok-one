@@ -31,6 +31,7 @@ const report: MonthlyAttendanceReport = {
           breakMinutes: 30,
           netMinutes: 450,
           locationCaptured: true,
+          locationSampleCount: 1,
         },
       ],
     },

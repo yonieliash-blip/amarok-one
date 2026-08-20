@@ -19,6 +19,17 @@ export const clockActionSchema = z
 
 export type ClockActionInput = z.infer<typeof clockActionSchema>;
 
+export const workDayLocationsSchema = z
+  .object({
+    points: z
+      .array(locationSchema.extend({ recordedAt: z.string().datetime() }).strict())
+      .min(1)
+      .max(100),
+  })
+  .strict();
+
+export type WorkDayLocationsInput = z.infer<typeof workDayLocationsSchema>;
+
 export const monthlyAttendanceQuerySchema = z.object({
   month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "month must use YYYY-MM format"),
 });
