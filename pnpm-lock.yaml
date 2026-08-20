@@ -141,6 +141,9 @@ importers:
       expo-status-bar:
         specifier: ~3.0.9
         version: 3.0.9(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      expo-task-manager:
+        specifier: ~14.0.9
+        version: 14.0.9(expo@54.0.36(@babel/core@7.29.7)(graphql@16.8.1)(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@6.0.3))(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))
       react:
         specifier: 19.1.0
         version: 19.1.0
@@ -2924,6 +2927,15 @@ packages:
     peerDependencies:
       react: '*'
       react-native: '*'
+
+  expo-task-manager@14.0.9:
+    resolution: {tarball: https://registry.npmjs.org/expo-task-manager/-/expo-task-manager-14.0.9.tgz}
+    peerDependencies:
+      expo: '*'
+      react-native: '*'
+
+  unimodules-app-loader@6.0.8:
+    resolution: {tarball: https://registry.npmjs.org/unimodules-app-loader/-/unimodules-app-loader-6.0.8.tgz}
 
   expo@54.0.36:
     resolution: {integrity: sha512-HMHp1H+actmnX85NJE6lILKzSJV6pTDNkwghq9EMOP3zTynjvBYVqJGSLlm6sEVzJCC5Z2ZiKgLvtsHrqlY0dg==}
@@ -7577,6 +7589,12 @@ snapshots:
       react-native: 0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0)
       react-native-is-edge-to-edge: 1.3.1(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
 
+  expo-task-manager@14.0.9(expo@54.0.36(@babel/core@7.29.7)(graphql@16.8.1)(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@6.0.3))(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0)):
+    dependencies:
+      expo: 54.0.36(@babel/core@7.29.7)(graphql@16.8.1)(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@6.0.3)
+      react-native: 0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0)
+      unimodules-app-loader: 6.0.8
+
   expo@54.0.36(@babel/core@7.29.7)(graphql@16.8.1)(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@6.0.3):
     dependencies:
       '@babel/runtime': 7.29.7
@@ -9364,6 +9382,8 @@ snapshots:
       - supports-color
 
   typescript@6.0.3: {}
+
+  unimodules-app-loader@6.0.8: {}
 
   ufo@1.6.4: {}
 

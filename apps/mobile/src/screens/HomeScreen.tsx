@@ -2,6 +2,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -24,6 +25,11 @@ import {
 import { Button, ScreenSubtitle, ScreenTitle } from "../components/ui";
 import { captureClockLocation } from "../location/clock-location";
 import {
+  enableBackgroundShiftTracking,
+  isBackgroundShiftTrackingActive,
+  stopBackgroundShiftTracking,
+} from "../location/background-shift-location";
+import {
   flushTrackedLocations,
   startForegroundShiftTracking,
 } from "../location/shift-location-tracking";
@@ -37,6 +43,8 @@ export function HomeScreen({ navigation }: Props) {
   const [workDay, setWorkDay] = useState<WorkDay | null>(null);
   const [clocking, setClocking] = useState(false);
   const [gpsTracking, setGpsTracking] = useState(false);
+  const [backgroundGpsTracking, setBackgroundGpsTracking] = useState(false);
+  const [backgroundGpsBusy, setBackgroundGpsBusy] = useState(false);
   const [calls, setCalls] = useState<ServiceCall[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -99,6 +107,18 @@ export function HomeScreen({ navigation }: Props) {
     };
   }, [accessToken, user, workDayActive, workDayStartedAt]);
 
+  useEffect(() => {
+    if (workDayActive) {
+      void isBackgroundShiftTrackingActive()
+        .then(setBackgroundGpsTracking)
+        .catch(() => setBackgroundGpsTracking(false));
+      return;
+    }
+    void stopBackgroundShiftTracking()
+      .catch(() => undefined)
+      .finally(() => setBackgroundGpsTracking(false));
+  }, [workDayActive]);
+
   async function handleStartWorkDay(): Promise<void> {
     if (!user || !accessToken) return;
     await runClockAction((location) => startWorkDay(user.organization.id, accessToken, location));
@@ -109,21 +129,66 @@ export function HomeScreen({ navigation }: Props) {
     await flushTrackedLocations(user.organization.id, accessToken, workDay?.startedAt).catch(
       () => undefined,
     );
-    await runClockAction((location) => endWorkDay(user.organization.id, accessToken, location));
+    const result = await runClockAction((location) =>
+      endWorkDay(user.organization.id, accessToken, location),
+    );
+    if (result?.endedAt) {
+      await stopBackgroundShiftTracking().catch(() => undefined);
+      setBackgroundGpsTracking(false);
+    }
   }
 
   async function runClockAction(
     action: (location: Awaited<ReturnType<typeof captureClockLocation>>) => Promise<WorkDay>,
-  ): Promise<void> {
+  ): Promise<WorkDay | null> {
     setClocking(true);
     setError(null);
     try {
-      setWorkDay(await action(await captureClockLocation()));
+      const result = await action(await captureClockLocation());
+      setWorkDay(result);
+      return result;
     } catch (err) {
       setError(isApiRequestError(err) ? err.message : "Unable to update work day");
+      return null;
     } finally {
       setClocking(false);
     }
+  }
+
+  function handleEnableBackgroundGps(): void {
+    Alert.alert(
+      "Background shift location",
+      "While your work day is active, AMAROK ONE will record periodic locations even when the app is in the background. Tracking stops when you end the work day or sign out.",
+      [
+        { text: "Not now", style: "cancel" },
+        {
+          text: "Allow",
+          onPress: () => {
+            setBackgroundGpsBusy(true);
+            void enableBackgroundShiftTracking()
+              .then((enabled) => {
+                setBackgroundGpsTracking(enabled);
+                if (!enabled) {
+                  Alert.alert(
+                    "Permission not granted",
+                    "Background GPS remains off. You can enable location access later in device settings.",
+                  );
+                }
+              })
+              .catch(() => {
+                setBackgroundGpsTracking(false);
+                Alert.alert("Unable to enable GPS", "Please check the device location settings.");
+              })
+              .finally(() => setBackgroundGpsBusy(false));
+          },
+        },
+      ],
+    );
+  }
+
+  async function handleLogout(): Promise<void> {
+    await stopBackgroundShiftTracking().catch(() => undefined);
+    await logout();
   }
 
   const activeBreak = workDay?.breaks.find((entry) => entry.status === "ACTIVE");
@@ -157,8 +222,20 @@ export function HomeScreen({ navigation }: Props) {
               Started {new Date(workDay!.startedAt).toLocaleTimeString()}
             </Text>
             <Text style={gpsTracking ? styles.trackingActive : styles.trackingUnavailable}>
-              {gpsTracking ? "Shift GPS tracking is active" : "GPS tracking is unavailable"}
+              {backgroundGpsTracking
+                ? "Background shift GPS is active"
+                : gpsTracking
+                  ? "GPS is active while the app is open"
+                  : "GPS tracking is unavailable"}
             </Text>
+            {!backgroundGpsTracking ? (
+              <Button
+                label={backgroundGpsBusy ? "Enabling background GPS…" : "Enable background GPS"}
+                variant="secondary"
+                disabled={backgroundGpsBusy}
+                onPress={handleEnableBackgroundGps}
+              />
+            ) : null}
             <Button label="Current task" onPress={() => navigation.navigate("CurrentTask")} />
             <Button
               label={activeBreak ? "End break" : "Start break"}
@@ -220,7 +297,7 @@ export function HomeScreen({ navigation }: Props) {
         </>
       )}
 
-      <Button label="Sign out" variant="secondary" onPress={() => void logout()} />
+      <Button label="Sign out" variant="secondary" onPress={() => void handleLogout()} />
     </View>
   );
 }

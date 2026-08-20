@@ -10,6 +10,7 @@ declare module "expo-location" {
     remove(): void;
   }
   export function requestForegroundPermissionsAsync(): Promise<{ status: string }>;
+  export function requestBackgroundPermissionsAsync(): Promise<{ status: string }>;
   export function getCurrentPositionAsync(options?: {
     accuracy?: Accuracy;
   }): Promise<LocationObject>;
@@ -17,4 +18,19 @@ declare module "expo-location" {
     options: { accuracy?: Accuracy; timeInterval?: number; distanceInterval?: number },
     callback: (location: LocationObject) => void,
   ): Promise<LocationSubscription>;
+  export function hasStartedLocationUpdatesAsync(taskName: string): Promise<boolean>;
+  export function startLocationUpdatesAsync(
+    taskName: string,
+    options: {
+      accuracy?: Accuracy;
+      timeInterval?: number;
+      distanceInterval?: number;
+      deferredUpdatesInterval?: number;
+      deferredUpdatesDistance?: number;
+      pausesUpdatesAutomatically?: boolean;
+      showsBackgroundLocationIndicator?: boolean;
+      foregroundService?: { notificationTitle: string; notificationBody: string };
+    },
+  ): Promise<void>;
+  export function stopLocationUpdatesAsync(taskName: string): Promise<void>;
 }
