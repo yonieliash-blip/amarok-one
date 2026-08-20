@@ -8,10 +8,11 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { Button, ScreenSubtitle, ScreenTitle } from "../components/ui";
+import { BrandMark, Button, Eyebrow, ScreenSubtitle, ScreenTitle } from "../components/ui";
 import { useAuth } from "../auth/AuthContext";
 import { isApiRequestError } from "../api/client";
 import { colors, spacing } from "../theme";
+import { brand } from "../config/brand";
 
 export function LoginScreen() {
   const { login } = useAuth();
@@ -45,8 +46,14 @@ export function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <ScreenTitle>AMAROK ONE</ScreenTitle>
-        <ScreenSubtitle>Technician field app — sign in to manage today's visits.</ScreenSubtitle>
+        <View style={styles.brandBlock}>
+          <BrandMark />
+          <View style={styles.brandCopy}>
+            <Eyebrow>{brand.fieldAppName}</Eyebrow>
+            <ScreenTitle>{brand.productName}</ScreenTitle>
+            <ScreenSubtitle>Work days, service calls and field visits in one place.</ScreenSubtitle>
+          </View>
+        </View>
 
         {error ? (
           <Text style={styles.error} accessibilityRole="alert">
@@ -54,44 +61,46 @@ export function LoginScreen() {
           </Text>
         ) : null}
 
-        <View style={styles.field}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            autoCapitalize="none"
-            keyboardType="email-address"
-            value={email}
-            onChangeText={setEmail}
-            style={styles.input}
-            placeholder="you@company.com"
-            placeholderTextColor={colors.textMuted}
-          />
-        </View>
+        <View style={styles.formCard}>
+          <View style={styles.field}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              autoCapitalize="none"
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
+              style={styles.input}
+              placeholder="you@company.com"
+              placeholderTextColor={colors.textSubtle}
+            />
+          </View>
 
-        <View style={styles.field}>
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-            style={styles.input}
-            placeholder="••••••••"
-            placeholderTextColor={colors.textMuted}
-          />
-        </View>
+          <View style={styles.field}>
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+              style={styles.input}
+              placeholder="••••••••"
+              placeholderTextColor={colors.textSubtle}
+            />
+          </View>
 
-        <View style={styles.field}>
-          <Text style={styles.label}>Organization slug (optional)</Text>
-          <TextInput
-            autoCapitalize="none"
-            value={organizationSlug}
-            onChangeText={setOrganizationSlug}
-            style={styles.input}
-            placeholder="acme-forklifts"
-            placeholderTextColor={colors.textMuted}
-          />
-        </View>
+          <View style={styles.field}>
+            <Text style={styles.label}>Company code (optional)</Text>
+            <TextInput
+              autoCapitalize="none"
+              value={organizationSlug}
+              onChangeText={setOrganizationSlug}
+              style={styles.input}
+              placeholder="company-code"
+              placeholderTextColor={colors.textSubtle}
+            />
+          </View>
 
-        <Button label="Sign in" onPress={() => void handleLogin()} loading={loading} />
+          <Button label="Sign in securely" onPress={() => void handleLogin()} loading={loading} />
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -103,16 +112,27 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
     padding: spacing.lg,
+    gap: spacing.lg,
+  },
+  brandBlock: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  brandCopy: { flex: 1 },
+  formCard: {
     gap: spacing.md,
+    padding: spacing.lg,
+    backgroundColor: colors.bgPanel,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 18,
   },
   field: { gap: spacing.xs },
-  label: { color: colors.textMuted, fontSize: 14 },
+  label: { color: colors.text, fontSize: 13, fontWeight: "700" },
   input: {
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.bgPanel,
     borderRadius: 12,
     paddingHorizontal: spacing.md,
+    minHeight: 52,
     paddingVertical: 12,
     color: colors.text,
     fontSize: 16,

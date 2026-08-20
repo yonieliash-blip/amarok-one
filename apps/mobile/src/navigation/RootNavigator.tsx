@@ -36,7 +36,15 @@ export function RootNavigator() {
 
   return (
     <NavigationContainer theme={navTheme}>
-      <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: colors.bgPanel } }}>
+      <Stack.Navigator
+        screenOptions={{
+          headerStyle: { backgroundColor: colors.bg },
+          headerShadowVisible: false,
+          headerTintColor: colors.text,
+          headerTitleStyle: { fontWeight: "800" },
+          contentStyle: { backgroundColor: colors.bg },
+        }}
+      >
         {status === "authenticated" ? (
           <>
             <Stack.Screen name="Home" component={HomeScreen} options={{ title: "Field day" }} />
