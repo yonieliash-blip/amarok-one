@@ -200,6 +200,19 @@ export interface TranslationMessages {
     moduleFinance: string;
     moduleAdministration: string;
   };
+  technicians: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    loading: string;
+    emptyTitle: string;
+    emptyMessage: string;
+    name: string;
+    email: string;
+    status: string;
+    active: string;
+    inactive: string;
+  };
   customers: {
     accountsEyebrow: string;
     title: string;

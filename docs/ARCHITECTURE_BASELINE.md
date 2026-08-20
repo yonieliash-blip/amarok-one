@@ -604,7 +604,7 @@ Audit expansion is deferred (A4).
 
 ### Placeholder routes
 
-Inventory, purchase orders, parts, accounting, reports, calendar, technicians, my equipment, my schedule — render `ModulePlaceholderPage`.
+Inventory, purchase orders, parts, accounting, reports, calendar, my equipment, and my schedule render `ModulePlaceholderPage`. The technicians route now renders a tenant-scoped roster backed by organization membership and the technician role.
 
 ### Known web limitations
 
