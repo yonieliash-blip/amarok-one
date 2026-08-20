@@ -23,6 +23,8 @@
     "eas-build-pre-install": "cd ../.. && corepack enable && corepack prepare pnpm@10.12.4 --activate && pnpm install --frozen-lockfile",
     "eas-build-post-install": "cd ../.. && pnpm exec turbo run build --filter=@amarok-one/types... --filter=@amarok-one/permissions... --filter=@amarok-one/utils...",
     "assets:fix-store": "node scripts/fix-store-assets.mjs",
+    "release:check:ios": "node scripts/check-ios-release-config.mjs",
+    "release:check:ios:staging": "node scripts/check-ios-release-config.mjs --require-api-url",
     "eas:whoami": "pnpm dlx eas-cli@16 whoami",
     "eas:init": "pnpm dlx eas-cli@16 init",
     "eas:build:ios": "pnpm dlx eas-cli@16 build --platform ios --profile production"
