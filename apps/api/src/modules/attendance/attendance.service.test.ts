@@ -1,8 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { endWorkDay, startBreak, startWorkDay } from "./attendance.service.js";
+import {
+  endWorkDay,
+  getMonthlyAttendanceReport,
+  startBreak,
+  startWorkDay,
+} from "./attendance.service.js";
 
 const mocks = vi.hoisted(() => ({
   workDayFindFirst: vi.fn(),
+  workDayFindMany: vi.fn(),
   workDayCreate: vi.fn(),
   workDayUpdate: vi.fn(),
   workBreakFindFirst: vi.fn(),
@@ -15,6 +21,7 @@ vi.mock("../../lib/prisma.js", () => ({
   prisma: {
     workDay: {
       findFirst: mocks.workDayFindFirst,
+      findMany: mocks.workDayFindMany,
       create: mocks.workDayCreate,
       update: mocks.workDayUpdate,
     },
@@ -88,5 +95,39 @@ describe("attendance.service", () => {
   it("does not start a break without an active work day", async () => {
     mocks.workDayFindFirst.mockResolvedValue(null);
     await expect(startBreak(org, user, {})).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("calculates monthly gross, break and net minutes per employee", async () => {
+    mocks.workDayFindMany.mockResolvedValue([
+      {
+        id: "day-1",
+        userId: user,
+        status: "COMPLETED",
+        startedAt: new Date("2026-08-10T05:00:00.000Z"),
+        endedAt: new Date("2026-08-10T14:00:00.000Z"),
+        startLatitude: 32,
+        endLatitude: 32,
+        user: { displayName: "Dana", email: "dana@example.com" },
+        breaks: [
+          {
+            startedAt: new Date("2026-08-10T09:00:00.000Z"),
+            endedAt: new Date("2026-08-10T09:30:00.000Z"),
+          },
+        ],
+      },
+    ]);
+
+    const report = await getMonthlyAttendanceReport(org, "2026-08", new Date("2026-08-31"));
+    expect(report).toMatchObject({
+      employeeCount: 1,
+      totalWorkDays: 1,
+      totalNetMinutes: 510,
+      employees: [{ displayName: "Dana", grossMinutes: 540, breakMinutes: 30, netMinutes: 510 }],
+    });
+    expect(mocks.workDayFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ organizationId: org, startedAt: expect.any(Object) }),
+      }),
+    );
   });
 });

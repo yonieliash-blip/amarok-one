@@ -4,11 +4,16 @@ import { Hono } from "hono";
 import { getAuth } from "../../lib/auth-context.js";
 import { requirePermission } from "../../middleware/jwt-guard.js";
 import { tenantGuard } from "../../middleware/tenant-guard.js";
-import { attendanceParamsSchema, clockActionSchema } from "./attendance.schemas.js";
+import {
+  attendanceParamsSchema,
+  clockActionSchema,
+  monthlyAttendanceQuerySchema,
+} from "./attendance.schemas.js";
 import {
   endBreak,
   endWorkDay,
   getCurrentWorkDay,
+  getMonthlyAttendanceReport,
   startBreak,
   startWorkDay,
 } from "./attendance.service.js";
@@ -19,6 +24,19 @@ function userId(context: Parameters<typeof getAuth>[0]): string {
 
 export const attendanceRoutes = new Hono()
   .use("*", tenantGuard)
+  .get(
+    "/reports/monthly",
+    requirePermission("attendance:read"),
+    zValidator("param", attendanceParamsSchema),
+    zValidator("query", monthlyAttendanceQuerySchema),
+    async (context) => {
+      const { organizationId } = context.req.valid("param");
+      const { month } = context.req.valid("query");
+      return context.json(
+        createApiResponse(await getMonthlyAttendanceReport(organizationId, month)),
+      );
+    },
+  )
   .get(
     "/current",
     requirePermission("my_attendance:read"),

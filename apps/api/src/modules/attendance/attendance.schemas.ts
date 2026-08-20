@@ -18,3 +18,7 @@ export const clockActionSchema = z
   .strict();
 
 export type ClockActionInput = z.infer<typeof clockActionSchema>;
+
+export const monthlyAttendanceQuerySchema = z.object({
+  month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "month must use YYYY-MM format"),
+});
