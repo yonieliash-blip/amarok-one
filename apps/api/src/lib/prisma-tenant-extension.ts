@@ -114,6 +114,24 @@ function assertUniqueWhereTenant(
   }
 }
 
+function applyUniqueTenantWhereScope(
+  where: Record<string, unknown>,
+  organizationId: string,
+  model: string,
+): Record<string, unknown> {
+  assertUniqueWhereTenant(where, organizationId, model);
+  return { ...where, organizationId };
+}
+
+function assertOrganizationWhereMatches(
+  where: Record<string, unknown> | undefined,
+  organizationId: string,
+): void {
+  if (typeof where?.id === "string" && where.id !== organizationId) {
+    throw forbidden("Cross-tenant write is not allowed for Organization");
+  }
+}
+
 function applyOrganizationReadScope(args: QueryArgs, organizationId: string): QueryArgs {
   const nextArgs = { ...args };
   nextArgs.where = mergeWhere(nextArgs.where as Record<string, unknown> | undefined, {
@@ -139,7 +157,7 @@ function applyTenantWriteWhereScope(
   const where = nextArgs.where as Record<string, unknown> | undefined;
 
   if (hasUniqueWhereSelector(where)) {
-    assertUniqueWhereTenant(where, organizationId, model);
+    nextArgs.where = applyUniqueTenantWhereScope(where ?? {}, organizationId, model);
     return nextArgs;
   }
 
@@ -199,7 +217,7 @@ function applyTenantUpsertScope(args: QueryArgs, organizationId: string, model: 
   const where = nextArgs.where as Record<string, unknown> | undefined;
 
   if (hasUniqueWhereSelector(where)) {
-    assertUniqueWhereTenant(where, organizationId, model);
+    nextArgs.where = applyUniqueTenantWhereScope(where ?? {}, organizationId, model);
   } else {
     nextArgs.where = mergeWhere(where, { organizationId });
   }
@@ -226,9 +244,9 @@ function scopeQueryArgs(model: string, operation: string, args: QueryArgs): Quer
 
     if (WRITE_WHERE_OPERATIONS.has(operation)) {
       const nextArgs = { ...args };
-      nextArgs.where = mergeWhere(nextArgs.where as Record<string, unknown> | undefined, {
-        id: organizationId,
-      });
+      const where = nextArgs.where as Record<string, unknown> | undefined;
+      assertOrganizationWhereMatches(where, organizationId);
+      nextArgs.where = mergeWhere(where, { id: organizationId });
       return nextArgs;
     }
 
@@ -240,7 +258,7 @@ function scopeQueryArgs(model: string, operation: string, args: QueryArgs): Quer
           id: organizationId,
         });
       } else {
-        assertUniqueWhereTenant(where, organizationId, "Organization");
+        assertOrganizationWhereMatches(where, organizationId);
       }
       return nextArgs;
     }
