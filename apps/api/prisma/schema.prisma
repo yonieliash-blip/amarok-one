@@ -33,6 +33,8 @@ model Organization {
   memberModuleAccess MemberModuleAccess[]
   roles       Role[]
   auditLogs   AuditLog[]
+  workDays    WorkDay[]
+  workBreaks  WorkBreak[]
 
   @@index([deletedAt])
   @@map("organizations")
@@ -103,6 +105,7 @@ model User {
   auditLogs      AuditLog[] @relation("AuditActor")
   assignedServiceCalls ServiceCall[] @relation("AssignedTechnician")
   serviceCallVisits    ServiceCallVisit[] @relation("VisitTechnician")
+  workDays             WorkDay[]
 
   @@index([deletedAt])
   @@index([isActive])
@@ -267,6 +270,66 @@ model AuditLog {
   @@index([organizationId, createdAt])
   @@index([entityType, entityId])
   @@map("audit_logs")
+}
+
+enum WorkDayStatus {
+  ACTIVE
+  COMPLETED
+}
+
+enum WorkBreakStatus {
+  ACTIVE
+  COMPLETED
+}
+
+/// Employee-owned attendance record. Location is captured only at explicit clock actions.
+model WorkDay {
+  id             String        @id @default(uuid()) @db.Uuid
+  organizationId String        @db.Uuid
+  userId         String        @db.Uuid
+  status         WorkDayStatus @default(ACTIVE)
+  startedAt      DateTime
+  startLatitude  Decimal?      @db.Decimal(9, 6)
+  startLongitude Decimal?      @db.Decimal(9, 6)
+  startAccuracy  Float?
+  endedAt        DateTime?
+  endLatitude    Decimal?      @db.Decimal(9, 6)
+  endLongitude   Decimal?      @db.Decimal(9, 6)
+  endAccuracy    Float?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  breaks       WorkBreak[]
+
+  @@index([organizationId, userId, startedAt])
+  @@index([organizationId, status])
+  @@map("work_days")
+}
+
+model WorkBreak {
+  id             String          @id @default(uuid()) @db.Uuid
+  organizationId String          @db.Uuid
+  workDayId      String          @db.Uuid
+  status         WorkBreakStatus @default(ACTIVE)
+  startedAt      DateTime
+  startLatitude  Decimal?        @db.Decimal(9, 6)
+  startLongitude Decimal?        @db.Decimal(9, 6)
+  startAccuracy  Float?
+  endedAt        DateTime?
+  endLatitude    Decimal?        @db.Decimal(9, 6)
+  endLongitude   Decimal?        @db.Decimal(9, 6)
+  endAccuracy    Float?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  workDay      WorkDay      @relation(fields: [workDayId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, workDayId])
+  @@index([organizationId, status])
+  @@map("work_breaks")
 }
 
 /// Customer lifecycle status.

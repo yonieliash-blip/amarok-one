@@ -1,40 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export interface WorkDayRecord {
-  userId: string;
-  startedAt: string;
-  endedAt?: string;
-}
-
-function workDayKey(userId: string): string {
-  const day = new Date().toISOString().slice(0, 10);
-  return `@amarok/work-day:${userId}:${day}`;
-}
-
-export async function loadWorkDay(userId: string): Promise<WorkDayRecord | null> {
-  const raw = await AsyncStorage.getItem(workDayKey(userId));
-  if (!raw) {
-    return null;
-  }
-  return JSON.parse(raw) as WorkDayRecord;
-}
-
-export async function startWorkDay(userId: string): Promise<WorkDayRecord> {
-  const record: WorkDayRecord = { userId, startedAt: new Date().toISOString() };
-  await AsyncStorage.setItem(workDayKey(userId), JSON.stringify(record));
-  return record;
-}
-
-export async function endWorkDay(userId: string): Promise<WorkDayRecord | null> {
-  const existing = await loadWorkDay(userId);
-  if (!existing || existing.endedAt) {
-    return existing;
-  }
-  const record: WorkDayRecord = { ...existing, endedAt: new Date().toISOString() };
-  await AsyncStorage.setItem(workDayKey(userId), JSON.stringify(record));
-  return record;
-}
-
 export interface VisitPhoto {
   id: string;
   uri: string;
