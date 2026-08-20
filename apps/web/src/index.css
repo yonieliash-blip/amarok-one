@@ -723,7 +723,10 @@ a {
 }
 
 .service-call-history-timeline__icon--technician_dispatched,
-.service-call-history-timeline__icon--additional_visit {
+.service-call-history-timeline__icon--additional_visit,
+.service-call-history-timeline__icon--technician_departed,
+.service-call-history-timeline__icon--work_started,
+.service-call-history-timeline__icon--visit_finished {
   background: color-mix(in srgb, var(--amarok-primary) 16%, transparent);
   color: var(--amarok-primary);
 }

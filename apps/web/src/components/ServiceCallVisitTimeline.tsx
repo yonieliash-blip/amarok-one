@@ -1,5 +1,14 @@
 import type { LucideIcon } from "lucide-react";
-import { CircleCheck, ClipboardPlus, UserCheck, UserPlus, Users } from "lucide-react";
+import {
+  CircleCheck,
+  ClipboardPlus,
+  Flag,
+  Truck,
+  UserCheck,
+  UserPlus,
+  Users,
+  Wrench,
+} from "lucide-react";
 import type { OrganizationMember, ServiceCall, ServiceCallLifecycleView } from "@amarok-one/types";
 import { formatDateTime } from "../i18n/format";
 import { useTranslation } from "../i18n/useTranslation";
@@ -25,6 +34,9 @@ const HISTORY_EVENT_ICONS: Record<ServiceCallHistoryEventType, LucideIcon> = {
   created: ClipboardPlus,
   technician_dispatched: UserCheck,
   additional_visit: UserPlus,
+  technician_departed: Truck,
+  work_started: Wrench,
+  visit_finished: Flag,
   closed: CircleCheck,
 };
 
@@ -135,6 +147,12 @@ function getHistoryEventTitle(
       return event.isContinuationByOtherTechnician
         ? t("serviceCalls", "historyEventContinuationVisit")
         : t("serviceCalls", "historyEventAdditionalVisit");
+    case "technician_departed":
+      return t("serviceCalls", "historyEventTechnicianDeparted");
+    case "work_started":
+      return t("serviceCalls", "historyEventWorkStarted");
+    case "visit_finished":
+      return t("serviceCalls", "historyEventVisitFinished");
     case "closed":
       return t("serviceCalls", "historyEventClosed");
   }
@@ -152,6 +170,9 @@ function getHistoryEventDetail(
         : null;
     case "technician_dispatched":
     case "additional_visit":
+    case "technician_departed":
+    case "work_started":
+    case "visit_finished":
       return t("serviceCalls", "historyEventTechnicianName", {
         name: event.technicianName ?? emptyValue,
       });

@@ -7,7 +7,13 @@ import type {
 } from "@amarok-one/types";
 
 export type ServiceCallHistoryEventType =
-  "created" | "technician_dispatched" | "additional_visit" | "closed";
+  | "created"
+  | "technician_dispatched"
+  | "additional_visit"
+  | "technician_departed"
+  | "work_started"
+  | "visit_finished"
+  | "closed";
 
 export interface ServiceCallHistoryEvent {
   id: string;
@@ -74,23 +80,50 @@ export function buildServiceCallHistoryTimeline(
         sequence: findVisitScheduledSequence(visit.id, lifecycle.timeline) ?? visit.sequence,
         technicianName,
       });
-      continue;
+    } else {
+      const previousVisit = sortedVisits[index - 1];
+      const isContinuationByOtherTechnician =
+        previousVisit !== undefined &&
+        Boolean(visit.technicianId) &&
+        visit.technicianId !== previousVisit.technicianId;
+
+      events.push({
+        id: `visit-additional-${visit.id}`,
+        type: "additional_visit",
+        occurredAt,
+        sequence: findVisitScheduledSequence(visit.id, lifecycle.timeline) ?? visit.sequence,
+        technicianName,
+        isContinuationByOtherTechnician,
+      });
     }
 
-    const previousVisit = sortedVisits[index - 1];
-    const isContinuationByOtherTechnician =
-      previousVisit !== undefined &&
-      Boolean(visit.technicianId) &&
-      visit.technicianId !== previousVisit.technicianId;
-
-    events.push({
-      id: `visit-additional-${visit.id}`,
-      type: "additional_visit",
-      occurredAt,
-      sequence: findVisitScheduledSequence(visit.id, lifecycle.timeline) ?? visit.sequence,
+    addVisitMilestone(
+      events,
+      lifecycle.timeline,
+      visit,
+      "visit.driving_started",
+      "technician_departed",
+      visit.drivingStartedAt,
       technicianName,
-      isContinuationByOtherTechnician,
-    });
+    );
+    addVisitMilestone(
+      events,
+      lifecycle.timeline,
+      visit,
+      "visit.working_started",
+      "work_started",
+      visit.workingStartedAt,
+      technicianName,
+    );
+    addVisitMilestone(
+      events,
+      lifecycle.timeline,
+      visit,
+      ["visit.finished", "visit.completed"],
+      "visit_finished",
+      visit.finishedAt,
+      technicianName,
+    );
   }
 
   const closedEvent = findClosedEvent(lifecycle.timeline);
@@ -118,6 +151,34 @@ export function buildServiceCallHistoryTimeline(
       const sequenceDifference = left.sequence - right.sequence;
       return sequenceDifference !== 0 ? sequenceDifference : left.id.localeCompare(right.id);
     });
+}
+
+function addVisitMilestone(
+  events: ServiceCallHistoryEvent[],
+  timeline: ServiceCallTimelineEvent[],
+  visit: ServiceCallVisit,
+  workflowTypes: string | string[],
+  type: Extract<
+    ServiceCallHistoryEventType,
+    "technician_departed" | "work_started" | "visit_finished"
+  >,
+  fallbackOccurredAt: string | undefined,
+  technicianName: string | undefined,
+): void {
+  const acceptedTypes = Array.isArray(workflowTypes) ? workflowTypes : [workflowTypes];
+  const workflowEvent = timeline.find(
+    (event) => acceptedTypes.includes(event.type) && event.payload.visitId === visit.id,
+  );
+  const occurredAt = workflowEvent?.occurredAt ?? fallbackOccurredAt;
+  if (!occurredAt) return;
+
+  events.push({
+    id: workflowEvent?.id ?? `${type}-${visit.id}`,
+    type,
+    occurredAt,
+    sequence: workflowEvent?.sequence ?? visit.sequence,
+    technicianName,
+  });
 }
 
 function findVisitScheduledAt(
