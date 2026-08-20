@@ -13,6 +13,7 @@ import {
 } from "../../lib/attendance-api";
 import { formatDateTime } from "../../i18n/format";
 import { useTranslation } from "../../i18n/useTranslation";
+import { downloadAttendanceCsv } from "../../lib/attendance-csv";
 
 function currentIsraelMonth(): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -113,6 +114,11 @@ export function AttendanceReportPage() {
           {t("attendanceReport", "month")}
           <input type="month" value={month} onChange={(event) => setMonth(event.target.value)} />
         </label>
+        {report ? (
+          <button type="button" onClick={() => downloadAttendanceCsv(report)}>
+            {t("attendanceReport", "exportCsv")}
+          </button>
+        ) : null}
       </header>
 
       {!report || report.employees.length === 0 ? (

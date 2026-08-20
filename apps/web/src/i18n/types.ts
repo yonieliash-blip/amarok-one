@@ -236,6 +236,7 @@ export interface TranslationMessages {
     startTime: string;
     endTime: string;
     correctionReason: string;
+    exportCsv: string;
   };
   customers: {
     accountsEyebrow: string;
