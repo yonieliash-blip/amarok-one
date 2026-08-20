@@ -2,16 +2,19 @@ import { useEffect, useState } from "react";
 import { EmptyState } from "../../components/EmptyState";
 import { ErrorState } from "../../components/ErrorState";
 import { LoadingState } from "../../components/LoadingState";
+import { AttendanceRoutePreview } from "../../components/AttendanceRoutePreview";
 import { useAuth } from "../../auth/useAuth";
 import { getAuthErrorMessage } from "../../lib/auth-errors";
 import {
   approveWorkDayRequest,
   correctWorkDayRequest,
   getMonthlyAttendanceReportRequest,
+  getWorkDayLocationsRequest,
   lockAttendancePeriodRequest,
   unlockAttendancePeriodRequest,
   type AttendanceDay,
   type MonthlyAttendanceReport,
+  type WorkDayLocationPoint,
 } from "../../lib/attendance-api";
 import { formatDateTime } from "../../i18n/format";
 import { useTranslation } from "../../i18n/useTranslation";
@@ -40,6 +43,10 @@ export function AttendanceReportPage() {
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [route, setRoute] = useState<{
+    employeeName: string;
+    points: WorkDayLocationPoint[];
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -130,6 +137,21 @@ export function AttendanceReportPage() {
     }
   }
 
+  async function viewRoute(employeeName: string, day: AttendanceDay): Promise<void> {
+    if (!user || !accessToken) return;
+    setSaving(true);
+    try {
+      setRoute({
+        employeeName,
+        points: await getWorkDayLocationsRequest(user.organization.id, accessToken, day.id),
+      });
+    } catch (cause) {
+      setError(getAuthErrorMessage(cause));
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (loading) return <LoadingState message={t("attendanceReport", "loading")} />;
   if (error) return <ErrorState message={error} onRetry={() => setRetryKey((key) => key + 1)} />;
 
@@ -172,6 +194,19 @@ export function AttendanceReportPage() {
         ) : null}
       </header>
 
+      {route ? (
+        <AttendanceRoutePreview
+          employeeName={route.employeeName}
+          points={route.points}
+          title={t("attendanceReport", "routeTitle")}
+          emptyMessage={t("attendanceReport", "routeEmpty")}
+          startLabel={t("attendanceReport", "routeStart")}
+          endLabel={t("attendanceReport", "routeEnd")}
+          closeLabel={t("attendanceReport", "closeRoute")}
+          onClose={() => setRoute(null)}
+        />
+      ) : null}
+
       {!report || report.employees.length === 0 ? (
         <EmptyState
           title={t("attendanceReport", "emptyTitle")}
@@ -210,7 +245,20 @@ export function AttendanceReportPage() {
                             {day.locationCaptured
                               ? t("attendanceReport", "yes")
                               : t("attendanceReport", "no")}
-                            {day.locationSampleCount > 0 ? ` (${day.locationSampleCount})` : ""}.{" "}
+                            {day.locationSampleCount > 0 ? ` (${day.locationSampleCount})` : ""}
+                            {day.locationSampleCount > 0 ? (
+                              <>
+                                {" "}
+                                <button
+                                  type="button"
+                                  disabled={saving}
+                                  onClick={() => void viewRoute(employee.displayName, day)}
+                                >
+                                  {t("attendanceReport", "viewRoute")}
+                                </button>
+                              </>
+                            ) : null}
+                            .{" "}
                             {day.reviewStatus === "APPROVED"
                               ? t("attendanceReport", "approved")
                               : t("attendanceReport", "pending")}

@@ -243,6 +243,12 @@ export interface TranslationMessages {
     lock: string;
     unlock: string;
     unlockReason: string;
+    viewRoute: string;
+    routeTitle: string;
+    routeEmpty: string;
+    routeStart: string;
+    routeEnd: string;
+    closeRoute: string;
   };
   customers: {
     accountsEyebrow: string;

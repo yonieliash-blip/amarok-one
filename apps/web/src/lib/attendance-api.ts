@@ -42,6 +42,14 @@ export interface MonthlyAttendanceReport {
   employees: AttendanceEmployee[];
 }
 
+export interface WorkDayLocationPoint {
+  id: string;
+  recordedAt: string;
+  latitude: number;
+  longitude: number;
+  accuracy: number | null;
+}
+
 export async function getMonthlyAttendanceReportRequest(
   organizationId: string,
   accessToken: string,
@@ -99,4 +107,16 @@ export async function correctWorkDayRequest(
     accessToken,
     body: JSON.stringify(input),
   });
+}
+
+export async function getWorkDayLocationsRequest(
+  organizationId: string,
+  accessToken: string,
+  workDayId: string,
+): Promise<WorkDayLocationPoint[]> {
+  const response = await apiRequest<WorkDayLocationPoint[]>(
+    `/organizations/${organizationId}/attendance/work-days/${workDayId}/locations`,
+    { accessToken },
+  );
+  return response.data;
 }
