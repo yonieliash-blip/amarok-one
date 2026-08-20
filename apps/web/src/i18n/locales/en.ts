@@ -235,6 +235,7 @@ export const en: TranslationMessages = {
     startTime: "Full start time",
     endTime: "Full end time",
     correctionReason: "Correction reason",
+    exportCsv: "Export to Excel (CSV)",
   },
   customers: {
     accountsEyebrow: "Accounts",

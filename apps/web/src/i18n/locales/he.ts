@@ -235,6 +235,7 @@ export const he: TranslationMessages = {
     startTime: "שעת התחלה בפורמט מלא",
     endTime: "שעת סיום בפורמט מלא",
     correctionReason: "סיבת התיקון",
+    exportCsv: "ייצוא ל־Excel (CSV)",
   },
   customers: {
     accountsEyebrow: "חשבונות",
