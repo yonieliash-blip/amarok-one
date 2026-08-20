@@ -3,6 +3,8 @@ import { apiRequest } from "./api-client";
 export interface AttendanceDay {
   id: string;
   status: "ACTIVE" | "COMPLETED";
+  reviewStatus: "PENDING" | "APPROVED";
+  approvedAt: string | null;
   startedAt: string;
   endedAt: string | null;
   grossMinutes: number;
@@ -41,4 +43,28 @@ export async function getMonthlyAttendanceReportRequest(
     { accessToken },
   );
   return response.data;
+}
+
+export async function approveWorkDayRequest(
+  organizationId: string,
+  accessToken: string,
+  workDayId: string,
+): Promise<void> {
+  await apiRequest(`/organizations/${organizationId}/attendance/work-days/${workDayId}/approve`, {
+    method: "POST",
+    accessToken,
+  });
+}
+
+export async function correctWorkDayRequest(
+  organizationId: string,
+  accessToken: string,
+  workDayId: string,
+  input: { startedAt: string; endedAt: string; reason: string },
+): Promise<void> {
+  await apiRequest(`/organizations/${organizationId}/attendance/work-days/${workDayId}`, {
+    method: "PATCH",
+    accessToken,
+    body: JSON.stringify(input),
+  });
 }

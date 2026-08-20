@@ -8,6 +8,8 @@ import {
   attendanceParamsSchema,
   clockActionSchema,
   monthlyAttendanceQuerySchema,
+  correctWorkDaySchema,
+  workDayParamsSchema,
 } from "./attendance.schemas.js";
 import {
   endBreak,
@@ -16,6 +18,8 @@ import {
   getMonthlyAttendanceReport,
   startBreak,
   startWorkDay,
+  approveWorkDay,
+  correctWorkDay,
 } from "./attendance.service.js";
 
 function userId(context: Parameters<typeof getAuth>[0]): string {
@@ -34,6 +38,36 @@ export const attendanceRoutes = new Hono()
       const { month } = context.req.valid("query");
       return context.json(
         createApiResponse(await getMonthlyAttendanceReport(organizationId, month)),
+      );
+    },
+  )
+  .patch(
+    "/work-days/:workDayId",
+    requirePermission("attendance:write"),
+    zValidator("param", workDayParamsSchema),
+    zValidator("json", correctWorkDaySchema),
+    async (context) => {
+      const { organizationId, workDayId } = context.req.valid("param");
+      return context.json(
+        createApiResponse(
+          await correctWorkDay(
+            organizationId,
+            workDayId,
+            userId(context),
+            context.req.valid("json"),
+          ),
+        ),
+      );
+    },
+  )
+  .post(
+    "/work-days/:workDayId/approve",
+    requirePermission("attendance:write"),
+    zValidator("param", workDayParamsSchema),
+    async (context) => {
+      const { organizationId, workDayId } = context.req.valid("param");
+      return context.json(
+        createApiResponse(await approveWorkDay(organizationId, workDayId, userId(context))),
       );
     },
   )

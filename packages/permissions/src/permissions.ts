@@ -24,6 +24,7 @@ export const PERMISSIONS = {
   TECHNICIANS_READ: "technicians:read",
   TECHNICIANS_WRITE: "technicians:write",
   ATTENDANCE_READ: "attendance:read",
+  ATTENDANCE_WRITE: "attendance:write",
   MY_ATTENDANCE_READ: "my_attendance:read",
   MY_ATTENDANCE_WRITE: "my_attendance:write",
   CALENDAR_READ: "calendar:read",
@@ -165,6 +166,11 @@ export const ALL_PERMISSIONS: readonly PermissionDefinition[] = [
     slug: PERMISSIONS.ATTENDANCE_READ,
     name: "Read Attendance",
     description: "View employee attendance records and reports",
+  },
+  {
+    slug: PERMISSIONS.ATTENDANCE_WRITE,
+    name: "Write Attendance",
+    description: "Correct and approve employee attendance records",
   },
   {
     slug: PERMISSIONS.MY_ATTENDANCE_READ,

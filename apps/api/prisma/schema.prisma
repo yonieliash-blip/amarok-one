@@ -106,6 +106,7 @@ model User {
   assignedServiceCalls ServiceCall[] @relation("AssignedTechnician")
   serviceCallVisits    ServiceCallVisit[] @relation("VisitTechnician")
   workDays             WorkDay[]
+  approvedWorkDays     WorkDay[] @relation("WorkDayApprover")
 
   @@index([deletedAt])
   @@index([isActive])
@@ -282,6 +283,11 @@ enum WorkBreakStatus {
   COMPLETED
 }
 
+enum AttendanceReviewStatus {
+  PENDING
+  APPROVED
+}
+
 /// Employee-owned attendance record. Location is captured only at explicit clock actions.
 model WorkDay {
   id             String        @id @default(uuid()) @db.Uuid
@@ -298,13 +304,18 @@ model WorkDay {
   endAccuracy    Float?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+  reviewStatus   AttendanceReviewStatus @default(PENDING)
+  approvedAt     DateTime?
+  approvedById   String?       @db.Uuid
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   user         User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  approvedBy   User?        @relation("WorkDayApprover", fields: [approvedById], references: [id], onDelete: SetNull)
   breaks       WorkBreak[]
 
   @@index([organizationId, userId, startedAt])
   @@index([organizationId, status])
+  @@index([organizationId, reviewStatus])
   @@map("work_days")
 }
 

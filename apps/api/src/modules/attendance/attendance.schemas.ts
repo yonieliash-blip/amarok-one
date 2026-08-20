@@ -22,3 +22,21 @@ export type ClockActionInput = z.infer<typeof clockActionSchema>;
 export const monthlyAttendanceQuerySchema = z.object({
   month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "month must use YYYY-MM format"),
 });
+
+export const workDayParamsSchema = organizationIdParamSchema.extend({
+  workDayId: z.string().uuid(),
+});
+
+export const correctWorkDaySchema = z
+  .object({
+    startedAt: z.string().datetime(),
+    endedAt: z.string().datetime(),
+    reason: z.string().trim().min(5).max(500),
+  })
+  .strict()
+  .refine((value) => new Date(value.endedAt) > new Date(value.startedAt), {
+    message: "endedAt must be after startedAt",
+    path: ["endedAt"],
+  });
+
+export type CorrectWorkDayInput = z.infer<typeof correctWorkDaySchema>;

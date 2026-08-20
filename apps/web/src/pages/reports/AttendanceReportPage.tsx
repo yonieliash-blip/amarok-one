@@ -5,7 +5,10 @@ import { LoadingState } from "../../components/LoadingState";
 import { useAuth } from "../../auth/useAuth";
 import { getAuthErrorMessage } from "../../lib/auth-errors";
 import {
+  approveWorkDayRequest,
+  correctWorkDayRequest,
   getMonthlyAttendanceReportRequest,
+  type AttendanceDay,
   type MonthlyAttendanceReport,
 } from "../../lib/attendance-api";
 import { formatDateTime } from "../../i18n/format";
@@ -32,6 +35,7 @@ export function AttendanceReportPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,6 +61,42 @@ export function AttendanceReportPage() {
       cancelled = true;
     };
   }, [accessToken, month, retryKey, user]);
+
+  async function approve(day: AttendanceDay): Promise<void> {
+    if (!user || !accessToken) return;
+    setSaving(true);
+    try {
+      await approveWorkDayRequest(user.organization.id, accessToken, day.id);
+      setRetryKey((key) => key + 1);
+    } catch (cause) {
+      setError(getAuthErrorMessage(cause));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function correct(day: AttendanceDay): Promise<void> {
+    if (!user || !accessToken || !day.endedAt) return;
+    const startedAt = window.prompt(t("attendanceReport", "startTime"), day.startedAt);
+    if (!startedAt) return;
+    const endedAt = window.prompt(t("attendanceReport", "endTime"), day.endedAt);
+    if (!endedAt) return;
+    const reason = window.prompt(t("attendanceReport", "correctionReason"));
+    if (!reason || reason.trim().length < 5) return;
+    setSaving(true);
+    try {
+      await correctWorkDayRequest(user.organization.id, accessToken, day.id, {
+        startedAt: new Date(startedAt).toISOString(),
+        endedAt: new Date(endedAt).toISOString(),
+        reason,
+      });
+      setRetryKey((key) => key + 1);
+    } catch (cause) {
+      setError(getAuthErrorMessage(cause));
+    } finally {
+      setSaving(false);
+    }
+  }
 
   if (loading) return <LoadingState message={t("attendanceReport", "loading")} />;
   if (error) return <ErrorState message={error} onRetry={() => setRetryKey((key) => key + 1)} />;
@@ -113,6 +153,34 @@ export function AttendanceReportPage() {
                             {day.locationCaptured
                               ? t("attendanceReport", "yes")
                               : t("attendanceReport", "no")}
+                            .{" "}
+                            {day.reviewStatus === "APPROVED"
+                              ? t("attendanceReport", "approved")
+                              : t("attendanceReport", "pending")}
+                            {day.status === "COMPLETED" ? (
+                              <span>
+                                {" "}
+                                <button
+                                  type="button"
+                                  disabled={saving}
+                                  onClick={() => void correct(day)}
+                                >
+                                  {t("attendanceReport", "correct")}
+                                </button>
+                                {day.reviewStatus !== "APPROVED" ? (
+                                  <>
+                                    {" "}
+                                    <button
+                                      type="button"
+                                      disabled={saving}
+                                      onClick={() => void approve(day)}
+                                    >
+                                      {t("attendanceReport", "approve")}
+                                    </button>
+                                  </>
+                                ) : null}
+                              </span>
+                            ) : null}
                           </li>
                         ))}
                       </ul>
