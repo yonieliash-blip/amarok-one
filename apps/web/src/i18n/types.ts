@@ -237,6 +237,7 @@ export interface TranslationMessages {
     endTime: string;
     correctionReason: string;
     exportCsv: string;
+    exportPdf: string;
     locked: string;
     open: string;
     lock: string;

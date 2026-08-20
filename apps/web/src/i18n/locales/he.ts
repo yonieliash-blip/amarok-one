@@ -236,6 +236,7 @@ export const he: TranslationMessages = {
     endTime: "שעת סיום בפורמט מלא",
     correctionReason: "סיבת התיקון",
     exportCsv: "ייצוא ל־Excel (CSV)",
+    exportPdf: "הפקת PDF",
     locked: "החודש נעול לשכר",
     open: "החודש פתוח לעריכה",
     lock: "נעילת חודש",

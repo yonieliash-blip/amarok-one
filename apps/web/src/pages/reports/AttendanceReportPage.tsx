@@ -16,6 +16,7 @@ import {
 import { formatDateTime } from "../../i18n/format";
 import { useTranslation } from "../../i18n/useTranslation";
 import { downloadAttendanceCsv } from "../../lib/attendance-csv";
+import { printAttendanceReport } from "../../lib/attendance-pdf";
 
 function currentIsraelMonth(): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -32,7 +33,7 @@ function hours(minutes: number): string {
 
 export function AttendanceReportPage() {
   const { user, accessToken } = useAuth();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [month, setMonth] = useState(currentIsraelMonth);
   const [report, setReport] = useState<MonthlyAttendanceReport | null>(null);
   const [loading, setLoading] = useState(true);
@@ -151,6 +152,12 @@ export function AttendanceReportPage() {
             </strong>
             <button type="button" onClick={() => downloadAttendanceCsv(report)}>
               {t("attendanceReport", "exportCsv")}
+            </button>
+            <button
+              type="button"
+              onClick={() => printAttendanceReport(report, user?.organization.name ?? "", locale)}
+            >
+              {t("attendanceReport", "exportPdf")}
             </button>
             {report.locked ? (
               <button type="button" disabled={saving} onClick={() => void unlockPeriod()}>

@@ -236,6 +236,7 @@ export const en: TranslationMessages = {
     endTime: "Full end time",
     correctionReason: "Correction reason",
     exportCsv: "Export to Excel (CSV)",
+    exportPdf: "Create PDF",
     locked: "Month locked for payroll",
     open: "Month open for editing",
     lock: "Lock month",
