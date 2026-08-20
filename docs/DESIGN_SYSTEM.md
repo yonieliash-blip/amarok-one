@@ -1,8 +1,8 @@
 # AMAROK ONE — Design System v1
 
-**Status:** Foundation (tokens + specification). Existing screens are **not** migrated yet.
+**Status:** Foundation active. Web migration is incremental; the mobile login, field-day and current-task screens use the v1 visual language.
 
-**Audience:** Web (`apps/web`), shared UI (`packages/ui`), and future mobile surfaces.
+**Audience:** Web (`apps/web`), shared UI (`packages/ui`), and mobile (`apps/mobile`).
 
 **Principles:** Dark industrial theme, Hebrew-first RTL, high contrast for field use, amber primary accent, minimal chrome, API-driven data (no decorative fake metrics).
 
@@ -245,6 +245,13 @@ Implemented today in `@amarok-one/ui` as **primary** and **secondary**; v1 defin
 | Shadow     | `--ds-shadow-none` (dark default) |
 
 Use `@amarok-one/ui` `Card` for new work; theme overrides live in app CSS until components consume tokens directly.
+
+### Mobile implementation
+
+- Mobile tokens live in `apps/mobile/src/theme.ts` and preserve the same industrial dark/amber language with contrast calibrated for field use.
+- Reusable mobile primitives (`Button`, `Card`, `StatusPill`, headings and brand mark) live in `apps/mobile/src/components/ui.tsx`.
+- Tenant-replaceable product name and logo defaults live in `apps/mobile/src/config/brand.ts`; operational screens must not hard-code the AMAROK company identity.
+- Primary operational state is presented with text and a status marker, never color alone.
 
 ---
 

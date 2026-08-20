@@ -4,7 +4,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../auth/AuthContext";
 import { isApiRequestError } from "../api/client";
 import { getTechnicianCurrentTask } from "../api/service-calls";
-import { Button, ScreenSubtitle, ScreenTitle } from "../components/ui";
+import { Button, Card, Eyebrow, ScreenSubtitle, ScreenTitle, StatusPill } from "../components/ui";
 import { colors, spacing } from "../theme";
 import type { RootStackParamList } from "../navigation/types";
 
@@ -47,34 +47,48 @@ export function CurrentTaskScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
+      <Eyebrow>Live assignment</Eyebrow>
       <ScreenTitle>Current task</ScreenTitle>
-      <ScreenSubtitle>Your active visit from assigned service calls.</ScreenSubtitle>
+      <ScreenSubtitle>The field visit that needs your attention now.</ScreenSubtitle>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       {loading ? (
         <ActivityIndicator color={colors.primary} />
       ) : task ? (
-        <View style={styles.card}>
+        <Card accent>
+          <View style={styles.cardTop}>
+            <Text style={styles.callNumber}>{task.serviceCall.serviceCallNumber}</Text>
+            <StatusPill label={task.visit.status.replace(/_/g, " ")} tone="success" />
+          </View>
           <Text style={styles.taskTitle}>{task.serviceCall.title}</Text>
-          <Text style={styles.meta}>{task.serviceCall.serviceCallNumber}</Text>
-          <Text style={styles.meta}>Visit status: {task.visit.status.replace(/_/g, " ")}</Text>
-          {task.serviceCall.customer ? (
-            <Text style={styles.meta}>Customer: {task.serviceCall.customer.name}</Text>
-          ) : null}
-          {task.serviceCall.equipment ? (
-            <Text style={styles.meta}>
-              Equipment: {task.serviceCall.equipment.name}
-              {task.serviceCall.equipment.internalNumber
-                ? ` · ${task.serviceCall.equipment.internalNumber}`
-                : ""}
-            </Text>
-          ) : null}
-          {task.serviceCall.location ? (
-            <Text style={styles.meta}>Location: {task.serviceCall.location}</Text>
-          ) : null}
+          <View style={styles.details}>
+            {task.serviceCall.customer ? (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>CUSTOMER</Text>
+                <Text style={styles.detailValue}>{task.serviceCall.customer.name}</Text>
+              </View>
+            ) : null}
+            {task.serviceCall.equipment ? (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>EQUIPMENT</Text>
+                <Text style={styles.detailValue}>
+                  {task.serviceCall.equipment.name}
+                  {task.serviceCall.equipment.internalNumber
+                    ? ` · ${task.serviceCall.equipment.internalNumber}`
+                    : ""}
+                </Text>
+              </View>
+            ) : null}
+            {task.serviceCall.location ? (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>LOCATION</Text>
+                <Text style={styles.detailValue}>{task.serviceCall.location}</Text>
+              </View>
+            ) : null}
+          </View>
           <Button
-            label="Open visit"
+            label="Open field visit"
             onPress={() =>
               navigation.navigate("Visit", {
                 serviceCallId: task.serviceCall.id,
@@ -82,11 +96,12 @@ export function CurrentTaskScreen({ navigation }: Props) {
               })
             }
           />
-        </View>
+        </Card>
       ) : (
-        <Text style={styles.empty}>
-          No active visit. Pick a service call from home when assigned.
-        </Text>
+        <Card>
+          <StatusPill label="No active visit" />
+          <Text style={styles.empty}>Your next active visit will appear here automatically.</Text>
+        </Card>
       )}
 
       <Button
@@ -103,16 +118,13 @@ export function CurrentTaskScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg, padding: spacing.lg, gap: spacing.md },
-  card: {
-    backgroundColor: colors.bgPanel,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: spacing.sm,
-  },
-  taskTitle: { color: colors.text, fontWeight: "700", fontSize: 18 },
-  meta: { color: colors.textMuted },
+  cardTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  callNumber: { color: colors.primary, fontWeight: "800", fontSize: 13, letterSpacing: 0.6 },
+  taskTitle: { color: colors.text, fontWeight: "800", fontSize: 22, lineHeight: 28 },
+  details: { gap: 0, borderTopWidth: 1, borderTopColor: colors.border },
+  detailRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
+  detailLabel: { color: colors.textSubtle, fontSize: 10, fontWeight: "800", letterSpacing: 1 },
+  detailValue: { color: colors.text, fontSize: 15, fontWeight: "600", marginTop: 4 },
   empty: { color: colors.textMuted, lineHeight: 22 },
   error: { color: colors.error },
 });

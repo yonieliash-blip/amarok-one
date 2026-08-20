@@ -22,7 +22,7 @@ import {
   startWorkDay,
   type WorkDay,
 } from "../api/attendance";
-import { Button, ScreenSubtitle, ScreenTitle } from "../components/ui";
+import { Button, Card, Eyebrow, ScreenSubtitle, ScreenTitle, StatusPill } from "../components/ui";
 import { captureClockLocation } from "../location/clock-location";
 import {
   enableBackgroundShiftTracking,
@@ -37,6 +37,12 @@ import { colors, spacing } from "../theme";
 import type { RootStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
+
+function priorityTone(priority: ServiceCall["priority"]): "neutral" | "warning" | "danger" {
+  if (priority === "urgent") return "danger";
+  if (priority === "high") return "warning";
+  return "neutral";
+}
 
 export function HomeScreen({ navigation }: Props) {
   const { user, accessToken, logout } = useAuth();
@@ -210,24 +216,53 @@ export function HomeScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <ScreenTitle>Hello, {user?.displayName ?? "Technician"}</ScreenTitle>
-        <ScreenSubtitle>{user?.organization.name}</ScreenSubtitle>
+        <Eyebrow>Field operations</Eyebrow>
+        <ScreenTitle>Hello, {user?.displayName?.split(" ")[0] ?? "Technician"}</ScreenTitle>
+        <ScreenSubtitle>{`${user?.organization.name} · Today's field overview`}</ScreenSubtitle>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Work day</Text>
+      <Card accent={workDayActive}>
+        <View style={styles.cardHeading}>
+          <View>
+            <Text style={styles.cardLabel}>WORK DAY</Text>
+            <Text style={styles.cardTitle}>
+              {workDayActive ? "Shift in progress" : "Ready to start"}
+            </Text>
+          </View>
+          <StatusPill
+            label={workDayActive ? "Active" : "Not started"}
+            tone={workDayActive ? "success" : "neutral"}
+          />
+        </View>
         {workDayActive ? (
           <>
-            <Text style={styles.cardBody}>
-              Started {new Date(workDay!.startedAt).toLocaleTimeString()}
-            </Text>
-            <Text style={gpsTracking ? styles.trackingActive : styles.trackingUnavailable}>
-              {backgroundGpsTracking
-                ? "Background shift GPS is active"
-                : gpsTracking
-                  ? "GPS is active while the app is open"
-                  : "GPS tracking is unavailable"}
-            </Text>
+            <View style={styles.shiftFacts}>
+              <View style={styles.fact}>
+                <Text style={styles.factLabel}>STARTED</Text>
+                <Text style={styles.factValue}>
+                  {new Date(workDay!.startedAt).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </Text>
+              </View>
+              <View style={styles.fact}>
+                <Text style={styles.factLabel}>GPS</Text>
+                <Text style={styles.factValue}>
+                  {backgroundGpsTracking ? "Background" : gpsTracking ? "Foreground" : "Off"}
+                </Text>
+              </View>
+            </View>
+            <StatusPill
+              label={
+                backgroundGpsTracking
+                  ? "Location tracking protected"
+                  : gpsTracking
+                    ? "GPS active while app is open"
+                    : "GPS tracking unavailable"
+              }
+              tone={backgroundGpsTracking || gpsTracking ? "success" : "warning"}
+            />
             {!backgroundGpsTracking ? (
               <Button
                 label={backgroundGpsBusy ? "Enabling background GPS…" : "Enable background GPS"}
@@ -252,7 +287,10 @@ export function HomeScreen({ navigation }: Props) {
           </>
         ) : (
           <>
-            <Text style={styles.cardBody}>Start your shift to begin field visits.</Text>
+            <Text style={styles.cardBody}>
+              Clock in before opening service calls. Your start time and optional location will be
+              recorded.
+            </Text>
             <Button
               label="Start work day"
               disabled={clocking}
@@ -260,7 +298,7 @@ export function HomeScreen({ navigation }: Props) {
             />
           </>
         )}
-      </View>
+      </Card>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -268,7 +306,13 @@ export function HomeScreen({ navigation }: Props) {
         <ActivityIndicator color={colors.primary} style={styles.loader} />
       ) : (
         <>
-          <Text style={styles.sectionTitle}>Assigned service calls</Text>
+          <View style={styles.sectionHeading}>
+            <View>
+              <Eyebrow>Work queue</Eyebrow>
+              <Text style={styles.sectionTitle}>Assigned service calls</Text>
+            </View>
+            <Text style={styles.count}>{calls.length}</Text>
+          </View>
           <FlatList
             data={calls}
             keyExtractor={(item) => item.id}
@@ -286,8 +330,18 @@ export function HomeScreen({ navigation }: Props) {
                   })
                 }
               >
+                <View style={styles.rowTop}>
+                  <Text style={styles.rowNumber}>{item.serviceCallNumber}</Text>
+                  <StatusPill label={item.priority} tone={priorityTone(item.priority)} />
+                </View>
                 <Text style={styles.rowTitle}>{item.title}</Text>
-                <Text style={styles.rowMeta}>{item.serviceCallNumber}</Text>
+                {item.customer ? <Text style={styles.rowMeta}>{item.customer.name}</Text> : null}
+                {item.equipment ? (
+                  <Text style={styles.rowMeta}>
+                    {item.equipment.name}
+                    {item.equipment.internalNumber ? ` · ${item.equipment.internalNumber}` : ""}
+                  </Text>
+                ) : null}
                 {!workDayActive ? (
                   <Text style={styles.rowHint}>Start work day to open visits</Text>
                 ) : null}
@@ -303,31 +357,47 @@ export function HomeScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.lg, gap: spacing.md },
-  header: { gap: spacing.xs },
-  card: {
-    backgroundColor: colors.bgPanel,
-    borderColor: colors.border,
-    borderWidth: 1,
+  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.lg, gap: spacing.lg },
+  header: { gap: spacing.xs, paddingTop: spacing.xs },
+  cardHeading: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
+  cardLabel: { color: colors.textMuted, fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
+  cardTitle: { color: colors.text, fontWeight: "800", fontSize: 21, marginTop: 4 },
+  cardBody: { color: colors.textMuted, lineHeight: 21 },
+  shiftFacts: { flexDirection: "row", gap: spacing.sm },
+  fact: {
+    flex: 1,
+    padding: spacing.md,
     borderRadius: 12,
+    backgroundColor: colors.bg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  factLabel: { color: colors.textSubtle, fontSize: 10, fontWeight: "800", letterSpacing: 1 },
+  factValue: { color: colors.text, fontSize: 17, fontWeight: "800", marginTop: 4 },
+  sectionHeading: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  sectionTitle: { color: colors.text, fontWeight: "800", fontSize: 19, marginTop: 4 },
+  count: {
+    color: colors.primaryOn,
+    backgroundColor: colors.primary,
+    minWidth: 30,
+    height: 30,
+    borderRadius: 15,
+    textAlign: "center",
+    textAlignVertical: "center",
+    fontWeight: "800",
+  },
+  list: { gap: spacing.md, paddingBottom: spacing.xl },
+  row: {
+    backgroundColor: colors.bgPanel,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: spacing.md,
     gap: spacing.sm,
   },
-  cardTitle: { color: colors.text, fontWeight: "700", fontSize: 16 },
-  cardBody: { color: colors.textMuted },
-  trackingActive: { color: colors.success, fontSize: 12 },
-  trackingUnavailable: { color: colors.warning, fontSize: 12 },
-  sectionTitle: { color: colors.text, fontWeight: "600", fontSize: 16 },
-  list: { gap: spacing.sm, paddingBottom: spacing.lg },
-  row: {
-    backgroundColor: colors.bgPanel,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: 4,
-  },
-  rowTitle: { color: colors.text, fontWeight: "600", fontSize: 16 },
+  rowTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  rowNumber: { color: colors.primary, fontSize: 12, fontWeight: "800", letterSpacing: 0.5 },
+  rowTitle: { color: colors.text, fontWeight: "700", fontSize: 17 },
   rowMeta: { color: colors.textMuted, fontSize: 13 },
   rowHint: { color: colors.warning, fontSize: 12, marginTop: 4 },
   empty: { color: colors.textMuted, textAlign: "center", paddingVertical: spacing.lg },

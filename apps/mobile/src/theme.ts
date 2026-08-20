@@ -1,16 +1,23 @@
 /** AMAROK ONE design tokens (aligned with apps/web design-system/tokens.css). */
 export const colors = {
-  primary: "#f5c518",
-  primaryOn: "#141414",
-  bg: "#101010",
-  bgPanel: "#141414",
-  bgElevated: "#1a1a1a",
-  border: "#3a3a3a",
-  text: "#f3f4f6",
-  textMuted: "#9ca3af",
-  success: "#22c55e",
-  error: "#ef4444",
-  warning: "#f5c518",
+  primary: "#ffc928",
+  primaryPressed: "#eab51c",
+  primarySoft: "#2b2512",
+  primaryOn: "#111111",
+  bg: "#0b0c0e",
+  bgPanel: "#131519",
+  bgElevated: "#1a1d22",
+  border: "#2a2e35",
+  borderStrong: "#3b414b",
+  text: "#f7f7f8",
+  textMuted: "#a4a9b2",
+  textSubtle: "#747b86",
+  success: "#36d17c",
+  successSoft: "#10271c",
+  error: "#ff5d65",
+  errorSoft: "#30171a",
+  warning: "#ffc928",
+  warningSoft: "#2b2512",
 } as const;
 
 export const spacing = {
@@ -24,5 +31,6 @@ export const spacing = {
 export const radius = {
   sm: 8,
   md: 12,
+  lg: 18,
   pill: 999,
 } as const;
