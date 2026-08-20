@@ -39,7 +39,11 @@ describe("buildServiceCallHistoryTimeline", () => {
             organizationId: "org-1",
             serviceCallId: "sc-1",
             technicianId: "tech-1",
-            technician: { id: "tech-1", email: "tech@demo", displayName: "Demo Technician" },
+            technician: {
+              id: "tech-1",
+              email: "tech@demo",
+              displayName: "Demo Technician",
+            },
             sequence: 1,
             status: "driving",
             createdAt: "2026-07-16T08:00:00.000Z",
@@ -199,9 +203,7 @@ describe("buildServiceCallHistoryTimeline", () => {
       "work_started",
       "visit_finished",
     ]);
-    expect(events.slice(1).every((event) => event.technicianName === "Demo Technician")).toBe(
-      true,
-    );
+    expect(events.slice(1).every((event) => event.technicianName === "Demo Technician")).toBe(true);
   });
 
   it("includes service call closed with actor name when available", () => {
