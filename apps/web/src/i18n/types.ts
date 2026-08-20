@@ -590,6 +590,9 @@ export interface TranslationMessages {
     historyEventTechnicianDispatched: string;
     historyEventAdditionalVisit: string;
     historyEventContinuationVisit: string;
+    historyEventTechnicianDeparted: string;
+    historyEventWorkStarted: string;
+    historyEventVisitFinished: string;
     historyEventTechnicianName: string;
     historyEventClosed: string;
     historyEventClosedBy: string;

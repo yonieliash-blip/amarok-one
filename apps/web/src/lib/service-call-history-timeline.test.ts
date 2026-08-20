@@ -39,7 +39,11 @@ describe("buildServiceCallHistoryTimeline", () => {
             organizationId: "org-1",
             serviceCallId: "sc-1",
             technicianId: "tech-1",
-            technician: { id: "tech-1", email: "tech@demo", displayName: "Demo Technician" },
+            technician: {
+              id: "tech-1",
+              email: "tech@demo",
+              displayName: "Demo Technician",
+            },
             sequence: 1,
             status: "driving",
             createdAt: "2026-07-16T08:00:00.000Z",
@@ -136,6 +140,70 @@ describe("buildServiceCallHistoryTimeline", () => {
         technicianName: "Technician Two",
       }),
     ]);
+  });
+
+  it("shows departure, work start and visit finish with the technician name", () => {
+    const events = buildServiceCallHistoryTimeline(
+      serviceCall,
+      lifecycle({
+        visits: [
+          {
+            id: "visit-1",
+            organizationId: "org-1",
+            serviceCallId: "sc-1",
+            technicianId: "tech-1",
+            technician: { id: "tech-1", email: "tech@demo", displayName: "Demo Technician" },
+            sequence: 1,
+            status: "finished",
+            drivingStartedAt: "2026-07-16T08:30:00.000Z",
+            workingStartedAt: "2026-07-16T09:00:00.000Z",
+            finishedAt: "2026-07-16T11:15:00.000Z",
+            createdAt: "2026-07-16T08:00:00.000Z",
+            updatedAt: "2026-07-16T11:15:00.000Z",
+          },
+        ],
+        timeline: [
+          {
+            id: "scheduled-1",
+            type: "visit.scheduled",
+            sequence: 2,
+            occurredAt: "2026-07-16T08:05:00.000Z",
+            payload: { visitId: "visit-1" },
+          },
+          {
+            id: "departed-1",
+            type: "visit.driving_started",
+            sequence: 3,
+            occurredAt: "2026-07-16T08:30:00.000Z",
+            payload: { visitId: "visit-1" },
+          },
+          {
+            id: "working-1",
+            type: "visit.working_started",
+            sequence: 4,
+            occurredAt: "2026-07-16T09:00:00.000Z",
+            payload: { visitId: "visit-1" },
+          },
+          {
+            id: "finished-1",
+            type: "visit.finished",
+            sequence: 5,
+            occurredAt: "2026-07-16T11:15:00.000Z",
+            payload: { visitId: "visit-1" },
+          },
+        ],
+      }),
+      new Map(),
+    );
+
+    expect(events.map((event) => event.type)).toEqual([
+      "created",
+      "technician_dispatched",
+      "technician_departed",
+      "work_started",
+      "visit_finished",
+    ]);
+    expect(events.slice(1).every((event) => event.technicianName === "Demo Technician")).toBe(true);
   });
 
   it("includes service call closed with actor name when available", () => {
