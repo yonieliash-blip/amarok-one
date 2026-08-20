@@ -36,6 +36,7 @@ model Organization {
   workDays              WorkDay[]
   workBreaks            WorkBreak[]
   attendancePeriodLocks AttendancePeriodLock[]
+  workDayLocations      WorkDayLocation[]
 
   @@index([deletedAt])
   @@map("organizations")
@@ -311,10 +312,11 @@ model WorkDay {
   approvedAt     DateTime?
   approvedById   String?                @db.Uuid
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  user         User         @relation(fields: [userId], references: [id], onDelete: Restrict)
-  approvedBy   User?        @relation("WorkDayApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  approvedBy   User?             @relation("WorkDayApprover", fields: [approvedById], references: [id], onDelete: SetNull)
   breaks       WorkBreak[]
+  locations    WorkDayLocation[]
 
   @@index([organizationId, userId, startedAt])
   @@index([organizationId, status])
@@ -344,6 +346,25 @@ model WorkBreak {
   @@index([organizationId, workDayId])
   @@index([organizationId, status])
   @@map("work_breaks")
+}
+
+/// A sampled employee location accepted only during that employee's active work day.
+model WorkDayLocation {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  workDayId      String   @db.Uuid
+  recordedAt     DateTime
+  latitude       Decimal  @db.Decimal(9, 6)
+  longitude      Decimal  @db.Decimal(9, 6)
+  accuracy       Float?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  workDay      WorkDay      @relation(fields: [workDayId], references: [id], onDelete: Cascade)
+
+  @@unique([workDayId, recordedAt])
+  @@index([organizationId, workDayId, recordedAt])
+  @@map("work_day_locations")
 }
 
 /// Tenant-scoped payroll boundary. An active lock has no unlockedAt value.

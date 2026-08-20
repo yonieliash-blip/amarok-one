@@ -117,6 +117,15 @@ Soft-deleted records must not appear in default queries and must not be accessib
 - Content Security Policy on web production builds
 - Do not disable TypeScript strict checks or ESLint security rules to "make it work"
 
+### Employee location data
+
+- Accept location samples only for the authenticated employee's active work day
+- Tenant-scope every stored point and every manager read
+- Keep attendance usable if location permission is denied, while showing that tracking is unavailable
+- Sample by time/distance instead of continuously to reduce battery use and unnecessary collection
+- Do not collect shift locations before clock-in or after clock-out
+- A production retention period and employee privacy notice are required before background tracking is enabled
+
 ## Infrastructure
 
 - Docker images run as non-root where possible

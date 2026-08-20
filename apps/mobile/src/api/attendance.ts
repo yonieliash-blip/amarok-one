@@ -5,6 +5,9 @@ export interface ClockLocation {
   longitude: number;
   accuracy?: number;
 }
+export interface TrackedLocation extends ClockLocation {
+  recordedAt: string;
+}
 export interface WorkBreak {
   id: string;
   status: "ACTIVE" | "COMPLETED";
@@ -57,3 +60,15 @@ export const startBreak = (organizationId: string, token: string, location: Cloc
   action(organizationId, token, "/breaks/start", location);
 export const endBreak = (organizationId: string, token: string, location: ClockLocation | null) =>
   action(organizationId, token, "/breaks/end", location);
+
+export async function submitTrackedLocations(
+  organizationId: string,
+  accessToken: string,
+  points: TrackedLocation[],
+): Promise<number> {
+  const response = await apiRequest<{ acceptedCount: number }>(
+    `${base(organizationId)}/locations/batch`,
+    { method: "POST", accessToken, body: JSON.stringify({ points }) },
+  );
+  return response.data.acceptedCount;
+}

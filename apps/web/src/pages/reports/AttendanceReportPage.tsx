@@ -210,7 +210,7 @@ export function AttendanceReportPage() {
                             {day.locationCaptured
                               ? t("attendanceReport", "yes")
                               : t("attendanceReport", "no")}
-                            .{" "}
+                            {day.locationSampleCount > 0 ? ` (${day.locationSampleCount})` : ""}.{" "}
                             {day.reviewStatus === "APPROVED"
                               ? t("attendanceReport", "approved")
                               : t("attendanceReport", "pending")}
