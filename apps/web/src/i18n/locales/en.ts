@@ -242,6 +242,12 @@ export const en: TranslationMessages = {
     lock: "Lock month",
     unlock: "Reopen month",
     unlockReason: "Enter the reason for reopening this month",
+    viewRoute: "View route",
+    routeTitle: "Work day GPS route",
+    routeEmpty: "No route samples were stored for this day.",
+    routeStart: "Start point",
+    routeEnd: "End point",
+    closeRoute: "Close",
   },
   customers: {
     accountsEyebrow: "Accounts",

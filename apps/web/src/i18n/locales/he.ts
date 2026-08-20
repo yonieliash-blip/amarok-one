@@ -242,6 +242,12 @@ export const he: TranslationMessages = {
     lock: "נעילת חודש",
     unlock: "פתיחת חודש מחדש",
     unlockReason: "יש להזין סיבה לפתיחת החודש מחדש",
+    viewRoute: "צפייה במסלול",
+    routeTitle: "מסלול GPS של יום העבודה",
+    routeEmpty: "לא נשמרו נקודות מסלול ביום זה.",
+    routeStart: "נקודת התחלה",
+    routeEnd: "נקודת סיום",
+    closeRoute: "סגירה",
   },
   customers: {
     accountsEyebrow: "חשבונות",
