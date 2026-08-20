@@ -56,3 +56,9 @@ Migrations run automatically when the API container starts. Demo seed is a separ
 | [../.dockerignore](../.dockerignore)                 | Build context exclusions                     |
 
 See [docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md) for AWS deployment procedures.
+
+## Budget-controlled staging
+
+The approved single-instance staging runtime is defined in
+[staging/README.md](staging/README.md). Its Compose stack keeps PostgreSQL, the API and the web
+container off public host ports and exposes them only through the Caddy HTTPS proxy.
