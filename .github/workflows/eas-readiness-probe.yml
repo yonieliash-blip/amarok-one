@@ -1,4 +1,4 @@
-name: Build AMAROK ONE iOS for TestFlight
+name: Submit AMAROK ONE iOS to TestFlight
 
 on:
   push:
@@ -11,9 +11,9 @@ permissions:
   contents: read
 
 jobs:
-  build-ios:
+  submit-ios:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
@@ -34,18 +34,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify iOS staging release configuration
-        working-directory: apps/mobile
-        env:
-          EXPO_PUBLIC_API_URL: https://staging-api.amarok-ce.com
-        run: pnpm run release:check:ios:staging
-
       - name: Verify Expo project identity
         working-directory: apps/mobile
         run: |
           pnpm dlx eas-cli@24 whoami
           pnpm dlx eas-cli@24 project:info --non-interactive
 
-      - name: Build iOS store binary
+      - name: Submit successful iOS build to App Store Connect
         working-directory: apps/mobile
-        run: pnpm dlx eas-cli@24 build --platform ios --profile production --non-interactive
+        run: pnpm dlx eas-cli@24 submit --platform ios --profile production --id b7ec2514-dd38-403a-a5e0-8e26cb35c222 --non-interactive
