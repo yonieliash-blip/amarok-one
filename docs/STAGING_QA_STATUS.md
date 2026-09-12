@@ -30,6 +30,16 @@ The central service-call lifecycle has passed an end-to-end staging check:
 11. Closing `SC-003` succeeded.
 12. Timeline showed create, assign, driving, work start, visit finish and service-call close milestones.
 
+## Staging read-only smoke coverage
+
+The following deployed web routes were opened as Demo Owner and rendered without application errors:
+
+- `/service-calls` — six demo calls visible.
+- `/customers` — four demo customers visible.
+- `/equipment` — demo equipment rows visible.
+- `/technicians` — Demo Technician visible and active.
+- `/reports` — monthly attendance report loaded.
+
 ## Member module access
 
 A temporary Inventory module grant was used to verify modular access for Demo Technician.
@@ -46,6 +56,8 @@ Runtime verification confirmed:
   - `inventory`: disabled
   - `finance`: disabled
   - `administration`: disabled
+
+Automated regression coverage now also asserts that a Core-only technician cannot access `/inventory`, `/purchase-orders` or `/parts`, and that those navigation items remain hidden.
 
 ## Attendance reporting
 
@@ -90,14 +102,28 @@ The repository already includes scripts/tests covering the critical authorizatio
   - locked-period correction denial
   - tenant-scoped GPS sampling and route reads
 
+## iOS / TestFlight release gate
+
+Repository-side release validation is now part of CI.
+
+Current verified state:
+
+- standard workspace quality gates pass: format, lint, typecheck, tests and build;
+- the mobile release configuration check passes against `https://staging-api.amarok-ce.com`;
+- Expo SDK was aligned to the required SDK 54 patch (`expo ~54.0.37`) and the lockfile was regenerated;
+- `expo-doctor` passes all 18 checks with no issues detected;
+- iOS bundle ID remains `com.amarokone.mobile`;
+- production EAS profile remains store distribution with automatic build-number increment;
+- Production infrastructure has not been touched.
+
 ## Still pending before pilot sign-off
 
-The following runtime checks are still required on the deployed staging environment:
+The following deployed-runtime or external-account checks are still required before the first employee pilot:
 
-- Technician login with Core-only state and direct `/inventory` denial/redirect confirmation.
-- Runtime cross-tenant request verification against staging.
-- Start Work Day / End Work Day runtime verification against staging, followed by confirmation that the resulting row appears in the monthly report.
-- Final release-readiness pass before creating the TestFlight build for the first employee pilot.
+- Direct deployed `/inventory` denial/redirect confirmation while logged in as the Core-only Demo Technician. The equivalent authorization regression is green in CI, but the browser automation has not returned a conclusive deployed-runtime result.
+- Runtime cross-tenant request verification against staging. Equivalent tenant-boundary regression coverage is green in CI.
+- Start Work Day / End Work Day runtime verification against staging, followed by confirmation that the resulting row appears in the monthly report. Service-level attendance tests are green in CI.
+- Authenticated Expo/EAS access for the production iOS cloud build and Apple signing/submission path. Repository configuration is ready, but the available browser profile is not currently authenticated to Expo, Codemagic or App Store Connect.
 
 ## Product requirement captured during QA
 
