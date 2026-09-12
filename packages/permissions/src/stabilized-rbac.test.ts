@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { canAccessPath, getDefaultLandingPath, ROLE_LANDING_PATHS } from "@amarok-one/permissions";
+import {
+  buildNavigationItems,
+  canAccessPath,
+  getDefaultLandingPath,
+  ROLE_LANDING_PATHS,
+} from "@amarok-one/permissions";
 
 import { resolveEffectivePermissions } from "./effective-permissions.js";
 
@@ -55,5 +60,25 @@ describe("stabilized role landings", () => {
 
   it("returns unauthorized when a known role cannot access its landing page", () => {
     expect(getDefaultLandingPath([], "technician")).toBe("/unauthorized");
+  });
+
+  it("blocks a core-only technician from inventory routes and navigation", () => {
+    const roleSlug = "technician";
+    const { permissions } = resolveEffectivePermissions({
+      isOrganizationOwner: false,
+      primaryRoleSlug: roleSlug,
+      primaryRoleIsOwner: false,
+      enabledModules: ["core"],
+    });
+
+    for (const path of ["/inventory", "/purchase-orders", "/parts"]) {
+      expect(canAccessPath(path, permissions, { activeRoleSlug: roleSlug })).toBe(false);
+    }
+
+    const navIds = buildNavigationItems(permissions, roleSlug).map((item) => item.id);
+    expect(navIds).toContain("my-service-calls");
+    expect(navIds).not.toContain("inventory");
+    expect(navIds).not.toContain("purchase-orders");
+    expect(navIds).not.toContain("parts");
   });
 });
