@@ -1,4 +1,4 @@
-name: Inspect EAS iOS failure logs
+name: Identify EAS iOS build log format
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 jobs:
-  inspect-ios-build-logs:
+  inspect-ios-log-format:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -34,41 +34,28 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Extract failed EAS build errors
+      - name: Identify and decode EAS build log
         working-directory: apps/mobile
         shell: bash
         run: |
           pnpm dlx eas-cli@24 build:view 7cbe3894-d059-4b8c-a0e5-4eeb218c3d70 --json > /tmp/eas-build.json
           python - <<'PY'
-          import gzip
           import json
-          import urllib.request
+          import subprocess
 
           with open('/tmp/eas-build.json', encoding='utf-8') as f:
-              build = json.load(f)
+              url = json.load(f)['logFiles'][0]
 
-          with urllib.request.urlopen(build['logFiles'][0], timeout=30) as response:
-              raw = response.read()
-
-          if raw[:2] == b'\x1f\x8b':
-              raw = gzip.decompress(raw)
-
-          text = raw.decode('utf-8', errors='replace')
-          lines = text.splitlines()
-          needles = (
-              'error', 'failed', 'bundle javascript', 'unable to resolve',
-              'cannot find', 'syntaxerror', 'transformerror', 'metro',
-              'module not found', 'command phasescriptexecution failed'
-          )
-
-          hits = [i for i, line in enumerate(lines) if any(n in line.lower() for n in needles)]
-          printed = set()
-          for i in hits:
-              for j in range(max(0, i - 6), min(len(lines), i + 10)):
-                  if j not in printed:
-                      print(lines[j])
-                      printed.add(j)
-              print('---')
-          print('=== FINAL 120 LINES ===')
-          print('\n'.join(lines[-120:]))
+          subprocess.run([
+              'curl', '--fail', '--location', '--silent', '--show-error',
+              '--compressed', url, '--output', '/tmp/eas-build.log'
+          ], check=True)
           PY
+          echo '=== FILE TYPE ==='
+          file /tmp/eas-build.log || true
+          echo '=== FIRST 32 BYTES ==='
+          xxd -l 32 /tmp/eas-build.log || true
+          echo '=== SIZE ==='
+          wc -c /tmp/eas-build.log
+          echo '=== RELEVANT STRINGS ==='
+          strings -n 4 /tmp/eas-build.log | grep -iE -C 6 'error|failed|bundle javascript|unable to resolve|cannot find|syntaxerror|transformerror|metro|module not found|phasescriptexecution' | tail -n 400 || true
