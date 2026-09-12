@@ -2,7 +2,7 @@
   "name": "@amarok-one/mobile",
   "version": "0.0.0",
   "private": true,
-  "main": "expo/AppEntry.js",
+  "main": "index.js",
   "expo": {
     "install": {
       "exclude": [
