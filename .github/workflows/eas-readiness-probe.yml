@@ -51,6 +51,14 @@ jobs:
         working-directory: apps/mobile
         run: pnpm dlx eas-cli@24 env:set --name EXPO_PUBLIC_API_URL --value https://staging-api.amarok-ce.com --environment production --visibility plaintext --scope project --non-interactive
 
+      - name: Check EAS account usage and billing
+        working-directory: apps/mobile
+        run: pnpm dlx eas-cli@24 account:usage amaroksoftware --non-interactive --json
+
+      - name: Check App Store Connect link
+        working-directory: apps/mobile
+        run: pnpm dlx eas-cli@24 integrations:asc:status --json --non-interactive
+
       - name: Check existing iOS builds
         working-directory: apps/mobile
         run: pnpm dlx eas-cli@24 build:list --platform ios --limit 5 --non-interactive
