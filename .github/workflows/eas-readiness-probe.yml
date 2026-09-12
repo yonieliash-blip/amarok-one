@@ -34,20 +34,41 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Download failed EAS build log
+      - name: Extract failed EAS build errors
         working-directory: apps/mobile
         shell: bash
         run: |
           pnpm dlx eas-cli@24 build:view 7cbe3894-d059-4b8c-a0e5-4eeb218c3d70 --json > /tmp/eas-build.json
           python - <<'PY'
+          import gzip
           import json
           import urllib.request
 
           with open('/tmp/eas-build.json', encoding='utf-8') as f:
               build = json.load(f)
-          url = build['logFiles'][0]
-          with urllib.request.urlopen(url, timeout=30) as response:
-              text = response.read().decode('utf-8', errors='replace')
+
+          with urllib.request.urlopen(build['logFiles'][0], timeout=30) as response:
+              raw = response.read()
+
+          if raw[:2] == b'\x1f\x8b':
+              raw = gzip.decompress(raw)
+
+          text = raw.decode('utf-8', errors='replace')
           lines = text.splitlines()
-          print('\n'.join(lines[-600:]))
+          needles = (
+              'error', 'failed', 'bundle javascript', 'unable to resolve',
+              'cannot find', 'syntaxerror', 'transformerror', 'metro',
+              'module not found', 'command phasescriptexecution failed'
+          )
+
+          hits = [i for i, line in enumerate(lines) if any(n in line.lower() for n in needles)]
+          printed = set()
+          for i in hits:
+              for j in range(max(0, i - 6), min(len(lines), i + 10)):
+                  if j not in printed:
+                      print(lines[j])
+                      printed.add(j)
+              print('---')
+          print('=== FINAL 120 LINES ===')
+          print('\n'.join(lines[-120:]))
           PY
