@@ -1,4 +1,4 @@
-name: Validate iOS entrypoint fix
+name: Validate complete iOS bundle fix
 
 on:
   push:
@@ -11,9 +11,11 @@ permissions:
   contents: read
 
 jobs:
-  validate-ios-entrypoint-fix:
+  validate-complete-ios-fix:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
     steps:
       - name: Check out repository
@@ -31,6 +33,22 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Confirm workspace build hook ran in failed EAS build
+        working-directory: apps/mobile
+        shell: bash
+        run: |
+          pnpm dlx eas-cli@24 build:view 7cbe3894-d059-4b8c-a0e5-4eeb218c3d70 --json > /tmp/eas-build.json
+          python - <<'PY'
+          import json
+          import subprocess
+
+          with open('/tmp/eas-build.json', encoding='utf-8') as f:
+              url = json.load(f)['logFiles'][0]
+          subprocess.run(['curl','--fail','--location','--silent','--show-error','--compressed',url,'--output','/tmp/eas-build.log'], check=True)
+          PY
+          echo '=== EAS HOOK / WORKSPACE BUILD EVIDENCE ==='
+          grep -iE 'eas-build-post-install|post.install|turbo run build|@amarok-one/(types|permissions|utils)|RUN_EAS_BUILD' /tmp/eas-build.log | tail -n 250 || true
 
       - name: Apply proposed entrypoint fix only in runner
         shell: bash
@@ -50,6 +68,9 @@ jobs:
 
           registerRootComponent(App);
           EOF
+
+      - name: Build mobile workspace dependencies
+        run: pnpm exec turbo run build --filter=@amarok-one/types... --filter=@amarok-one/permissions... --filter=@amarok-one/utils...
 
       - name: Verify iOS JavaScript bundle
         working-directory: apps/mobile
