@@ -13,7 +13,7 @@ permissions:
 jobs:
   eas-readiness:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
@@ -31,6 +31,9 @@ jobs:
           corepack enable
           corepack prepare pnpm@10.12.4 --activate
 
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Verify EXPO_TOKEN is available
         run: |
           test -n "$EXPO_TOKEN"
@@ -43,6 +46,10 @@ jobs:
       - name: Verify linked EAS project
         working-directory: apps/mobile
         run: pnpm dlx eas-cli@16 project:info --non-interactive
+
+      - name: Configure staging API for TestFlight production environment
+        working-directory: apps/mobile
+        run: pnpm dlx eas-cli@16 env:set --name EXPO_PUBLIC_API_URL --value https://staging-api.amarok-ce.com --environment production --visibility plaintext --scope project --non-interactive
 
       - name: Check existing iOS builds
         working-directory: apps/mobile
