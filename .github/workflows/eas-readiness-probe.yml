@@ -13,7 +13,7 @@ permissions:
 jobs:
   first-ios-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
@@ -40,6 +40,6 @@ jobs:
           pnpm dlx eas-cli@24 whoami
           pnpm dlx eas-cli@24 project:info --non-interactive
 
-      - name: Start first iOS store build
+      - name: Build first iOS store build
         working-directory: apps/mobile
-        run: pnpm dlx eas-cli@24 build --platform ios --profile production --non-interactive --no-wait
+        run: pnpm dlx eas-cli@24 build --platform ios --profile production --non-interactive
