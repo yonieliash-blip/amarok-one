@@ -41,16 +41,16 @@ jobs:
 
       - name: Verify Expo identity
         working-directory: apps/mobile
-        run: pnpm dlx eas-cli@16 whoami
+        run: pnpm dlx eas-cli@24 whoami
 
       - name: Verify linked EAS project
         working-directory: apps/mobile
-        run: pnpm dlx eas-cli@16 project:info --non-interactive
+        run: pnpm dlx eas-cli@24 project:info --non-interactive
 
       - name: Configure staging API for TestFlight production environment
         working-directory: apps/mobile
-        run: pnpm dlx eas-cli@16 env:set --name EXPO_PUBLIC_API_URL --value https://staging-api.amarok-ce.com --environment production --visibility plaintext --scope project --non-interactive
+        run: pnpm dlx eas-cli@24 env:set --name EXPO_PUBLIC_API_URL --value https://staging-api.amarok-ce.com --environment production --visibility plaintext --scope project --non-interactive
 
       - name: Check existing iOS builds
         working-directory: apps/mobile
-        run: pnpm dlx eas-cli@16 build:list --platform ios --limit 5 --non-interactive
+        run: pnpm dlx eas-cli@24 build:list --platform ios --limit 5 --non-interactive
