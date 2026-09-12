@@ -39,3 +39,8 @@ jobs:
 
       - name: Run required quality gates
         run: pnpm verify
+
+      - name: Verify iOS TestFlight release configuration
+        env:
+          EXPO_PUBLIC_API_URL: https://staging-api.amarok-ce.com
+        run: pnpm --filter @amarok-one/mobile release:check:ios:staging
