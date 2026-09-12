@@ -1,4 +1,4 @@
-name: Diagnose first AMAROK ONE iOS build
+name: Inspect EAS iOS failure logs
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 jobs:
-  inspect-ios-build:
+  inspect-ios-build-logs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -34,6 +34,20 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Inspect failed EAS build
+      - name: Download failed EAS build log
         working-directory: apps/mobile
-        run: pnpm dlx eas-cli@24 build:view 7cbe3894-d059-4b8c-a0e5-4eeb218c3d70 --json
+        shell: bash
+        run: |
+          pnpm dlx eas-cli@24 build:view 7cbe3894-d059-4b8c-a0e5-4eeb218c3d70 --json > /tmp/eas-build.json
+          python - <<'PY'
+          import json
+          import urllib.request
+
+          with open('/tmp/eas-build.json', encoding='utf-8') as f:
+              build = json.load(f)
+          url = build['logFiles'][0]
+          with urllib.request.urlopen(url, timeout=30) as response:
+              text = response.read().decode('utf-8', errors='replace')
+          lines = text.splitlines()
+          print('\n'.join(lines[-600:]))
+          PY
