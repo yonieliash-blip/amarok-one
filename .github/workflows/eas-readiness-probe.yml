@@ -1,4 +1,4 @@
-name: Identify EAS iOS build log format
+name: Validate iOS entrypoint fix
 
 on:
   push:
@@ -11,11 +11,9 @@ permissions:
   contents: read
 
 jobs:
-  inspect-ios-log-format:
+  validate-ios-entrypoint-fix:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    timeout-minutes: 20
 
     steps:
       - name: Check out repository
@@ -34,28 +32,39 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Identify and decode EAS build log
-        working-directory: apps/mobile
+      - name: Apply proposed entrypoint fix only in runner
         shell: bash
         run: |
-          pnpm dlx eas-cli@24 build:view 7cbe3894-d059-4b8c-a0e5-4eeb218c3d70 --json > /tmp/eas-build.json
           python - <<'PY'
           import json
-          import subprocess
+          from pathlib import Path
 
-          with open('/tmp/eas-build.json', encoding='utf-8') as f:
-              url = json.load(f)['logFiles'][0]
-
-          subprocess.run([
-              'curl', '--fail', '--location', '--silent', '--show-error',
-              '--compressed', url, '--output', '/tmp/eas-build.log'
-          ], check=True)
+          path = Path('apps/mobile/package.json')
+          data = json.loads(path.read_text())
+          data['main'] = 'index.js'
+          path.write_text(json.dumps(data, indent=2) + '\n')
           PY
-          echo '=== FILE TYPE ==='
-          file /tmp/eas-build.log || true
-          echo '=== FIRST 32 BYTES ==='
-          xxd -l 32 /tmp/eas-build.log || true
-          echo '=== SIZE ==='
-          wc -c /tmp/eas-build.log
-          echo '=== RELEVANT STRINGS ==='
-          strings -n 4 /tmp/eas-build.log | grep -iE -C 6 'error|failed|bundle javascript|unable to resolve|cannot find|syntaxerror|transformerror|metro|module not found|phasescriptexecution' | tail -n 400 || true
+          cat > apps/mobile/index.js <<'EOF'
+          import { registerRootComponent } from 'expo';
+          import App from './App';
+
+          registerRootComponent(App);
+          EOF
+
+      - name: Verify iOS JavaScript bundle
+        working-directory: apps/mobile
+        env:
+          EXPO_PUBLIC_API_URL: https://staging-api.amarok-ce.com
+        run: pnpm expo export:embed --eager --platform ios --dev false --bundle-output /tmp/main.jsbundle --assets-dest /tmp/amarok-assets
+
+      - name: Mobile typecheck
+        working-directory: apps/mobile
+        run: pnpm run typecheck
+
+      - name: Mobile tests
+        working-directory: apps/mobile
+        run: pnpm run test
+
+      - name: Mobile lint
+        working-directory: apps/mobile
+        run: pnpm run lint
