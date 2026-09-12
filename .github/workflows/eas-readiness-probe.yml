@@ -1,4 +1,4 @@
-name: Validate complete iOS bundle fix
+name: Build AMAROK ONE iOS for TestFlight
 
 on:
   push:
@@ -11,9 +11,9 @@ permissions:
   contents: read
 
 jobs:
-  validate-complete-ios-fix:
+  build-ios:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 60
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
@@ -34,58 +34,18 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Confirm workspace build hook ran in failed EAS build
-        working-directory: apps/mobile
-        shell: bash
-        run: |
-          pnpm dlx eas-cli@24 build:view 7cbe3894-d059-4b8c-a0e5-4eeb218c3d70 --json > /tmp/eas-build.json
-          python - <<'PY'
-          import json
-          import subprocess
-
-          with open('/tmp/eas-build.json', encoding='utf-8') as f:
-              url = json.load(f)['logFiles'][0]
-          subprocess.run(['curl','--fail','--location','--silent','--show-error','--compressed',url,'--output','/tmp/eas-build.log'], check=True)
-          PY
-          echo '=== EAS HOOK / WORKSPACE BUILD EVIDENCE ==='
-          grep -iE 'eas-build-post-install|post.install|turbo run build|@amarok-one/(types|permissions|utils)|RUN_EAS_BUILD' /tmp/eas-build.log | tail -n 250 || true
-
-      - name: Apply proposed entrypoint fix only in runner
-        shell: bash
-        run: |
-          python - <<'PY'
-          import json
-          from pathlib import Path
-
-          path = Path('apps/mobile/package.json')
-          data = json.loads(path.read_text())
-          data['main'] = 'index.js'
-          path.write_text(json.dumps(data, indent=2) + '\n')
-          PY
-          cat > apps/mobile/index.js <<'EOF'
-          import { registerRootComponent } from 'expo';
-          import App from './App';
-
-          registerRootComponent(App);
-          EOF
-
-      - name: Build mobile workspace dependencies
-        run: pnpm exec turbo run build --filter=@amarok-one/types... --filter=@amarok-one/permissions... --filter=@amarok-one/utils...
-
-      - name: Verify iOS JavaScript bundle
+      - name: Verify iOS staging release configuration
         working-directory: apps/mobile
         env:
           EXPO_PUBLIC_API_URL: https://staging-api.amarok-ce.com
-        run: pnpm expo export:embed --eager --platform ios --dev false --bundle-output /tmp/main.jsbundle --assets-dest /tmp/amarok-assets
+        run: pnpm run release:check:ios:staging
 
-      - name: Mobile typecheck
+      - name: Verify Expo project identity
         working-directory: apps/mobile
-        run: pnpm run typecheck
+        run: |
+          pnpm dlx eas-cli@24 whoami
+          pnpm dlx eas-cli@24 project:info --non-interactive
 
-      - name: Mobile tests
+      - name: Build iOS store binary
         working-directory: apps/mobile
-        run: pnpm run test
-
-      - name: Mobile lint
-        working-directory: apps/mobile
-        run: pnpm run lint
+        run: pnpm dlx eas-cli@24 build --platform ios --profile production --non-interactive
