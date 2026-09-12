@@ -44,3 +44,7 @@ jobs:
         env:
           EXPO_PUBLIC_API_URL: https://staging-api.amarok-ce.com
         run: pnpm --filter @amarok-one/mobile release:check:ios:staging
+
+      - name: Run Expo doctor
+        working-directory: apps/mobile
+        run: pnpm dlx expo-doctor@1.20.1
