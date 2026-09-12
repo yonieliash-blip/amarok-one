@@ -1,0 +1,49 @@
+name: Verify EAS readiness
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/eas-readiness-probe.yml
+
+permissions:
+  contents: read
+
+jobs:
+  eas-readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable pinned pnpm version
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.12.4 --activate
+
+      - name: Verify EXPO_TOKEN is available
+        run: |
+          test -n "$EXPO_TOKEN"
+          echo "EXPO_TOKEN is configured."
+
+      - name: Verify Expo identity
+        working-directory: apps/mobile
+        run: pnpm dlx eas-cli@16 whoami
+
+      - name: Verify linked EAS project
+        working-directory: apps/mobile
+        run: pnpm dlx eas-cli@16 project:info --non-interactive
+
+      - name: Check existing iOS builds
+        working-directory: apps/mobile
+        run: pnpm dlx eas-cli@16 build:list --platform ios --limit 5 --non-interactive
