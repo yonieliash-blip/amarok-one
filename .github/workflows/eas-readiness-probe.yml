@@ -1,4 +1,4 @@
-name: Start first AMAROK ONE iOS build
+name: Diagnose first AMAROK ONE iOS build
 
 on:
   push:
@@ -11,9 +11,9 @@ permissions:
   contents: read
 
 jobs:
-  first-ios-build:
+  inspect-ios-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 15
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
@@ -34,12 +34,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify Expo identity and linked project
+      - name: Inspect failed EAS build
         working-directory: apps/mobile
-        run: |
-          pnpm dlx eas-cli@24 whoami
-          pnpm dlx eas-cli@24 project:info --non-interactive
-
-      - name: Build first iOS store build
-        working-directory: apps/mobile
-        run: pnpm dlx eas-cli@24 build --platform ios --profile production --non-interactive
+        run: pnpm dlx eas-cli@24 build:view 7cbe3894-d059-4b8c-a0e5-4eeb218c3d70 --json
