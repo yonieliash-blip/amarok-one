@@ -1,0 +1,49 @@
+name: Refresh Expo SDK 54 patch
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/update-expo-sdk54-lock.yml
+      - apps/mobile/package.json
+      - pnpm-lock.yaml
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-lockfile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable pinned pnpm version
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.12.4 --activate
+
+      - name: Refresh Expo patch and lockfile
+        run: pnpm --filter @amarok-one/mobile add expo@~54.0.37 --lockfile-only
+
+      - name: Commit generated dependency update
+        run: |
+          if git diff --quiet -- apps/mobile/package.json pnpm-lock.yaml; then
+            echo "Expo SDK 54 patch is already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile/package.json pnpm-lock.yaml
+          git commit -m "chore: align Expo SDK 54 patch"
+          git push origin HEAD:main
