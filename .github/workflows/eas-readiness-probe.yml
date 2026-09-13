@@ -1,5 +1,6 @@
 name: Submit AMAROK ONE iOS to TestFlight
 
+# Retriggered after adding the required App Store Connect companyName.
 on:
   push:
     branches:
