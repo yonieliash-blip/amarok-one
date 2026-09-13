@@ -30,7 +30,9 @@
   },
   "submit": {
     "production": {
-      "ios": {}
+      "ios": {
+        "companyName": "AMAROK HEAVY EQUIPMENT LTD"
+      }
     }
   }
 }
