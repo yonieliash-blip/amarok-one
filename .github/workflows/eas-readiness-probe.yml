@@ -1,6 +1,6 @@
 name: Submit AMAROK ONE iOS to TestFlight
 
-# Retriggered after adding the required App Store Connect companyName.
+# Retriggered after connecting the App Store Connect API key and app in Expo.
 on:
   workflow_dispatch:
   push:
