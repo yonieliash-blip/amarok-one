@@ -2,6 +2,7 @@ name: Submit AMAROK ONE iOS to TestFlight
 
 # Retriggered after adding the required App Store Connect companyName.
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -43,4 +44,4 @@ jobs:
 
       - name: Submit successful iOS build to App Store Connect
         working-directory: apps/mobile
-        run: pnpm dlx eas-cli@24 submit --platform ios --profile production --id b7ec2514-dd38-403a-a5e0-8e26cb35c222 --non-interactive
+        run: pnpm dlx eas-cli@24 submit --platform ios --profile production --id b7ec2514-dd38-403a-a5e0-8e26cb35c222 --non-interactive --wait
