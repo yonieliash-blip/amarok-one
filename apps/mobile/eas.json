@@ -31,7 +31,8 @@
   "submit": {
     "production": {
       "ios": {
-        "companyName": "AMAROK HEAVY EQUIPMENT LTD"
+        "companyName": "AMAROK HEAVY EQUIPMENT LTD",
+        "ascAppId": "6811738603"
       }
     }
   }
