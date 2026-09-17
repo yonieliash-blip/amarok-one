@@ -1,4 +1,4 @@
-# Starts once when this file changes; subsequent runs are manual.
+# Triggered for iOS build number 3; subsequent runs are manual.
 name: Build staging TestFlight
 
 on:
