@@ -34,6 +34,17 @@ function hours(minutes: number): string {
   return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`;
 }
 
+function latestDayWithRoute(days: AttendanceDay[]): AttendanceDay | null {
+  return (
+    [...days]
+      .filter((day) => day.locationSampleCount > 0)
+      .sort((left, right) => {
+        if (left.status !== right.status) return left.status === "ACTIVE" ? -1 : 1;
+        return new Date(right.startedAt).getTime() - new Date(left.startedAt).getTime();
+      })[0] ?? null
+  );
+}
+
 export function AttendanceReportPage() {
   const { user, accessToken } = useAuth();
   const { t, locale } = useTranslation();
@@ -222,10 +233,13 @@ export function AttendanceReportPage() {
                 <th>{t("attendanceReport", "gross")}</th>
                 <th>{t("attendanceReport", "breaks")}</th>
                 <th>{t("attendanceReport", "net")}</th>
+                <th>{t("attendanceReport", "route")}</th>
               </tr>
             </thead>
             <tbody>
-              {report.employees.map((employee) => (
+              {report.employees.map((employee) => {
+                const routeDay = latestDayWithRoute(employee.days);
+                return (
                 <tr key={employee.userId}>
                   <td>
                     <details>
@@ -297,8 +311,22 @@ export function AttendanceReportPage() {
                   <td>
                     <strong>{hours(employee.netMinutes)}</strong>
                   </td>
+                  <td>
+                    {routeDay ? (
+                      <button
+                        type="button"
+                        disabled={saving}
+                        onClick={() => void viewRoute(employee.displayName, routeDay)}
+                      >
+                        {t("attendanceReport", "viewLatestRoute")}
+                      </button>
+                    ) : (
+                      <span>{t("attendanceReport", "noRoute")}</span>
+                    )}
+                  </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

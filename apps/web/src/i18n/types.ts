@@ -226,6 +226,7 @@ export interface TranslationMessages {
     gross: string;
     breaks: string;
     net: string;
+    route: string;
     active: string;
     yes: string;
     no: string;
@@ -244,6 +245,8 @@ export interface TranslationMessages {
     unlock: string;
     unlockReason: string;
     viewRoute: string;
+    viewLatestRoute: string;
+    noRoute: string;
     routeTitle: string;
     routeEmpty: string;
     routeStart: string;
