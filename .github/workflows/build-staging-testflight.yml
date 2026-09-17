@@ -1,3 +1,4 @@
+# Starts once when this file changes; subsequent runs are manual.
 name: Build staging TestFlight
 
 on:
