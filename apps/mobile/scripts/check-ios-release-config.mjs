@@ -47,11 +47,11 @@ requireValue(Boolean(expo.extra?.eas?.projectId), "EAS project ID is missing.");
 requireValue(production.distribution === "store", "Production build must use store distribution.");
 requireValue(production.autoIncrement === true, "Production build must auto-increment.");
 requireValue(
-  infoPlist.NSLocationWhenInUseUsageDescription?.includes("active work day"),
+  infoPlist.NSLocationWhenInUseUsageDescription?.includes("יום עבודה פעיל"),
   "Foreground location disclosure must explain active-work-day tracking.",
 );
 requireValue(
-  infoPlist.NSLocationAlwaysAndWhenInUseUsageDescription?.includes("active work day"),
+  infoPlist.NSLocationAlwaysAndWhenInUseUsageDescription?.includes("יום עבודה פעיל"),
   "Background location disclosure must explain active-work-day tracking.",
 );
 requireValue(
