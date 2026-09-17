@@ -10,6 +10,19 @@ import type { RootStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "CurrentTask">;
 
+function visitStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    assigned: "הוקצה",
+    planned: "מתוכנן",
+    checked_in: "הגעה אושרה",
+    driving: "בנסיעה",
+    working: "בעבודה באתר",
+    in_progress: "העבודה מתבצעת",
+    completed: "הביקור הושלם",
+  };
+  return labels[status] ?? status.replace(/_/g, " ");
+}
+
 export function CurrentTaskScreen({ navigation }: Props) {
   const { user, accessToken } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -31,7 +44,7 @@ export function CurrentTaskScreen({ navigation }: Props) {
         setTask(currentTask);
       } catch (err) {
         if (cancelled) return;
-        setError(isApiRequestError(err) ? err.message : "Unable to load current task");
+        setError(isApiRequestError(err) ? err.message : "לא ניתן לטעון את המשימה הנוכחית");
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -47,9 +60,9 @@ export function CurrentTaskScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <Eyebrow>Live assignment</Eyebrow>
-      <ScreenTitle>Current task</ScreenTitle>
-      <ScreenSubtitle>The field visit that needs your attention now.</ScreenSubtitle>
+      <Eyebrow>משימה פעילה</Eyebrow>
+      <ScreenTitle>המשימה הנוכחית</ScreenTitle>
+      <ScreenSubtitle>ביקור השטח שדורש את הטיפול שלך כעת.</ScreenSubtitle>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -59,19 +72,19 @@ export function CurrentTaskScreen({ navigation }: Props) {
         <Card accent>
           <View style={styles.cardTop}>
             <Text style={styles.callNumber}>{task.serviceCall.serviceCallNumber}</Text>
-            <StatusPill label={task.visit.status.replace(/_/g, " ")} tone="success" />
+            <StatusPill label={visitStatusLabel(task.visit.status)} tone="success" />
           </View>
           <Text style={styles.taskTitle}>{task.serviceCall.title}</Text>
           <View style={styles.details}>
             {task.serviceCall.customer ? (
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>CUSTOMER</Text>
+                <Text style={styles.detailLabel}>לקוח</Text>
                 <Text style={styles.detailValue}>{task.serviceCall.customer.name}</Text>
               </View>
             ) : null}
             {task.serviceCall.equipment ? (
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>EQUIPMENT</Text>
+                <Text style={styles.detailLabel}>ציוד</Text>
                 <Text style={styles.detailValue}>
                   {task.serviceCall.equipment.name}
                   {task.serviceCall.equipment.internalNumber
@@ -82,13 +95,13 @@ export function CurrentTaskScreen({ navigation }: Props) {
             ) : null}
             {task.serviceCall.location ? (
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>LOCATION</Text>
+                <Text style={styles.detailLabel}>מיקום</Text>
                 <Text style={styles.detailValue}>{task.serviceCall.location}</Text>
               </View>
             ) : null}
           </View>
           <Button
-            label="Open field visit"
+            label="פתיחת ביקור שטח"
             onPress={() =>
               navigation.navigate("Visit", {
                 serviceCallId: task.serviceCall.id,
@@ -99,13 +112,13 @@ export function CurrentTaskScreen({ navigation }: Props) {
         </Card>
       ) : (
         <Card>
-          <StatusPill label="No active visit" />
-          <Text style={styles.empty}>Your next active visit will appear here automatically.</Text>
+          <StatusPill label="אין ביקור פעיל" />
+          <Text style={styles.empty}>הביקור הפעיל הבא יוצג כאן אוטומטית.</Text>
         </Card>
       )}
 
       <Button
-        label="Refresh"
+        label="רענון"
         variant="secondary"
         onPress={() => {
           setLoading(true);

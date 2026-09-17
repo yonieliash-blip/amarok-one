@@ -47,13 +47,13 @@ export function RootNavigator() {
       >
         {status === "authenticated" ? (
           <>
-            <Stack.Screen name="Home" component={HomeScreen} options={{ title: "Field day" }} />
+            <Stack.Screen name="Home" component={HomeScreen} options={{ title: "יום עבודה" }} />
             <Stack.Screen
               name="CurrentTask"
               component={CurrentTaskScreen}
-              options={{ title: "Current task" }}
+              options={{ title: "משימה נוכחית" }}
             />
-            <Stack.Screen name="Visit" component={VisitScreen} options={{ title: "Visit" }} />
+            <Stack.Screen name="Visit" component={VisitScreen} options={{ title: "ביקור" }} />
           </>
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />

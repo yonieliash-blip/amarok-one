@@ -33,7 +33,7 @@ export function LoginScreen() {
           ? err.message
           : err instanceof Error
             ? err.message
-            : "Sign in failed",
+            : "ההתחברות נכשלה",
       );
     } finally {
       setLoading(false);
@@ -51,7 +51,7 @@ export function LoginScreen() {
           <View style={styles.brandCopy}>
             <Eyebrow>{brand.fieldAppName}</Eyebrow>
             <ScreenTitle>{brand.productName}</ScreenTitle>
-            <ScreenSubtitle>Work days, service calls and field visits in one place.</ScreenSubtitle>
+            <ScreenSubtitle>ימי עבודה, קריאות שירות וביקורי שטח – במקום אחד.</ScreenSubtitle>
           </View>
         </View>
 
@@ -63,20 +63,20 @@ export function LoginScreen() {
 
         <View style={styles.formCard}>
           <View style={styles.field}>
-            <Text style={styles.label}>Email</Text>
+            <Text style={styles.label}>דוא״ל</Text>
             <TextInput
               autoCapitalize="none"
               keyboardType="email-address"
               value={email}
               onChangeText={setEmail}
               style={styles.input}
-              placeholder="you@company.com"
+              placeholder="yourname@company.com"
               placeholderTextColor={colors.textSubtle}
             />
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Password</Text>
+            <Text style={styles.label}>סיסמה</Text>
             <TextInput
               secureTextEntry
               value={password}
@@ -88,18 +88,18 @@ export function LoginScreen() {
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Company code (optional)</Text>
+            <Text style={styles.label}>קוד חברה (לא חובה)</Text>
             <TextInput
               autoCapitalize="none"
               value={organizationSlug}
               onChangeText={setOrganizationSlug}
               style={styles.input}
-              placeholder="company-code"
+              placeholder="קוד-חברה"
               placeholderTextColor={colors.textSubtle}
             />
           </View>
 
-          <Button label="Sign in securely" onPress={() => void handleLogin()} loading={loading} />
+          <Button label="כניסה מאובטחת" onPress={() => void handleLogin()} loading={loading} />
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.lg,
   },
-  brandBlock: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  brandBlock: { flexDirection: "row-reverse", alignItems: "center", gap: spacing.md },
   brandCopy: { flex: 1 },
   formCard: {
     gap: spacing.md,
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   field: { gap: spacing.xs },
-  label: { color: colors.text, fontSize: 13, fontWeight: "700" },
+  label: { color: colors.text, fontSize: 13, fontWeight: "700", textAlign: "right" },
   input: {
     borderWidth: 1,
     borderColor: colors.border,
@@ -136,6 +136,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     color: colors.text,
     fontSize: 16,
+    textAlign: "right",
   },
   error: {
     color: colors.error,

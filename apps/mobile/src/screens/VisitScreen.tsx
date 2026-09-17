@@ -41,13 +41,13 @@ type Props = NativeStackScreenProps<RootStackParamList, "Visit">;
 
 function visitStatusLabel(status: string): string {
   const labels: Record<string, string> = {
-    assigned: "Assigned",
-    planned: "Planned",
-    checked_in: "Checked in",
-    driving: "Driving",
-    working: "Working on site",
-    in_progress: "Work in progress",
-    completed: "Visit completed",
+    assigned: "הוקצה",
+    planned: "מתוכנן",
+    checked_in: "הגעה אושרה",
+    driving: "בנסיעה",
+    working: "בעבודה באתר",
+    in_progress: "העבודה מתבצעת",
+    completed: "הביקור הושלם",
   };
   return labels[status] ?? status.replace(/_/g, " ");
 }
@@ -56,6 +56,16 @@ function visitStatusTone(status: string): "neutral" | "success" | "warning" {
   if (status === "working" || status === "in_progress") return "success";
   if (status === "driving") return "warning";
   return "neutral";
+}
+
+function priorityLabel(priority: ServiceCall["priority"]): string {
+  const labels: Record<ServiceCall["priority"], string> = {
+    low: "נמוכה",
+    normal: "רגילה",
+    high: "גבוהה",
+    urgent: "דחופה",
+  };
+  return labels[priority];
 }
 
 export function VisitScreen({ route, navigation }: Props) {
@@ -109,7 +119,7 @@ export function VisitScreen({ route, navigation }: Props) {
         }
       } catch (err) {
         if (cancelled) return;
-        setError(isApiRequestError(err) ? err.message : "Unable to load visit");
+        setError(isApiRequestError(err) ? err.message : "לא ניתן לטעון את הביקור");
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -135,7 +145,7 @@ export function VisitScreen({ route, navigation }: Props) {
       setLifecycle(next);
       setReloadToken((value) => value + 1);
     } catch (err) {
-      setError(isApiRequestError(err) ? err.message : "Action failed");
+      setError(isApiRequestError(err) ? err.message : "הפעולה נכשלה");
     } finally {
       setBusy(false);
     }
@@ -156,12 +166,12 @@ export function VisitScreen({ route, navigation }: Props) {
       await appendLocalTimeline(visit.id, {
         id: newLocalEntryId("note"),
         type: "note",
-        label: "Field note updated",
+        label: "הערת שטח עודכנה",
         occurredAt: new Date().toISOString(),
       });
       setReloadToken((value) => value + 1);
     } catch (err) {
-      setError(isApiRequestError(err) ? err.message : "Could not save note");
+      setError(isApiRequestError(err) ? err.message : "לא ניתן לשמור את ההערה");
     } finally {
       setBusy(false);
     }
@@ -171,7 +181,7 @@ export function VisitScreen({ route, navigation }: Props) {
     if (!visit) return;
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      setError("Photo library permission is required.");
+      setError("נדרשת הרשאה לגישה לתמונות במכשיר.");
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -201,14 +211,14 @@ export function VisitScreen({ route, navigation }: Props) {
     if (!visit || !user || !accessToken) return;
     const waitingForParts = destination === "waiting_for_parts";
     Alert.alert(
-      waitingForParts ? "Finish and wait for parts?" : "Finish this visit?",
+      waitingForParts ? "לסיים ולהמתין לחלפים?" : "לסיים את הביקור?",
       waitingForParts
-        ? "The visit will end and the service call will be marked as waiting for parts."
-        : "The visit will end and return to the service dispatcher for the next decision.",
+        ? "הביקור יסתיים וקריאת השירות תסומן כממתינה לחלפים."
+        : "הביקור יסתיים והקריאה תחזור למנהל השירות להחלטה הבאה.",
       [
-        { text: "Cancel", style: "cancel" },
+        { text: "ביטול", style: "cancel" },
         {
-          text: "Finish visit",
+          text: "סיום ביקור",
           style: waitingForParts ? "default" : "destructive",
           onPress: () =>
             void runWorkflow(() =>
@@ -229,7 +239,7 @@ export function VisitScreen({ route, navigation }: Props) {
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-      <Eyebrow>Service call · field visit</Eyebrow>
+      <Eyebrow>קריאת שירות · ביקור שטח</Eyebrow>
       <ScreenTitle>{title}</ScreenTitle>
       {call ? (
         <ScreenSubtitle>
@@ -249,23 +259,23 @@ export function VisitScreen({ route, navigation }: Props) {
           <>
             <View style={styles.cardHeading}>
               <View style={styles.headingCopy}>
-                <Text style={styles.cardLabel}>CURRENT VISIT</Text>
+                <Text style={styles.cardLabel}>ביקור נוכחי</Text>
                 <Text style={styles.cardTitle}>{visitStatusLabel(visit.status)}</Text>
               </View>
-              <StatusPill label={`Visit ${visit.sequence}`} tone={visitStatusTone(visit.status)} />
+              <StatusPill label={`ביקור ${visit.sequence}`} tone={visitStatusTone(visit.status)} />
             </View>
             <Text style={styles.cardHint}>
               {canDrive
-                ? "Confirm when you leave for the customer."
+                ? "אשר כשתצא ללקוח."
                 : canWork
-                  ? "You are on the way. Confirm when work begins on site."
+                  ? "אתה בדרך. אשר כשהעבודה מתחילה באתר."
                   : canFinish
-                    ? "Work is active. Add notes and photos before finishing the visit."
-                    : "This visit has no available field action."}
+                    ? "העבודה פעילה. הוסף הערות ותמונות לפני סיום הביקור."
+                    : "אין כרגע פעולה זמינה לביקור זה."}
             </Text>
             {canDrive ? (
               <Button
-                label="Start driving"
+                label="תחילת נסיעה"
                 loading={busy}
                 onPress={() =>
                   void runWorkflow(() =>
@@ -276,7 +286,7 @@ export function VisitScreen({ route, navigation }: Props) {
             ) : null}
             {canWork ? (
               <Button
-                label="Start work on site"
+                label="תחילת עבודה באתר"
                 loading={busy}
                 onPress={() =>
                   void runWorkflow(() =>
@@ -287,7 +297,7 @@ export function VisitScreen({ route, navigation }: Props) {
             ) : null}
           </>
         ) : (
-          <Text style={styles.body}>No visit assigned to you on this call.</Text>
+          <Text style={styles.body}>לא הוקצה לך ביקור בקריאה זו.</Text>
         )}
       </Card>
 
@@ -295,11 +305,11 @@ export function VisitScreen({ route, navigation }: Props) {
         <Card>
           <View style={styles.sectionHeader}>
             <View>
-              <Eyebrow>Job details</Eyebrow>
-              <Text style={styles.sectionTitle}>Customer and equipment</Text>
+              <Eyebrow>פרטי עבודה</Eyebrow>
+              <Text style={styles.sectionTitle}>לקוח וציוד</Text>
             </View>
             <StatusPill
-              label={call.priority}
+              label={priorityLabel(call.priority)}
               tone={
                 call.priority === "urgent"
                   ? "danger"
@@ -309,25 +319,25 @@ export function VisitScreen({ route, navigation }: Props) {
               }
             />
           </View>
-          <DetailRow label="Customer" value={call.customer?.name ?? "Not provided"} />
+          <DetailRow label="לקוח" value={call.customer?.name ?? "לא נמסר"} />
           <DetailRow
-            label="Equipment"
+            label="ציוד"
             value={
               call.equipment
                 ? `${call.equipment.name}${call.equipment.internalNumber ? ` · ${call.equipment.internalNumber}` : ""}`
-                : "Not provided"
+                : "לא נמסר"
             }
           />
-          {call.location ? <DetailRow label="Location" value={call.location} /> : null}
+          {call.location ? <DetailRow label="מיקום" value={call.location} /> : null}
           {call.contactName || call.contactPhone ? (
             <DetailRow
-              label="Contact"
+              label="איש קשר"
               value={[call.contactName, call.contactPhone].filter(Boolean).join(" · ")}
             />
           ) : null}
           {call.description ? (
             <View style={styles.descriptionBlock}>
-              <Text style={styles.detailLabel}>SERVICE REQUEST</Text>
+              <Text style={styles.detailLabel}>בקשת שירות</Text>
               <Text style={styles.description}>{call.description}</Text>
             </View>
           ) : null}
@@ -335,19 +345,19 @@ export function VisitScreen({ route, navigation }: Props) {
       ) : null}
 
       <Card>
-        <Eyebrow>Field report</Eyebrow>
-        <Text style={styles.sectionTitle}>Work notes</Text>
+        <Eyebrow>דוח שטח</Eyebrow>
+        <Text style={styles.sectionTitle}>הערות עבודה</Text>
         <TextInput
           multiline
           value={noteDraft}
           onChangeText={setNoteDraft}
           style={styles.noteInput}
-          placeholder="Describe the fault, work performed and next action…"
+          placeholder="תאר את התקלה, העבודה שבוצעה והפעולה הבאה…"
           placeholderTextColor={colors.textMuted}
-          accessibilityLabel="Field work notes"
+          accessibilityLabel="הערות עבודה בשטח"
         />
         <Button
-          label="Save work notes"
+          label="שמירת הערות עבודה"
           variant="secondary"
           loading={busy}
           onPress={() => void handleAddNote()}
@@ -357,8 +367,8 @@ export function VisitScreen({ route, navigation }: Props) {
       <Card>
         <View style={styles.sectionHeader}>
           <View>
-            <Eyebrow>Attachments</Eyebrow>
-            <Text style={styles.sectionTitle}>Visit photos</Text>
+            <Eyebrow>קבצים מצורפים</Eyebrow>
+            <Text style={styles.sectionTitle}>תמונות מהביקור</Text>
           </View>
           <Text style={styles.photoCount}>{photos.length}</Text>
         </View>
@@ -369,10 +379,10 @@ export function VisitScreen({ route, navigation }: Props) {
             ))}
           </View>
         ) : (
-          <Text style={styles.bodyMuted}>No photos added on this device.</Text>
+          <Text style={styles.bodyMuted}>לא נוספו תמונות במכשיר זה.</Text>
         )}
         <Button
-          label="Add photo"
+          label="הוספת תמונה"
           variant="secondary"
           loading={busy}
           onPress={() => void handleAddPhoto()}
@@ -380,21 +390,21 @@ export function VisitScreen({ route, navigation }: Props) {
       </Card>
 
       <Card>
-        <Eyebrow>Activity</Eyebrow>
-        <Text style={styles.sectionTitle}>Technician timeline</Text>
+        <Eyebrow>פעילות</Eyebrow>
+        <Text style={styles.sectionTitle}>ציר זמן טכנאי</Text>
         <VisitTimeline lifecycle={lifecycle} localTimeline={localTimeline} />
       </Card>
 
       {visit && canFinish ? (
         <>
           <Button
-            label="Finish visit — return to dispatcher"
+            label="סיום ביקור — החזרה למנהל השירות"
             variant="danger"
             loading={busy}
             onPress={() => confirmFinish("dispatcher")}
           />
           <Button
-            label="Finish visit — waiting for parts"
+            label="סיום ביקור — המתנה לחלפים"
             variant="secondary"
             loading={busy}
             onPress={() => confirmFinish("waiting_for_parts")}
@@ -403,8 +413,7 @@ export function VisitScreen({ route, navigation }: Props) {
       ) : null}
 
       <Text style={styles.hint}>
-        Technicians finish visits only. The service manager decides assignment, parts, or closing
-        the call.
+        הטכנאי מסיים ביקורים בלבד. מנהל השירות מחליט על הקצאה, חלפים או סגירת הקריאה.
       </Text>
     </ScrollView>
   );
@@ -430,7 +439,7 @@ function VisitTimeline({
   const items = mergeTimeline(lifecycle?.timeline ?? [], localTimeline);
 
   if (items.length === 0) {
-    return <Text style={styles.bodyMuted}>No timeline events yet.</Text>;
+    return <Text style={styles.bodyMuted}>אין עדיין אירועים בציר הזמן.</Text>;
   }
 
   return (

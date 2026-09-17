@@ -41,7 +41,7 @@ export async function addVisitPhoto(visitId: string, uri: string): Promise<Visit
   await appendLocalTimeline(visitId, {
     id: entry.id,
     type: "photo",
-    label: "Photo added",
+    label: "נוספה תמונה",
     occurredAt: entry.createdAt,
   });
   return next;

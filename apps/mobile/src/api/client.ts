@@ -48,7 +48,7 @@ export async function apiRequest<T>(
   if (!env.isApiConfigured && !isDevelopmentBuild()) {
     throw new ApiRequestError(
       "API_NOT_CONFIGURED",
-      "The app server is not configured. Please contact your administrator.",
+      "שרת האפליקציה אינו מוגדר. יש לפנות למנהל המערכת.",
       0,
     );
   }
@@ -68,7 +68,7 @@ export async function apiRequest<T>(
   } catch {
     throw new ApiRequestError(
       "NETWORK_UNAVAILABLE",
-      "Cannot reach the app server. Check your internet connection and try again.",
+      "לא ניתן להתחבר לשרת האפליקציה. יש לבדוק את החיבור לאינטרנט ולנסות שוב.",
       0,
     );
   }

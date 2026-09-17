@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string, organizationSlug?: string) => {
     const session = await loginRequest({ email, password, organizationSlug });
     if (!isAssignedServiceCallsOnly(permissionSlugs(session.user))) {
-      throw new Error("This app is for field technicians only.");
+      throw new Error("האפליקציה מיועדת לטכנאי שטח בלבד.");
     }
     await persistSession(session);
     setUser(session.user);

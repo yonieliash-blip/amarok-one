@@ -18,9 +18,9 @@
       "bundleIdentifier": "com.amarokone.mobile",
       "buildNumber": "1",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Attach visit photos stored on this device for your records.",
-        "NSLocationWhenInUseUsageDescription": "AMAROK ONE records your location only during an active work day for attendance and field travel.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "AMAROK ONE can continue recording your location in the background only during an active work day.",
+        "NSPhotoLibraryUsageDescription": "הוספת תמונות ביקור השמורות במכשיר לצורך תיעוד העבודה.",
+        "NSLocationWhenInUseUsageDescription": "AMAROK ONE מתעדת את מיקומך רק במהלך יום עבודה פעיל, לצורך נוכחות ונסיעות שטח.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "AMAROK ONE יכולה להמשיך לתעד את מיקומך ברקע רק במהלך יום עבודה פעיל.",
         "UIBackgroundModes": ["location"],
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -38,14 +38,14 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Attach visit photos stored on this device for your records."
+          "photosPermission": "הוספת תמונות ביקור השמורות במכשיר לצורך תיעוד העבודה."
         }
       ],
       "expo-secure-store",
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "AMAROK ONE records your location only during an active work day for attendance and field travel.",
+          "locationAlwaysAndWhenInUsePermission": "AMAROK ONE מתעדת את מיקומך רק במהלך יום עבודה פעיל, לצורך נוכחות ונסיעות שטח.",
           "isIosBackgroundLocationEnabled": true,
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true

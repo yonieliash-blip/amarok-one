@@ -33,8 +33,8 @@ export async function enableBackgroundShiftTracking(): Promise<boolean> {
       pausesUpdatesAutomatically: true,
       showsBackgroundLocationIndicator: true,
       foregroundService: {
-        notificationTitle: "AMAROK ONE work day",
-        notificationBody: "Location recording is active during your work day.",
+        notificationTitle: "יום עבודה ב־AMAROK ONE",
+        notificationBody: "רישום המיקום פעיל במהלך יום העבודה.",
       },
     });
   }

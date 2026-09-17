@@ -44,6 +44,16 @@ function priorityTone(priority: ServiceCall["priority"]): "neutral" | "warning" 
   return "neutral";
 }
 
+function priorityLabel(priority: ServiceCall["priority"]): string {
+  const labels: Record<ServiceCall["priority"], string> = {
+    low: "נמוכה",
+    normal: "רגילה",
+    high: "גבוהה",
+    urgent: "דחופה",
+  };
+  return labels[priority];
+}
+
 export function HomeScreen({ navigation }: Props) {
   const { user, accessToken, logout } = useAuth();
   const [workDay, setWorkDay] = useState<WorkDay | null>(null);
@@ -75,7 +85,7 @@ export function HomeScreen({ navigation }: Props) {
         setCalls(list.filter((call) => call.lifecycleState !== "closed"));
       } catch (err) {
         if (cancelled) return;
-        setError(isApiRequestError(err) ? err.message : "Unable to load assignments");
+        setError(isApiRequestError(err) ? err.message : "לא ניתן לטעון את הקריאות שהוקצו לך");
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -154,7 +164,7 @@ export function HomeScreen({ navigation }: Props) {
       setWorkDay(result);
       return result;
     } catch (err) {
-      setError(isApiRequestError(err) ? err.message : "Unable to update work day");
+      setError(isApiRequestError(err) ? err.message : "לא ניתן לעדכן את יום העבודה");
       return null;
     } finally {
       setClocking(false);
@@ -163,12 +173,12 @@ export function HomeScreen({ navigation }: Props) {
 
   function handleEnableBackgroundGps(): void {
     Alert.alert(
-      "Background shift location",
-      "While your work day is active, AMAROK ONE will record periodic locations even when the app is in the background. Tracking stops when you end the work day or sign out.",
+      "מיקום ברקע במהלך יום העבודה",
+      "בזמן שיום העבודה פעיל, AMAROK ONE תשמור מיקומים מעת לעת גם כשהאפליקציה ברקע. המעקב נפסק בסיום יום העבודה או ביציאה מהחשבון.",
       [
-        { text: "Not now", style: "cancel" },
+        { text: "לא עכשיו", style: "cancel" },
         {
-          text: "Allow",
+          text: "אישור",
           onPress: () => {
             setBackgroundGpsBusy(true);
             void enableBackgroundShiftTracking()
@@ -176,14 +186,14 @@ export function HomeScreen({ navigation }: Props) {
                 setBackgroundGpsTracking(enabled);
                 if (!enabled) {
                   Alert.alert(
-                    "Permission not granted",
-                    "Background GPS remains off. You can enable location access later in device settings.",
+                    "ההרשאה לא אושרה",
+                    "מעקב ה־GPS ברקע נשאר כבוי. אפשר להפעיל את הרשאת המיקום בהגדרות המכשיר.",
                   );
                 }
               })
               .catch(() => {
                 setBackgroundGpsTracking(false);
-                Alert.alert("Unable to enable GPS", "Please check the device location settings.");
+                Alert.alert("לא ניתן להפעיל GPS", "יש לבדוק את הגדרות המיקום במכשיר.");
               })
               .finally(() => setBackgroundGpsBusy(false));
           },
@@ -216,21 +226,21 @@ export function HomeScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Eyebrow>Field operations</Eyebrow>
-        <ScreenTitle>Hello, {user?.displayName?.split(" ")[0] ?? "Technician"}</ScreenTitle>
-        <ScreenSubtitle>{`${user?.organization.name} · Today's field overview`}</ScreenSubtitle>
+        <Eyebrow>ניהול עבודות שטח</Eyebrow>
+        <ScreenTitle>שלום, {user?.displayName?.split(" ")[0] ?? "טכנאי"}</ScreenTitle>
+        <ScreenSubtitle>{`${user?.organization.name} · תמונת מצב להיום`}</ScreenSubtitle>
       </View>
 
       <Card accent={workDayActive}>
         <View style={styles.cardHeading}>
           <View>
-            <Text style={styles.cardLabel}>WORK DAY</Text>
+            <Text style={styles.cardLabel}>יום עבודה</Text>
             <Text style={styles.cardTitle}>
-              {workDayActive ? "Shift in progress" : "Ready to start"}
+              {workDayActive ? "יום העבודה פעיל" : "מוכן להתחלה"}
             </Text>
           </View>
           <StatusPill
-            label={workDayActive ? "Active" : "Not started"}
+            label={workDayActive ? "פעיל" : "לא התחיל"}
             tone={workDayActive ? "success" : "neutral"}
           />
         </View>
@@ -238,7 +248,7 @@ export function HomeScreen({ navigation }: Props) {
           <>
             <View style={styles.shiftFacts}>
               <View style={styles.fact}>
-                <Text style={styles.factLabel}>STARTED</Text>
+                <Text style={styles.factLabel}>התחלה</Text>
                 <Text style={styles.factValue}>
                   {new Date(workDay!.startedAt).toLocaleTimeString([], {
                     hour: "2-digit",
@@ -249,37 +259,37 @@ export function HomeScreen({ navigation }: Props) {
               <View style={styles.fact}>
                 <Text style={styles.factLabel}>GPS</Text>
                 <Text style={styles.factValue}>
-                  {backgroundGpsTracking ? "Background" : gpsTracking ? "Foreground" : "Off"}
+                  {backgroundGpsTracking ? "ברקע" : gpsTracking ? "פעיל" : "כבוי"}
                 </Text>
               </View>
             </View>
             <StatusPill
               label={
                 backgroundGpsTracking
-                  ? "Location tracking protected"
+                  ? "מעקב המיקום פעיל ברקע"
                   : gpsTracking
-                    ? "GPS active while app is open"
-                    : "GPS tracking unavailable"
+                    ? "GPS פעיל כשהאפליקציה פתוחה"
+                    : "מעקב GPS אינו זמין"
               }
               tone={backgroundGpsTracking || gpsTracking ? "success" : "warning"}
             />
             {!backgroundGpsTracking ? (
               <Button
-                label={backgroundGpsBusy ? "Enabling background GPS…" : "Enable background GPS"}
+                label={backgroundGpsBusy ? "מפעיל GPS ברקע…" : "הפעלת GPS ברקע"}
                 variant="secondary"
                 disabled={backgroundGpsBusy}
                 onPress={handleEnableBackgroundGps}
               />
             ) : null}
-            <Button label="Current task" onPress={() => navigation.navigate("CurrentTask")} />
+            <Button label="משימה נוכחית" onPress={() => navigation.navigate("CurrentTask")} />
             <Button
-              label={activeBreak ? "End break" : "Start break"}
+              label={activeBreak ? "סיום הפסקה" : "תחילת הפסקה"}
               variant="secondary"
               disabled={clocking}
               onPress={() => void handleBreak()}
             />
             <Button
-              label="End work day"
+              label="סיום יום עבודה"
               variant="secondary"
               disabled={clocking}
               onPress={() => void handleEndWorkDay()}
@@ -288,11 +298,11 @@ export function HomeScreen({ navigation }: Props) {
         ) : (
           <>
             <Text style={styles.cardBody}>
-              Clock in before opening service calls. Your start time and optional location will be
-              recorded.
+              יש להתחיל יום עבודה לפני פתיחת קריאות שירות. שעת ההתחלה והמיקום, אם אושר,
+              יישמרו.
             </Text>
             <Button
-              label="Start work day"
+              label="התחלת יום עבודה"
               disabled={clocking}
               onPress={() => void handleStartWorkDay()}
             />
@@ -308,8 +318,8 @@ export function HomeScreen({ navigation }: Props) {
         <>
           <View style={styles.sectionHeading}>
             <View>
-              <Eyebrow>Work queue</Eyebrow>
-              <Text style={styles.sectionTitle}>Assigned service calls</Text>
+              <Eyebrow>תור עבודה</Eyebrow>
+              <Text style={styles.sectionTitle}>קריאות שירות שהוקצו לך</Text>
             </View>
             <Text style={styles.count}>{calls.length}</Text>
           </View>
@@ -318,7 +328,7 @@ export function HomeScreen({ navigation }: Props) {
             keyExtractor={(item) => item.id}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
             contentContainerStyle={styles.list}
-            ListEmptyComponent={<Text style={styles.empty}>No active assignments.</Text>}
+            ListEmptyComponent={<Text style={styles.empty}>אין כרגע קריאות פעילות שהוקצו לך.</Text>}
             renderItem={({ item }) => (
               <Pressable
                 style={styles.row}
@@ -332,7 +342,7 @@ export function HomeScreen({ navigation }: Props) {
               >
                 <View style={styles.rowTop}>
                   <Text style={styles.rowNumber}>{item.serviceCallNumber}</Text>
-                  <StatusPill label={item.priority} tone={priorityTone(item.priority)} />
+                  <StatusPill label={priorityLabel(item.priority)} tone={priorityTone(item.priority)} />
                 </View>
                 <Text style={styles.rowTitle}>{item.title}</Text>
                 {item.customer ? <Text style={styles.rowMeta}>{item.customer.name}</Text> : null}
@@ -343,7 +353,7 @@ export function HomeScreen({ navigation }: Props) {
                   </Text>
                 ) : null}
                 {!workDayActive ? (
-                  <Text style={styles.rowHint}>Start work day to open visits</Text>
+                  <Text style={styles.rowHint}>יש להתחיל יום עבודה כדי לפתוח ביקורים</Text>
                 ) : null}
               </Pressable>
             )}
@@ -351,7 +361,7 @@ export function HomeScreen({ navigation }: Props) {
         </>
       )}
 
-      <Button label="Sign out" variant="secondary" onPress={() => void handleLogout()} />
+      <Button label="יציאה מהחשבון" variant="secondary" onPress={() => void handleLogout()} />
     </View>
   );
 }
