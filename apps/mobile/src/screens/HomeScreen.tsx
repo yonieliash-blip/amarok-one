@@ -224,150 +224,161 @@ export function HomeScreen({ navigation }: Props) {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Eyebrow>ניהול עבודות שטח</Eyebrow>
-        <ScreenTitle>שלום, {user?.displayName?.split(" ")[0] ?? "טכנאי"}</ScreenTitle>
-        <ScreenSubtitle>{`${user?.organization.name} · תמונת מצב להיום`}</ScreenSubtitle>
-      </View>
-
-      <Card accent={workDayActive}>
-        <View style={styles.cardHeading}>
-          <View>
-            <Text style={styles.cardLabel}>יום עבודה</Text>
-            <Text style={styles.cardTitle}>
-              {workDayActive ? "יום העבודה פעיל" : "מוכן להתחלה"}
-            </Text>
+    <FlatList
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      data={loading ? [] : calls}
+      keyExtractor={(item) => item.id}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+      ItemSeparatorComponent={() => <View style={styles.separator} />}
+      ListHeaderComponent={
+        <View style={styles.topContent}>
+          <View style={styles.header}>
+            <Eyebrow>ניהול עבודות שטח</Eyebrow>
+            <ScreenTitle>שלום, {user?.displayName?.split(" ")[0] ?? "טכנאי"}</ScreenTitle>
+            <ScreenSubtitle>{`${user?.organization.name} · תמונת מצב להיום`}</ScreenSubtitle>
           </View>
-          <StatusPill
-            label={workDayActive ? "פעיל" : "לא התחיל"}
-            tone={workDayActive ? "success" : "neutral"}
-          />
-        </View>
-        {workDayActive ? (
-          <>
-            <View style={styles.shiftFacts}>
-              <View style={styles.fact}>
-                <Text style={styles.factLabel}>התחלה</Text>
-                <Text style={styles.factValue}>
-                  {new Date(workDay!.startedAt).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+
+          <Card accent={workDayActive}>
+            <View style={styles.cardHeading}>
+              <View>
+                <Text style={styles.cardLabel}>יום עבודה</Text>
+                <Text style={styles.cardTitle}>
+                  {workDayActive ? "יום העבודה פעיל" : "מוכן להתחלה"}
                 </Text>
               </View>
-              <View style={styles.fact}>
-                <Text style={styles.factLabel}>GPS</Text>
-                <Text style={styles.factValue}>
-                  {backgroundGpsTracking ? "ברקע" : gpsTracking ? "פעיל" : "כבוי"}
-                </Text>
-              </View>
-            </View>
-            <StatusPill
-              label={
-                backgroundGpsTracking
-                  ? "מעקב המיקום פעיל ברקע"
-                  : gpsTracking
-                    ? "GPS פעיל כשהאפליקציה פתוחה"
-                    : "מעקב GPS אינו זמין"
-              }
-              tone={backgroundGpsTracking || gpsTracking ? "success" : "warning"}
-            />
-            {!backgroundGpsTracking ? (
-              <Button
-                label={backgroundGpsBusy ? "מפעיל GPS ברקע…" : "הפעלת GPS ברקע"}
-                variant="secondary"
-                disabled={backgroundGpsBusy}
-                onPress={handleEnableBackgroundGps}
+              <StatusPill
+                label={workDayActive ? "פעיל" : "לא התחיל"}
+                tone={workDayActive ? "success" : "neutral"}
               />
-            ) : null}
-            <Button label="משימה נוכחית" onPress={() => navigation.navigate("CurrentTask")} />
-            <Button
-              label={activeBreak ? "סיום הפסקה" : "תחילת הפסקה"}
-              variant="secondary"
-              disabled={clocking}
-              onPress={() => void handleBreak()}
-            />
-            <Button
-              label="סיום יום עבודה"
-              variant="secondary"
-              disabled={clocking}
-              onPress={() => void handleEndWorkDay()}
-            />
-          </>
-        ) : (
-          <>
-            <Text style={styles.cardBody}>
-              יש להתחיל יום עבודה לפני פתיחת קריאות שירות. שעת ההתחלה והמיקום, אם אושר,
-              יישמרו.
-            </Text>
-            <Button
-              label="התחלת יום עבודה"
-              disabled={clocking}
-              onPress={() => void handleStartWorkDay()}
-            />
-          </>
-        )}
-      </Card>
-
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-
-      {loading ? (
-        <ActivityIndicator color={colors.primary} style={styles.loader} />
-      ) : (
-        <>
-          <View style={styles.sectionHeading}>
-            <View>
-              <Eyebrow>תור עבודה</Eyebrow>
-              <Text style={styles.sectionTitle}>קריאות שירות שהוקצו לך</Text>
             </View>
-            <Text style={styles.count}>{calls.length}</Text>
-          </View>
-          <FlatList
-            data={calls}
-            keyExtractor={(item) => item.id}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
-            contentContainerStyle={styles.list}
-            ListEmptyComponent={<Text style={styles.empty}>אין כרגע קריאות פעילות שהוקצו לך.</Text>}
-            renderItem={({ item }) => (
-              <Pressable
-                style={styles.row}
-                disabled={!workDayActive}
-                onPress={() =>
-                  navigation.navigate("Visit", {
-                    serviceCallId: item.id,
-                    title: item.title,
-                  })
-                }
-              >
-                <View style={styles.rowTop}>
-                  <Text style={styles.rowNumber}>{item.serviceCallNumber}</Text>
-                  <StatusPill label={priorityLabel(item.priority)} tone={priorityTone(item.priority)} />
+            {workDayActive ? (
+              <>
+                <View style={styles.shiftFacts}>
+                  <View style={styles.fact}>
+                    <Text style={styles.factLabel}>התחלה</Text>
+                    <Text style={styles.factValue}>
+                      {new Date(workDay!.startedAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </Text>
+                  </View>
+                  <View style={styles.fact}>
+                    <Text style={styles.factLabel}>GPS</Text>
+                    <Text style={styles.factValue}>
+                      {backgroundGpsTracking ? "ברקע" : gpsTracking ? "פעיל" : "כבוי"}
+                    </Text>
+                  </View>
                 </View>
-                <Text style={styles.rowTitle}>{item.title}</Text>
-                {item.customer ? <Text style={styles.rowMeta}>{item.customer.name}</Text> : null}
-                {item.equipment ? (
-                  <Text style={styles.rowMeta}>
-                    {item.equipment.name}
-                    {item.equipment.internalNumber ? ` · ${item.equipment.internalNumber}` : ""}
-                  </Text>
+                <StatusPill
+                  label={
+                    backgroundGpsTracking
+                      ? "מעקב המיקום פעיל ברקע"
+                      : gpsTracking
+                        ? "GPS פעיל כשהאפליקציה פתוחה"
+                        : "מעקב GPS אינו זמין"
+                  }
+                  tone={backgroundGpsTracking || gpsTracking ? "success" : "warning"}
+                />
+                {!backgroundGpsTracking ? (
+                  <Button
+                    label={backgroundGpsBusy ? "מפעיל GPS ברקע…" : "הפעלת GPS ברקע"}
+                    variant="secondary"
+                    disabled={backgroundGpsBusy}
+                    onPress={handleEnableBackgroundGps}
+                  />
                 ) : null}
-                {!workDayActive ? (
-                  <Text style={styles.rowHint}>יש להתחיל יום עבודה כדי לפתוח ביקורים</Text>
-                ) : null}
-              </Pressable>
+                <Button label="משימה נוכחית" onPress={() => navigation.navigate("CurrentTask")} />
+                <Button
+                  label={activeBreak ? "סיום הפסקה" : "תחילת הפסקה"}
+                  variant="secondary"
+                  disabled={clocking}
+                  onPress={() => void handleBreak()}
+                />
+                <Button
+                  label="סיום יום עבודה"
+                  variant="secondary"
+                  disabled={clocking}
+                  onPress={() => void handleEndWorkDay()}
+                />
+              </>
+            ) : (
+              <>
+                <Text style={styles.cardBody}>
+                  יש להתחיל יום עבודה לפני פתיחת קריאות שירות. שעת ההתחלה והמיקום, אם אושר,
+                  יישמרו.
+                </Text>
+                <Button
+                  label="התחלת יום עבודה"
+                  disabled={clocking}
+                  onPress={() => void handleStartWorkDay()}
+                />
+              </>
             )}
-          />
-        </>
-      )}
+          </Card>
 
-      <Button label="יציאה מהחשבון" variant="secondary" onPress={() => void handleLogout()} />
-    </View>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          {!loading ? (
+            <View style={styles.sectionHeading}>
+              <View>
+                <Eyebrow>תור עבודה</Eyebrow>
+                <Text style={styles.sectionTitle}>קריאות שירות שהוקצו לך</Text>
+              </View>
+              <Text style={styles.count}>{calls.length}</Text>
+            </View>
+          ) : null}
+        </View>
+      }
+      ListEmptyComponent={
+        loading ? (
+          <ActivityIndicator color={colors.primary} style={styles.loader} />
+        ) : (
+          <Text style={styles.empty}>אין כרגע קריאות פעילות שהוקצו לך.</Text>
+        )
+      }
+      ListFooterComponent={
+        <View style={styles.footer}>
+          <Button label="יציאה מהחשבון" variant="secondary" onPress={() => void handleLogout()} />
+        </View>
+      }
+      renderItem={({ item }) => (
+        <Pressable
+          style={styles.row}
+          disabled={!workDayActive}
+          onPress={() =>
+            navigation.navigate("Visit", {
+              serviceCallId: item.id,
+              title: item.title,
+            })
+          }
+        >
+          <View style={styles.rowTop}>
+            <Text style={styles.rowNumber}>{item.serviceCallNumber}</Text>
+            <StatusPill label={priorityLabel(item.priority)} tone={priorityTone(item.priority)} />
+          </View>
+          <Text style={styles.rowTitle}>{item.title}</Text>
+          {item.customer ? <Text style={styles.rowMeta}>{item.customer.name}</Text> : null}
+          {item.equipment ? (
+            <Text style={styles.rowMeta}>
+              {item.equipment.name}
+              {item.equipment.internalNumber ? ` · ${item.equipment.internalNumber}` : ""}
+            </Text>
+          ) : null}
+          {!workDayActive ? (
+            <Text style={styles.rowHint}>יש להתחיל יום עבודה כדי לפתוח ביקורים</Text>
+          ) : null}
+        </Pressable>
+      )}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.lg, gap: spacing.lg },
+  container: { flex: 1, backgroundColor: colors.bg },
+  content: { padding: spacing.lg, paddingBottom: spacing.xl },
+  topContent: { gap: spacing.lg, marginBottom: spacing.lg },
   header: { gap: spacing.xs, paddingTop: spacing.xs },
   cardHeading: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
   cardLabel: { color: colors.textMuted, fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
@@ -396,7 +407,7 @@ const styles = StyleSheet.create({
     textAlignVertical: "center",
     fontWeight: "800",
   },
-  list: { gap: spacing.md, paddingBottom: spacing.xl },
+  separator: { height: spacing.md },
   row: {
     backgroundColor: colors.bgPanel,
     borderRadius: 16,
@@ -413,4 +424,5 @@ const styles = StyleSheet.create({
   empty: { color: colors.textMuted, textAlign: "center", paddingVertical: spacing.lg },
   error: { color: colors.error },
   loader: { marginVertical: spacing.lg },
+  footer: { marginTop: spacing.lg },
 });
