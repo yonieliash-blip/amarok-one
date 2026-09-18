@@ -213,6 +213,20 @@ export interface TranslationMessages {
     status: string;
     active: string;
     inactive: string;
+    add: string;
+    createEyebrow: string;
+    createTitle: string;
+    createSubtitle: string;
+    displayName: string;
+    password: string;
+    passwordHint: string;
+    create: string;
+    creating: string;
+    created: string;
+    createError: string;
+    namePlaceholder: string;
+    emailPlaceholder: string;
+    passwordPlaceholder: string;
   };
   currentLocations: {
     eyebrow: string;

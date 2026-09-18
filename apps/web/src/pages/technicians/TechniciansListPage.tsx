@@ -1,3 +1,4 @@
+import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { PERMISSIONS } from "@amarok-one/permissions";
@@ -6,9 +7,23 @@ import { EmptyState } from "../../components/EmptyState";
 import { ErrorState } from "../../components/ErrorState";
 import { LoadingState } from "../../components/LoadingState";
 import { useAuth } from "../../auth/useAuth";
-import { getAuthErrorMessage } from "../../lib/auth-errors";
-import { listTechniciansRequest, type TechnicianSummary } from "../../lib/technicians-api";
+import { getApiErrorMessage, getAuthErrorMessage } from "../../lib/auth-errors";
+import { isApiRequestError } from "../../lib/api-client";
+import {
+  createTechnicianRequest,
+  listTechniciansRequest,
+  type CreateTechnicianInput,
+  type TechnicianSummary,
+} from "../../lib/technicians-api";
 import { useTranslation } from "../../i18n/useTranslation";
+
+type CreateStatus = "idle" | "submitting";
+
+const EMPTY_FORM: CreateTechnicianInput = {
+  displayName: "",
+  email: "",
+  password: "",
+};
 
 export function TechniciansListPage() {
   const { user, accessToken } = useAuth();
@@ -17,8 +32,18 @@ export function TechniciansListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createStatus, setCreateStatus] = useState<CreateStatus>("idle");
+  const [createForm, setCreateForm] = useState<CreateTechnicianInput>(EMPTY_FORM);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [createSuccess, setCreateSuccess] = useState<string | null>(null);
+
   const canViewCurrentLocations =
     user?.permissions.some((permission) => permission.slug === PERMISSIONS.ATTENDANCE_READ) ?? false;
+  const canCreateTechnician =
+    Boolean(user?.isOrganizationOwner) &&
+    (user?.permissions.some((permission) => permission.slug === PERMISSIONS.TECHNICIANS_WRITE) ??
+      false);
 
   useEffect(() => {
     let cancelled = false;
@@ -41,6 +66,51 @@ export function TechniciansListPage() {
     };
   }, [accessToken, retryKey, user]);
 
+  function updateCreateField<K extends keyof CreateTechnicianInput>(
+    key: K,
+    value: CreateTechnicianInput[K],
+  ): void {
+    setCreateForm((current) => ({ ...current, [key]: value }));
+    setCreateError(null);
+    setCreateSuccess(null);
+  }
+
+  async function handleCreateTechnician(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    if (!user || !accessToken || !canCreateTechnician) {
+      return;
+    }
+
+    setCreateStatus("submitting");
+    setCreateError(null);
+    setCreateSuccess(null);
+
+    try {
+      const created = await createTechnicianRequest(user.organization.id, accessToken, {
+        displayName: createForm.displayName.trim(),
+        email: createForm.email.trim(),
+        password: createForm.password,
+      });
+
+      setTechnicians((current) =>
+        [...current, created].sort((left, right) =>
+          left.displayName.localeCompare(right.displayName),
+        ),
+      );
+      setCreateForm(EMPTY_FORM);
+      setShowCreateForm(false);
+      setCreateSuccess(t("technicians", "created"));
+    } catch (cause) {
+      setCreateError(
+        isApiRequestError(cause)
+          ? getApiErrorMessage(cause, t("technicians", "createError"))
+          : t("technicians", "createError"),
+      );
+    } finally {
+      setCreateStatus("idle");
+    }
+  }
+
   if (loading) return <LoadingState message={t("technicians", "loading")} />;
   if (error) return <ErrorState message={error} onRetry={() => setRetryKey((key) => key + 1)} />;
 
@@ -54,12 +124,127 @@ export function TechniciansListPage() {
             {t("technicians", "subtitle", { organization: user?.organization.name ?? "" })}
           </p>
         </div>
-        {canViewCurrentLocations ? (
-          <Link to="/technicians/current-locations">
-            <Button variant="primary">{t("currentLocations", "title")}</Button>
-          </Link>
-        ) : null}
+        <div className="customers-page__actions">
+          {canViewCurrentLocations ? (
+            <Link to="/technicians/current-locations">
+              <Button variant="secondary">{t("currentLocations", "title")}</Button>
+            </Link>
+          ) : null}
+          {canCreateTechnician ? (
+            <Button
+              type="button"
+              variant="primary"
+              onClick={() => {
+                setShowCreateForm((visible) => !visible);
+                setCreateError(null);
+                setCreateSuccess(null);
+              }}
+            >
+              {t("technicians", "add")}
+            </Button>
+          ) : null}
+        </div>
       </header>
+
+      {createSuccess ? (
+        <div className="customers-alert customers-alert--success" role="status">
+          {createSuccess}
+        </div>
+      ) : null}
+
+      {showCreateForm ? (
+        <form
+          className="customer-form"
+          onSubmit={(event) => void handleCreateTechnician(event)}
+          noValidate
+        >
+          <section className="customer-form__section">
+            <p className="customers-page__eyebrow">{t("technicians", "createEyebrow")}</p>
+            <h3>{t("technicians", "createTitle")}</h3>
+            <p className="customers-page__subtitle">{t("technicians", "createSubtitle")}</p>
+
+            {createError ? (
+              <div className="customers-alert customers-alert--error" role="alert">
+                {createError}
+              </div>
+            ) : null}
+
+            <div className="customer-form__grid">
+              <label className="customer-form__field">
+                <span>
+                  {t("technicians", "displayName")} {t("common", "requiredMark")}
+                </span>
+                <input
+                  required
+                  minLength={2}
+                  maxLength={120}
+                  autoComplete="name"
+                  value={createForm.displayName}
+                  placeholder={t("technicians", "namePlaceholder")}
+                  onChange={(event) => updateCreateField("displayName", event.target.value)}
+                />
+              </label>
+
+              <label className="customer-form__field">
+                <span>
+                  {t("technicians", "email")} {t("common", "requiredMark")}
+                </span>
+                <input
+                  required
+                  type="email"
+                  dir="ltr"
+                  maxLength={256}
+                  autoComplete="email"
+                  value={createForm.email}
+                  placeholder={t("technicians", "emailPlaceholder")}
+                  onChange={(event) => updateCreateField("email", event.target.value)}
+                />
+              </label>
+
+              <label className="customer-form__field customer-form__field--wide">
+                <span>
+                  {t("technicians", "password")} {t("common", "requiredMark")}
+                </span>
+                <input
+                  required
+                  type="password"
+                  dir="ltr"
+                  minLength={8}
+                  maxLength={128}
+                  autoComplete="new-password"
+                  value={createForm.password}
+                  placeholder={t("technicians", "passwordPlaceholder")}
+                  onChange={(event) => updateCreateField("password", event.target.value)}
+                />
+                <small className="customers-page__subtitle">
+                  {t("technicians", "passwordHint")}
+                </small>
+              </label>
+            </div>
+          </section>
+
+          <div className="customer-form__actions">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={createStatus === "submitting"}
+              onClick={() => {
+                setShowCreateForm(false);
+                setCreateForm(EMPTY_FORM);
+                setCreateError(null);
+              }}
+            >
+              {t("common", "cancel")}
+            </Button>
+            <Button type="submit" variant="primary" disabled={createStatus === "submitting"}>
+              {createStatus === "submitting"
+                ? t("technicians", "creating")
+                : t("technicians", "create")}
+            </Button>
+          </div>
+        </form>
+      ) : null}
+
       {technicians.length === 0 ? (
         <EmptyState
           title={t("technicians", "emptyTitle")}
