@@ -50,6 +50,32 @@ export interface WorkDayLocationPoint {
   accuracy: number | null;
 }
 
+export interface CurrentTechnicianLocation {
+  userId: string;
+  displayName: string;
+  email: string;
+  workDayId: string | null;
+  startedAt: string | null;
+  location: {
+    recordedAt: string;
+    latitude: number;
+    longitude: number;
+    accuracy: number | null;
+    source: "sample" | "clock_in";
+  } | null;
+}
+
+export async function getCurrentTechnicianLocationsRequest(
+  organizationId: string,
+  accessToken: string,
+): Promise<CurrentTechnicianLocation[]> {
+  const response = await apiRequest<CurrentTechnicianLocation[]>(
+    `/organizations/${organizationId}/attendance/current-technician-locations`,
+    { accessToken },
+  );
+  return response.data;
+}
+
 export async function getMonthlyAttendanceReportRequest(
   organizationId: string,
   accessToken: string,

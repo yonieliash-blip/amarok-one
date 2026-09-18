@@ -19,6 +19,7 @@ import {
   endWorkDay,
   getCurrentWorkDay,
   getMonthlyAttendanceReport,
+  getCurrentTechnicianLocations,
   getWorkDayLocations,
   startBreak,
   startWorkDay,
@@ -46,6 +47,15 @@ export const attendanceRoutes = new Hono()
       return context.json(
         createApiResponse(await getMonthlyAttendanceReport(organizationId, month)),
       );
+    },
+  )
+  .get(
+    "/current-technician-locations",
+    requirePermission("attendance:read"),
+    zValidator("param", attendanceParamsSchema),
+    async (context) => {
+      const { organizationId } = context.req.valid("param");
+      return context.json(createApiResponse(await getCurrentTechnicianLocations(organizationId)));
     },
   )
   .patch(

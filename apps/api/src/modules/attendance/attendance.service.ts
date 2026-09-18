@@ -201,6 +201,104 @@ export async function getWorkDayLocations(organizationId: string, workDayId: str
   }));
 }
 
+export async function getCurrentTechnicianLocations(organizationId: string) {
+  const technicianMemberships = await prisma.userRole.findMany({
+    where: {
+      organizationId,
+      deletedAt: null,
+      role: { slug: "technician", deletedAt: null },
+      user: { deletedAt: null, isActive: true },
+    },
+    include: { user: true },
+    orderBy: [{ user: { displayName: "asc" } }, { createdAt: "asc" }],
+  });
+
+  const technicianByUserId = new Map<
+    string,
+    { id: string; displayName: string; email: string }
+  >();
+  for (const membership of technicianMemberships) {
+    if (!technicianByUserId.has(membership.userId)) {
+      technicianByUserId.set(membership.userId, {
+        id: membership.user.id,
+        displayName: membership.user.displayName,
+        email: membership.user.email,
+      });
+    }
+  }
+
+  const userIds = [...technicianByUserId.keys()];
+  const activeWorkDays =
+    userIds.length === 0
+      ? []
+      : await prisma.workDay.findMany({
+          where: {
+            organizationId,
+            userId: { in: userIds },
+            status: "ACTIVE",
+          },
+          include: {
+            locations: {
+              orderBy: { recordedAt: "desc" },
+              take: 1,
+            },
+          },
+          orderBy: { startedAt: "desc" },
+        });
+
+  const activeDayByUserId = new Map<string, (typeof activeWorkDays)[number]>();
+  for (const day of activeWorkDays) {
+    if (!activeDayByUserId.has(day.userId)) {
+      activeDayByUserId.set(day.userId, day);
+    }
+  }
+
+  return [...technicianByUserId.values()].map((technician) => {
+    const day = activeDayByUserId.get(technician.id);
+    if (!day) {
+      return {
+        userId: technician.id,
+        displayName: technician.displayName,
+        email: technician.email,
+        workDayId: null,
+        startedAt: null,
+        location: null,
+      };
+    }
+
+    const latest = day.locations[0];
+    const clockInLocation =
+      day.startLatitude !== null && day.startLongitude !== null
+        ? {
+            latitude: Number(day.startLatitude),
+            longitude: Number(day.startLongitude),
+            accuracy: day.startAccuracy,
+            recordedAt: day.startedAt,
+            source: "clock_in" as const,
+          }
+        : null;
+
+    const location = latest
+      ? {
+          latitude: Number(latest.latitude),
+          longitude: Number(latest.longitude),
+          accuracy: latest.accuracy,
+          recordedAt: latest.recordedAt,
+          source: "sample" as const,
+        }
+      : clockInLocation;
+
+    return {
+      userId: technician.id,
+      displayName: technician.displayName,
+      email: technician.email,
+      workDayId: day.id,
+      startedAt: day.startedAt,
+      location,
+    };
+  });
+}
+
 export async function lockAttendancePeriod(organizationId: string, month: string, actorId: string) {
   const { from, to } = monthRange(month);
   const existingLock = await prisma.attendancePeriodLock.findFirst({

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { Badge } from "@amarok-one/ui";
+import { Link } from "react-router-dom";
+import { PERMISSIONS } from "@amarok-one/permissions";
+import { Badge, Button } from "@amarok-one/ui";
 import { EmptyState } from "../../components/EmptyState";
 import { ErrorState } from "../../components/ErrorState";
 import { LoadingState } from "../../components/LoadingState";
@@ -15,6 +17,8 @@ export function TechniciansListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  const canViewCurrentLocations =
+    user?.permissions.some((permission) => permission.slug === PERMISSIONS.ATTENDANCE_READ) ?? false;
 
   useEffect(() => {
     let cancelled = false;
@@ -50,6 +54,11 @@ export function TechniciansListPage() {
             {t("technicians", "subtitle", { organization: user?.organization.name ?? "" })}
           </p>
         </div>
+        {canViewCurrentLocations ? (
+          <Link to="/technicians/current-locations">
+            <Button variant="primary">{t("currentLocations", "title")}</Button>
+          </Link>
+        ) : null}
       </header>
       {technicians.length === 0 ? (
         <EmptyState

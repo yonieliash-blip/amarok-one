@@ -77,6 +77,7 @@ export interface TranslationMessages {
     myEquipment: string;
     mySchedule: string;
     technicians: string;
+    currentLocations: string;
     calendar: string;
     inventory: string;
     purchaseOrders: string;
@@ -212,6 +213,31 @@ export interface TranslationMessages {
     status: string;
     active: string;
     inactive: string;
+  };
+  currentLocations: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    refresh: string;
+    refreshing: string;
+    loading: string;
+    emptyTitle: string;
+    emptyMessage: string;
+    working: string;
+    notWorking: string;
+    notWorkingHint: string;
+    noGps: string;
+    startedAt: string;
+    lastUpdated: string;
+    accuracy: string;
+    meters: string;
+    openMap: string;
+    sampled: string;
+    clockIn: string;
+    fresh: string;
+    stale: string;
+    source: string;
+    autoRefresh: string;
   };
   attendanceReport: {
     eyebrow: string;

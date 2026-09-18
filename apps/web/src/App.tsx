@@ -27,6 +27,7 @@ import { CustomerFormPage } from "./pages/customers/CustomerFormPage";
 import { CustomersListPage } from "./pages/customers/CustomersListPage";
 import { MemberAccessPage } from "./pages/administration/MemberAccessPage";
 import { TechniciansListPage } from "./pages/technicians/TechniciansListPage";
+import { CurrentTechnicianLocationsPage } from "./pages/technicians/CurrentTechnicianLocationsPage";
 import { AttendanceReportPage } from "./pages/reports/AttendanceReportPage";
 
 export function App() {
@@ -72,6 +73,10 @@ export function App() {
                   element={<ModulePlaceholderPage titleKey="mySchedule" />}
                 />
                 <Route path="technicians" element={<TechniciansListPage />} />
+                <Route
+                  path="technicians/current-locations"
+                  element={<CurrentTechnicianLocationsPage />}
+                />
                 <Route path="calendar" element={<ModulePlaceholderPage titleKey="calendar" />} />
                 <Route path="inventory" element={<ModulePlaceholderPage titleKey="inventory" />} />
                 <Route

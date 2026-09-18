@@ -72,6 +72,11 @@ export const APP_ROUTE_ACCESS: readonly RouteAccessRule[] = [
   { path: "/my/equipment", permissions: [PERMISSIONS.MY_EQUIPMENT_READ] },
   { path: "/my/schedule", permissions: [PERMISSIONS.MY_SCHEDULE_READ] },
   { path: "/technicians", permissions: [PERMISSIONS.TECHNICIANS_READ] },
+  {
+    path: "/technicians/current-locations",
+    permissions: [PERMISSIONS.TECHNICIANS_READ, PERMISSIONS.ATTENDANCE_READ],
+    requireAllPermissions: true,
+  },
   { path: "/calendar", permissions: [PERMISSIONS.CALENDAR_READ] },
   { path: "/inventory", permissions: [PERMISSIONS.INVENTORY_READ] },
   { path: "/purchase-orders", permissions: [PERMISSIONS.PURCHASE_ORDERS_READ] },

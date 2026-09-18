@@ -3,6 +3,7 @@ import {
   endWorkDay,
   correctWorkDay,
   getMonthlyAttendanceReport,
+  getCurrentTechnicianLocations,
   getWorkDayLocations,
   lockAttendancePeriod,
   recordWorkDayLocations,
@@ -23,6 +24,7 @@ const mocks = vi.hoisted(() => ({
   attendancePeriodLockUpdate: vi.fn(),
   workDayLocationCreateMany: vi.fn(),
   workDayLocationFindMany: vi.fn(),
+  userRoleFindMany: vi.fn(),
   audit: vi.fn(),
 }));
 
@@ -47,6 +49,9 @@ vi.mock("../../lib/prisma.js", () => ({
     workDayLocation: {
       createMany: mocks.workDayLocationCreateMany,
       findMany: mocks.workDayLocationFindMany,
+    },
+    userRole: {
+      findMany: mocks.userRoleFindMany,
     },
   },
 }));
@@ -239,6 +244,61 @@ describe("attendance.service", () => {
         points: [{ recordedAt: new Date().toISOString(), latitude: 32, longitude: 34 }],
       }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("returns the latest stored point only for technicians with an active work day", async () => {
+    const secondUser = "33333333-3333-4333-8333-333333333333";
+    mocks.userRoleFindMany.mockResolvedValue([
+      {
+        userId: user,
+        createdAt: new Date("2026-09-18T05:00:00.000Z"),
+        user: { id: user, displayName: "Daniel", email: "daniel@example.com" },
+      },
+      {
+        userId: secondUser,
+        createdAt: new Date("2026-09-18T05:00:00.000Z"),
+        user: { id: secondUser, displayName: "Noam", email: "noam@example.com" },
+      },
+    ]);
+    mocks.workDayFindMany.mockResolvedValue([
+      {
+        id: "44444444-4444-4444-8444-444444444444",
+        userId: user,
+        startedAt: new Date("2026-09-18T05:30:00.000Z"),
+        startLatitude: "32.000000",
+        startLongitude: "34.000000",
+        startAccuracy: 30,
+        locations: [
+          {
+            recordedAt: new Date("2026-09-18T06:00:00.000Z"),
+            latitude: "32.085300",
+            longitude: "34.781800",
+            accuracy: 12,
+          },
+        ],
+      },
+    ]);
+
+    const result = await getCurrentTechnicianLocations(org);
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        userId: user,
+        displayName: "Daniel",
+        workDayId: "44444444-4444-4444-8444-444444444444",
+        location: expect.objectContaining({
+          latitude: 32.0853,
+          longitude: 34.7818,
+          source: "sample",
+        }),
+      }),
+      expect.objectContaining({
+        userId: secondUser,
+        displayName: "Noam",
+        workDayId: null,
+        location: null,
+      }),
+    ]);
   });
 
   it("returns a tenant-scoped route for an existing work day", async () => {
