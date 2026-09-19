@@ -8,6 +8,15 @@ import { HomeScreen } from "../screens/HomeScreen";
 import { CurrentTaskScreen } from "../screens/CurrentTaskScreen";
 import { VisitScreen } from "../screens/VisitScreen";
 import { WorkReportScreen } from "../screens/WorkReportScreen";
+import {
+  ManagerCustomersScreen,
+  ManagerEquipmentScreen,
+  ManagerHomeScreen,
+  ManagerLocationsScreen,
+  ManagerNewServiceCallScreen,
+  ManagerServiceCallScreen,
+  ManagerServiceCallsScreen,
+} from "../screens/ManagerScreens";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -25,7 +34,7 @@ const navTheme = {
 };
 
 export function RootNavigator() {
-  const { status } = useAuth();
+  const { status, isManager } = useAuth();
 
   if (status === "loading") {
     return (
@@ -47,16 +56,25 @@ export function RootNavigator() {
         }}
       >
         {status === "authenticated" ? (
-          <>
-            <Stack.Screen name="Home" component={HomeScreen} options={{ title: "יום עבודה" }} />
-            <Stack.Screen
-              name="CurrentTask"
-              component={CurrentTaskScreen}
-              options={{ title: "משימה נוכחית" }}
-            />
-            <Stack.Screen name="Visit" component={VisitScreen} options={{ title: "ביקור" }} />
-            <Stack.Screen name="WorkReport" component={WorkReportScreen} options={{ title: "דוח עבודה" }} />
-          </>
+          isManager ? (
+            <>
+              <Stack.Screen name="ManagerHome" component={ManagerHomeScreen} options={{ title: "ניהול" }} />
+              <Stack.Screen name="ManagerServiceCalls" component={ManagerServiceCallsScreen} options={{ title: "קריאות שירות" }} />
+              <Stack.Screen name="ManagerNewServiceCall" component={ManagerNewServiceCallScreen} options={{ title: "פתיחת קריאה" }} />
+              <Stack.Screen name="ManagerServiceCall" component={ManagerServiceCallScreen} options={({ route }) => ({ title: route.params.title })} />
+              <Stack.Screen name="ManagerCustomers" component={ManagerCustomersScreen} options={{ title: "לקוחות" }} />
+              <Stack.Screen name="ManagerEquipment" component={ManagerEquipmentScreen} options={{ title: "ציוד" }} />
+              <Stack.Screen name="ManagerLocations" component={ManagerLocationsScreen} options={{ title: "מיקומי טכנאים" }} />
+              <Stack.Screen name="WorkReport" component={WorkReportScreen} options={{ title: "דוח עבודה" }} />
+            </>
+          ) : (
+            <>
+              <Stack.Screen name="Home" component={HomeScreen} options={{ title: "יום עבודה" }} />
+              <Stack.Screen name="CurrentTask" component={CurrentTaskScreen} options={{ title: "משימה נוכחית" }} />
+              <Stack.Screen name="Visit" component={VisitScreen} options={{ title: "ביקור" }} />
+              <Stack.Screen name="WorkReport" component={WorkReportScreen} options={{ title: "דוח עבודה" }} />
+            </>
+          )
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
         )}
