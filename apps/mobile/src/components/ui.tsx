@@ -76,6 +76,10 @@ export function BrandMark({ style }: { style?: StyleProp<ImageStyle> }) {
   return <Image source={brand.logo} style={[styles.brandMark, style]} resizeMode="contain" />;
 }
 
+export function BrandWordmark({ style }: { style?: StyleProp<ImageStyle> }) {
+  return <Image source={brand.wordmark} style={[styles.brandWordmark, style]} resizeMode="contain" />;
+}
+
 export function Card({
   children,
   accent = false,
@@ -144,6 +148,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: "600",
+    textAlign: "center",
   },
   labelPrimary: {
     color: colors.primaryOn,
@@ -157,11 +162,15 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
     color: colors.text,
     marginBottom: spacing.sm,
+    textAlign: "right",
+    writingDirection: "rtl",
   },
   subtitle: {
     fontSize: 15,
     color: colors.textMuted,
     lineHeight: 22,
+    textAlign: "right",
+    writingDirection: "rtl",
   },
   card: {
     backgroundColor: colors.bgPanel,
@@ -181,11 +190,17 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: 1.6,
     textTransform: "uppercase",
+    textAlign: "right",
+    writingDirection: "rtl",
   },
   brandMark: {
     width: 82,
     height: 82,
     borderRadius: radius.lg,
+  },
+  brandWordmark: {
+    width: 172,
+    height: 48,
   },
   pill: {
     minHeight: 30,
@@ -206,5 +221,5 @@ const styles = StyleSheet.create({
   pillDotSuccess: { backgroundColor: colors.success },
   pillDotWarning: { backgroundColor: colors.warning },
   pillDotDanger: { backgroundColor: colors.error },
-  pillLabel: { color: colors.text, fontSize: 12, fontWeight: "700" },
+  pillLabel: { color: colors.text, fontSize: 12, fontWeight: "700", textAlign: "right", writingDirection: "rtl" },
 });
