@@ -332,7 +332,7 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
     const nextCustomerId = patchInput.customerId ?? existing.customerId;
     const nextEquipmentId = patchInput.equipmentId ?? existing.equipmentId;
 
-    if (patchInput.customerId !== undefined || patchInput.equipmentId !== undefined) {
+    if (nextCustomerId !== existing.customerId || nextEquipmentId !== existing.equipmentId) {
       await validateCustomerEquipmentLink(organizationId, nextCustomerId, nextEquipmentId);
     }
 
@@ -473,10 +473,10 @@ async function assertCustomerInOrganization(
 async function assertEquipmentInOrganization(
   organizationId: string,
   equipmentId: string,
-): Promise<{ id: string; customerId: string | null }> {
+): Promise<{ id: string; customerId: string | null; status: string }> {
   const equipment = await prisma.equipment.findFirst({
     where: { id: equipmentId, organizationId, ...activeOnly },
-    select: { id: true, customerId: true },
+    select: { id: true, customerId: true, status: true },
   });
 
   if (!equipment) {
@@ -504,5 +504,11 @@ async function validateCustomerEquipmentLink(
 ): Promise<void> {
   await assertCustomerInOrganization(organizationId, customerId);
   const equipment = await assertEquipmentInOrganization(organizationId, equipmentId);
+  if (equipment.status === "RETIRED") {
+    throw badRequest("Retired equipment cannot be assigned to a new service call", {
+      field: "equipmentId",
+      equipmentId,
+    });
+  }
   assertEquipmentMatchesCustomer(equipment, customerId);
 }

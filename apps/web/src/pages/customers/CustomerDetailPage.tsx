@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type { CustomerDetail, Equipment, ServiceCall } from "@amarok-one/types";
 import { Button } from "@amarok-one/ui";
 import { useAuth } from "../../auth/useAuth";
@@ -24,7 +24,11 @@ import {
   updateContactRequest,
   type CustomerContactFormInput,
 } from "../../lib/customers-api";
-import { listEquipmentRequest } from "../../lib/equipment-api";
+import {
+  deleteEquipmentRequest,
+  hasEquipmentWrite,
+  listEquipmentRequest,
+} from "../../lib/equipment-api";
 import { listServiceCallsRequest } from "../../lib/service-calls-api";
 
 type PageStatus = "loading" | "ready" | "error" | "deleting";
@@ -34,21 +38,33 @@ type ContactEditorMode = "closed" | "create" | { editId: string };
 export function CustomerDetailPage() {
   const { customerId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const initialTab: DetailTab =
+    requestedTab === "contacts" ||
+    requestedTab === "equipment" ||
+    requestedTab === "service-calls"
+      ? requestedTab
+      : "overview";
   const { user, accessToken } = useAuth();
   const { t, locale } = useTranslation();
   const [status, setStatus] = useState<PageStatus>("loading");
   const [customer, setCustomer] = useState<CustomerDetail | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<DetailTab>("overview");
+  const [activeTab, setActiveTab] = useState<DetailTab>(initialTab);
   const [contactEditor, setContactEditor] = useState<ContactEditorMode>("closed");
   const [contactSubmitting, setContactSubmitting] = useState(false);
   const [contactError, setContactError] = useState<string | null>(null);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [equipmentLoading, setEquipmentLoading] = useState(false);
+  const [equipmentActionId, setEquipmentActionId] = useState<string | null>(null);
+  const [equipmentMessage, setEquipmentMessage] = useState<string | null>(null);
+  const [equipmentError, setEquipmentError] = useState<string | null>(null);
   const [serviceCalls, setServiceCalls] = useState<ServiceCall[]>([]);
   const [serviceCallsLoading, setServiceCallsLoading] = useState(false);
 
   const canWrite = user ? hasCustomersWrite(user.permissions) : false;
+  const canWriteEquipment = user ? hasEquipmentWrite(user.permissions) : false;
   const emptyValue = t("common", "emptyValue");
 
   const reloadCustomer = useCallback(async () => {
@@ -262,6 +278,47 @@ export function CustomerDetailPage() {
     }
   }
 
+  async function handleRemoveEquipment(item: Equipment): Promise<void> {
+    if (!user || !accessToken || item.status === "retired") {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      t("customers", "removeEquipmentConfirm", { name: item.name }),
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setEquipmentActionId(item.id);
+    setEquipmentMessage(null);
+    setEquipmentError(null);
+
+    try {
+      const result = await deleteEquipmentRequest(user.organization.id, item.id, accessToken);
+
+      if (result.action === "deleted") {
+        setEquipment((current) => current.filter((entry) => entry.id !== item.id));
+        setEquipmentMessage(t("customers", "equipmentDeleted"));
+      } else {
+        setEquipment((current) =>
+          current.map((entry) =>
+            entry.id === item.id ? { ...entry, status: "retired" } : entry,
+          ),
+        );
+        setEquipmentMessage(t("customers", "equipmentRemoved"));
+      }
+    } catch (error) {
+      setEquipmentError(
+        isApiRequestError(error)
+          ? getApiErrorMessage(error, t("customers", "equipmentRemoveError"))
+          : t("customers", "equipmentRemoveError"),
+      );
+    } finally {
+      setEquipmentActionId(null);
+    }
+  }
+
   if (!user || !accessToken) {
     return <LoadingState message={t("customers", "loading")} />;
   }
@@ -305,6 +362,66 @@ export function CustomerDetailPage() {
     typeof contactEditor === "object"
       ? customer.contacts.find((entry) => entry.id === contactEditor.editId)
       : undefined;
+  const activeEquipment = equipment.filter((item) => item.status !== "retired");
+  const removedEquipment = equipment.filter((item) => item.status === "retired");
+
+  function renderEquipmentTable(items: Equipment[], removed = false) {
+    return (
+      <div className="customers-table-wrap">
+        <table className="customers-table">
+          <thead>
+            <tr>
+              <th>{t("equipment", "tableName")}</th>
+              <th>{t("equipment", "tableNumber")}</th>
+              <th>{t("equipment", "tableStatus")}</th>
+              <th>{t("customers", "equipmentActions")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => (
+              <tr key={item.id}>
+                <td>
+                  <Link to={`/equipment/${item.id}`} className="customers-table__link">
+                    <strong>{item.name}</strong>
+                  </Link>
+                </td>
+                <td dir="ltr">{item.internalNumber}</td>
+                <td>
+                  {removed ? (
+                    <span className="customers-table__badge">
+                      {t("customers", "removedFromFleet")}
+                    </span>
+                  ) : (
+                    <EquipmentStatusBadge status={item.status} />
+                  )}
+                </td>
+                <td>
+                  {canWriteEquipment ? (
+                    <div className="customers-page__actions">
+                      <Link to={`/equipment/${item.id}/edit`}>
+                        <Button variant="secondary">{t("common", "edit")}</Button>
+                      </Link>
+                      {!removed ? (
+                        <Button
+                          variant="secondary"
+                          disabled={equipmentActionId === item.id}
+                          onClick={() => void handleRemoveEquipment(item)}
+                        >
+                          {equipmentActionId === item.id
+                            ? t("common", "loading")
+                            : t("customers", "removeFromFleet")}
+                        </Button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
 
   return (
     <div className="customers-page">
@@ -488,38 +605,47 @@ export function CustomerDetailPage() {
 
       {activeTab === "equipment" ? (
         <section className="customer-detail-card customer-detail-card--wide">
-          <h3>{t("customers", "tabEquipment")}</h3>
+          <div className="customer-detail-card__header">
+            <div>
+              <h3>{t("customers", "tabEquipment")}</h3>
+              <p className="customer-detail-notes">{t("customers", "fleetHint")}</p>
+            </div>
+            {canWriteEquipment ? (
+              <Link to={`/equipment/new?customerId=${customer.id}`}>
+                <Button variant="primary">{t("customers", "addEquipment")}</Button>
+              </Link>
+            ) : null}
+          </div>
+
+          {equipmentError ? (
+            <div className="customers-alert customers-alert--error" role="alert">
+              {equipmentError}
+            </div>
+          ) : null}
+          {equipmentMessage ? (
+            <div className="customers-alert customers-alert--success" role="status">
+              {equipmentMessage}
+            </div>
+          ) : null}
+
           {equipmentLoading ? <LoadingState message={t("equipment", "loading")} /> : null}
+
           {!equipmentLoading && equipment.length === 0 ? (
             <p className="customer-detail-notes">{t("customers", "noRelatedEquipment")}</p>
           ) : null}
-          {!equipmentLoading && equipment.length > 0 ? (
-            <div className="customers-table-wrap">
-              <table className="customers-table">
-                <thead>
-                  <tr>
-                    <th>{t("equipment", "tableName")}</th>
-                    <th>{t("equipment", "tableNumber")}</th>
-                    <th>{t("equipment", "tableStatus")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {equipment.map((item) => (
-                    <tr key={item.id}>
-                      <td>
-                        <Link to={`/equipment/${item.id}`} className="customers-table__link">
-                          <strong>{item.name}</strong>
-                        </Link>
-                      </td>
-                      <td dir="ltr">{item.internalNumber}</td>
-                      <td>
-                        <EquipmentStatusBadge status={item.status} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+
+          {!equipmentLoading && activeEquipment.length > 0 ? (
+            <>
+              <h4>{t("customers", "activeFleet")}</h4>
+              {renderEquipmentTable(activeEquipment)}
+            </>
+          ) : null}
+
+          {!equipmentLoading && removedEquipment.length > 0 ? (
+            <>
+              <h4>{t("customers", "removedFleet")}</h4>
+              {renderEquipmentTable(removedEquipment, true)}
+            </>
           ) : null}
         </section>
       ) : null}

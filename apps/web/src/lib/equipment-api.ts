@@ -131,15 +131,24 @@ export async function updateEquipmentRequest(
   return response.data;
 }
 
+export interface RemoveEquipmentResult {
+  action: "deleted" | "retired";
+  serviceCallCount: number;
+}
+
 export async function deleteEquipmentRequest(
   organizationId: string,
   equipmentId: string,
   accessToken: string,
-): Promise<void> {
-  await apiRequest<void>(`${equipmentBase(organizationId)}/${equipmentId}`, {
-    method: "DELETE",
-    accessToken,
-  });
+): Promise<RemoveEquipmentResult> {
+  const response = await apiRequest<RemoveEquipmentResult>(
+    `${equipmentBase(organizationId)}/${equipmentId}`,
+    {
+      method: "DELETE",
+      accessToken,
+    },
+  );
+  return response.data;
 }
 
 export async function listCompaniesRequest(

@@ -285,12 +285,43 @@ export async function updateEquipment(
   }
 }
 
-export async function softDeleteEquipment(
+export interface RemoveEquipmentResult {
+  action: "deleted" | "retired";
+  serviceCallCount: number;
+}
+
+export async function removeEquipmentFromFleet(
   organizationId: string,
   equipmentId: string,
   actorId?: string,
-): Promise<void> {
+): Promise<RemoveEquipmentResult> {
   const equipment = await getEquipmentById(organizationId, equipmentId);
+  const serviceCallCount = await prisma.serviceCall.count({
+    where: { organizationId, equipmentId },
+  });
+
+  if (serviceCallCount > 0) {
+    await prisma.equipment.update({
+      where: { id: equipmentId },
+      data: { status: "RETIRED" },
+    });
+
+    await writeAuditLog({
+      organizationId,
+      actorId,
+      action: "equipment.removed_from_fleet",
+      entityType: "Equipment",
+      entityId: equipmentId,
+      metadata: {
+        internalNumber: equipment.internalNumber,
+        name: equipment.name,
+        serviceCallCount,
+        preservedForHistory: true,
+      },
+    });
+
+    return { action: "retired", serviceCallCount };
+  }
 
   await prisma.equipment.update({
     where: { id: equipmentId },
@@ -306,6 +337,9 @@ export async function softDeleteEquipment(
     metadata: {
       internalNumber: equipment.internalNumber,
       name: equipment.name,
+      serviceCallCount,
     },
   });
+
+  return { action: "deleted", serviceCallCount };
 }

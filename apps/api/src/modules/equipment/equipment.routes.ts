@@ -16,7 +16,7 @@ import {
   getEquipmentById,
   listEquipment,
   listEquipmentTypes,
-  softDeleteEquipment,
+  removeEquipmentFromFleet,
   updateEquipment,
 } from "./equipment.service.js";
 
@@ -98,7 +98,11 @@ export const equipmentRoutes = new Hono()
     zValidator("param", equipmentIdParamSchema),
     async (context) => {
       const { organizationId, equipmentId } = context.req.valid("param");
-      await softDeleteEquipment(organizationId, equipmentId, actorId(context));
-      return context.body(null, 204);
+      const result = await removeEquipmentFromFleet(
+        organizationId,
+        equipmentId,
+        actorId(context),
+      );
+      return context.json(createApiResponse(result));
     },
   );

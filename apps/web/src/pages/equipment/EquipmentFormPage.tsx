@@ -1,6 +1,6 @@
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type { Branch, Customer, EquipmentStatus, EquipmentType } from "@amarok-one/types";
 import { Button } from "@amarok-one/ui";
 import { useAuth } from "../../auth/useAuth";
@@ -46,10 +46,18 @@ export function EquipmentFormPage() {
   const { equipmentId } = useParams();
   const isEdit = Boolean(equipmentId);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const customerIdFromQuery = isEdit ? "" : (searchParams.get("customerId") ?? "");
+  const customerReturnPath = customerIdFromQuery
+    ? `/customers/${customerIdFromQuery}?tab=equipment`
+    : null;
   const { user, accessToken } = useAuth();
   const { t } = useTranslation();
   const [status, setStatus] = useState<FormStatus>(isEdit ? "loading" : "ready");
-  const [form, setForm] = useState<EquipmentFormInput>(EMPTY_FORM);
+  const [form, setForm] = useState<EquipmentFormInput>(() => ({
+    ...EMPTY_FORM,
+    customerId: customerIdFromQuery,
+  }));
   const [equipmentTypes, setEquipmentTypes] = useState<EquipmentType[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -197,7 +205,11 @@ export function EquipmentFormPage() {
         navigate(`/equipment/${equipmentId}`);
       } else {
         const created = await createEquipmentRequest(user.organization.id, accessToken, payload);
-        navigate(`/equipment/${created.id}`);
+        if (customerReturnPath && created.customerId === customerIdFromQuery) {
+          navigate(customerReturnPath);
+        } else {
+          navigate(`/equipment/${created.id}`);
+        }
       }
     } catch (error) {
       setErrorMessage(
@@ -238,7 +250,13 @@ export function EquipmentFormPage() {
             {isEdit ? t("equipment", "editTitle") : t("equipment", "newTitle")}
           </h2>
         </div>
-        <Link to={isEdit && equipmentId ? `/equipment/${equipmentId}` : "/equipment"}>
+        <Link
+          to={
+            isEdit && equipmentId
+              ? `/equipment/${equipmentId}`
+              : (customerReturnPath ?? "/equipment")
+          }
+        >
           <Button variant="secondary">{t("common", "cancel")}</Button>
         </Link>
       </header>

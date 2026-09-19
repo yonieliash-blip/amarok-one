@@ -372,6 +372,17 @@ export interface TranslationMessages {
     contactSaveError: string;
     contactDeleteError: string;
     noRelatedEquipment: string;
+    addEquipment: string;
+    activeFleet: string;
+    removedFleet: string;
+    fleetHint: string;
+    equipmentActions: string;
+    removeFromFleet: string;
+    removedFromFleet: string;
+    removeEquipmentConfirm: string;
+    equipmentDeleted: string;
+    equipmentRemoved: string;
+    equipmentRemoveError: string;
     noRelatedServiceCalls: string;
     sortBy: string;
     sortOrder: string;

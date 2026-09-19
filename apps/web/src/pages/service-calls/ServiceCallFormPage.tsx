@@ -66,9 +66,12 @@ export function ServiceCallFormPage() {
   const priorityOptions: ServiceCallPriority[] = ["low", "normal", "high", "urgent"];
 
   const compatibleEquipment = useMemo(() => {
-    if (!form.customerId) return equipment;
-    return equipment.filter((item) => !item.customerId || item.customerId === form.customerId);
-  }, [equipment, form.customerId]);
+    const available = equipment.filter(
+      (item) => item.status !== "retired" || (isEdit && item.id === form.equipmentId),
+    );
+    if (!form.customerId) return available;
+    return available.filter((item) => !item.customerId || item.customerId === form.customerId);
+  }, [equipment, form.customerId, form.equipmentId, isEdit]);
 
   useEffect(() => {
     if (!user || !accessToken) return;
