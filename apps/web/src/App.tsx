@@ -27,6 +27,7 @@ import { CustomerFormPage } from "./pages/customers/CustomerFormPage";
 import { CustomersListPage } from "./pages/customers/CustomersListPage";
 import { MemberAccessPage } from "./pages/administration/MemberAccessPage";
 import { EquipmentCatalogPage } from "./pages/administration/EquipmentCatalogPage";
+import { WorkReportPartsPage } from "./pages/administration/WorkReportPartsPage";
 import { TechniciansListPage } from "./pages/technicians/TechniciansListPage";
 import { CurrentTechnicianLocationsPage } from "./pages/technicians/CurrentTechnicianLocationsPage";
 import { AttendanceReportPage } from "./pages/reports/AttendanceReportPage";
@@ -92,6 +93,7 @@ export function App() {
                 <Route path="reports" element={<AttendanceReportPage />} />
                 <Route path="administration/member-access" element={<MemberAccessPage />} />
                 <Route path="administration/equipment-catalog" element={<EquipmentCatalogPage />} />
+                <Route path="administration/work-report-parts" element={<WorkReportPartsPage />} />
               </Route>
             </Route>
           </Route>

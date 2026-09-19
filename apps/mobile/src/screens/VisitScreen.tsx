@@ -295,6 +295,9 @@ export function VisitScreen({ route, navigation }: Props) {
                 }
               />
             ) : null}
+            {visit && (visit.status === "working" || visit.status === "in_progress") ? (
+              <Button label="דוח עבודה" variant="secondary" onPress={() => navigation.navigate("WorkReport", { serviceCallId, visitId: visit.id, title })} />
+            ) : null}
           </>
         ) : (
           <Text style={styles.body}>לא הוקצה לך ביקור בקריאה זו.</Text>

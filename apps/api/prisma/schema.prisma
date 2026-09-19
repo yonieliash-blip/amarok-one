@@ -27,6 +27,10 @@ model Organization {
   equipmentManufacturers EquipmentManufacturer[]
   equipmentModels       EquipmentCatalogModel[]
   equipment             Equipment[]
+  workReportPartCategories WorkReportPartCategory[]
+  workReportParts       WorkReportPart[]
+  workReports           WorkReport[]
+  workReportMedia       WorkReportMedia[]
   serviceCalls          ServiceCall[]
   serviceCallVisits     ServiceCallVisit[]
   workflowEvents        WorkflowEvent[]
@@ -109,6 +113,8 @@ model User {
   auditLogs                 AuditLog[]             @relation("AuditActor")
   assignedServiceCalls      ServiceCall[]          @relation("AssignedTechnician")
   serviceCallVisits         ServiceCallVisit[]     @relation("VisitTechnician")
+  authoredWorkReports       WorkReport[]           @relation("WorkReportTechnician")
+  editedWorkReports         WorkReport[]           @relation("WorkReportEditor")
   workDays                  WorkDay[]
   approvedWorkDays          WorkDay[]              @relation("WorkDayApprover")
   lockedAttendancePeriods   AttendancePeriodLock[] @relation("AttendancePeriodLocker")
@@ -649,6 +655,7 @@ model ServiceCall {
   branch       Branch?            @relation(fields: [branchId], references: [id], onDelete: SetNull)
   assignedUser User?              @relation("AssignedTechnician", fields: [assignedUserId], references: [id], onDelete: SetNull)
   visits       ServiceCallVisit[]
+  workReports  WorkReport[]
 
   @@unique([organizationId, serviceCallNumber])
   @@index([organizationId])
@@ -683,6 +690,7 @@ model ServiceCallVisit {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   serviceCall  ServiceCall  @relation(fields: [serviceCallId], references: [id], onDelete: Restrict)
   technician   User         @relation("VisitTechnician", fields: [technicianId], references: [id], onDelete: Restrict)
+  workReports  WorkReport[]
 
   @@unique([serviceCallId, sequence])
   @@index([organizationId])
@@ -690,6 +698,106 @@ model ServiceCallVisit {
   @@index([organizationId, technicianId])
   @@index([organizationId, deletedAt])
   @@map("service_call_visits")
+}
+
+/// Tenant-managed catalog used only to document parts used in field work reports.
+model WorkReportPartCategory {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  name           String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  parts        WorkReportPart[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId, deletedAt])
+  @@map("work_report_part_categories")
+}
+
+model WorkReportPart {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  categoryId     String   @db.Uuid
+  name           String
+  partNumber     String?
+  unit           String   @default("יח׳")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  category     WorkReportPartCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  reportItems  WorkReportPartItem[]
+
+  @@index([organizationId, categoryId, deletedAt])
+  @@map("work_report_parts")
+}
+
+model WorkReport {
+  id                     String   @id @default(uuid()) @db.Uuid
+  organizationId         String   @db.Uuid
+  serviceCallId          String   @db.Uuid
+  visitId                String   @db.Uuid
+  reportNumber           String
+  workDescription        String   @default("")
+  customerRepresentative String?
+  customerRepresentativeRole String?
+  signatureStrokes       Json?
+  signedAt               DateTime?
+  technicianId           String   @db.Uuid
+  lastEditedById         String?  @db.Uuid
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  deletedAt              DateTime?
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  serviceCall  ServiceCall        @relation(fields: [serviceCallId], references: [id], onDelete: Restrict)
+  visit        ServiceCallVisit   @relation(fields: [visitId], references: [id], onDelete: Restrict)
+  technician   User               @relation("WorkReportTechnician", fields: [technicianId], references: [id], onDelete: Restrict)
+  lastEditedBy User?              @relation("WorkReportEditor", fields: [lastEditedById], references: [id], onDelete: SetNull)
+  parts        WorkReportPartItem[]
+  media        WorkReportMedia[]
+
+  @@unique([organizationId, reportNumber])
+  @@unique([visitId])
+  @@index([organizationId, serviceCallId, deletedAt])
+  @@map("work_reports")
+}
+
+model WorkReportPartItem {
+  id           String   @id @default(uuid()) @db.Uuid
+  reportId     String   @db.Uuid
+  partId       String   @db.Uuid
+  quantity     Decimal  @db.Decimal(12, 3)
+  createdAt    DateTime @default(now())
+
+  report WorkReport     @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  part   WorkReportPart @relation(fields: [partId], references: [id], onDelete: Restrict)
+
+  @@unique([reportId, partId])
+  @@map("work_report_part_items")
+}
+
+model WorkReportMedia {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  reportId       String   @db.Uuid
+  mediaType      String
+  fileName       String
+  mimeType       String
+  storageKey     String   @unique
+  sizeBytes      Int
+  createdAt      DateTime @default(now())
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  report       WorkReport   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, reportId, deletedAt])
+  @@map("work_report_media")
 }
 
 /// Append-only workflow event stream (service-call aggregate).

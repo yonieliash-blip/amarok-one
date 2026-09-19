@@ -7,6 +7,7 @@ import { LoginScreen } from "../screens/LoginScreen";
 import { HomeScreen } from "../screens/HomeScreen";
 import { CurrentTaskScreen } from "../screens/CurrentTaskScreen";
 import { VisitScreen } from "../screens/VisitScreen";
+import { WorkReportScreen } from "../screens/WorkReportScreen";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -54,6 +55,7 @@ export function RootNavigator() {
               options={{ title: "משימה נוכחית" }}
             />
             <Stack.Screen name="Visit" component={VisitScreen} options={{ title: "ביקור" }} />
+            <Stack.Screen name="WorkReport" component={WorkReportScreen} options={{ title: "דוח עבודה" }} />
           </>
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />

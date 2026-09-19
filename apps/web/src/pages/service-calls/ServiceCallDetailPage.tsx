@@ -14,6 +14,7 @@ import { ServiceCallLifecyclePanel } from "../../components/ServiceCallLifecycle
 import { ServiceCallTechnicianWorkflowPanel } from "../../components/ServiceCallTechnicianWorkflowPanel";
 import { ServiceCallPriorityBadge } from "../../components/ServiceCallPriorityBadge";
 import { ServiceCallVisitTimeline } from "../../components/ServiceCallVisitTimeline";
+import { WorkReportManagerPanel } from "../../components/WorkReportManagerPanel";
 import { EmptyState } from "../../components/EmptyState";
 import { ErrorState } from "../../components/ErrorState";
 import { LoadingState } from "../../components/LoadingState";
@@ -246,6 +247,8 @@ export function ServiceCallDetailPage() {
         errorMessage={lifecycleErrorMessage}
         onRetry={() => void reloadDetail()}
       />
+
+      {!technicianOnly ? <WorkReportManagerPanel organizationId={user.organization.id} serviceCallId={serviceCall.id} accessToken={accessToken} lifecycle={lifecycle} /> : null}
 
       <div className="customer-detail-grid">
         <section className="customer-detail-card">

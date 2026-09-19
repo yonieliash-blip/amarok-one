@@ -14,6 +14,7 @@ import type { AccessService } from "./modules/access/access.service.js";
 import type { ServiceCallService } from "./modules/service-calls/service-call.service.js";
 import { technicianRoutes } from "./modules/technicians/technician.routes.js";
 import { attendanceRoutes } from "./modules/attendance/attendance.routes.js";
+import { workReportRoutes } from "./modules/work-reports/work-report.routes.js";
 
 export function createApiRoutes(
   serviceCallService: ServiceCallService,
@@ -31,6 +32,7 @@ export function createApiRoutes(
     .route("/organizations/:organizationId/equipment", equipmentRoutes)
     .route("/organizations/:organizationId/technicians", technicianRoutes)
     .route("/organizations/:organizationId/attendance", attendanceRoutes)
+    .route("/organizations/:organizationId", workReportRoutes())
     .route(
       "/organizations/:organizationId/service-calls",
       createServiceCallRoutes(serviceCallService),

@@ -35,6 +35,8 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-info}
     expose:
       - "3000"
+    volumes:
+      - work_report_uploads:/app/uploads
     networks:
       - backend
       - edge
@@ -102,3 +104,4 @@ volumes:
   postgres_data:
   caddy_data:
   caddy_config:
+  work_report_uploads:
