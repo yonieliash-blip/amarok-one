@@ -32,8 +32,12 @@ async function reportForVisit(organizationId: string, serviceCallId: string, vis
   if (!allowManager && visit.technicianId !== actorId) throw forbidden("Only the assigned technician can access this report");
   let report = await prisma.workReport.findFirst({ where: { visitId, organizationId, ...activeOnly }, include });
   if (!report) {
-    const count = await prisma.workReport.count({ where: { organizationId } });
-    report = await prisma.workReport.create({ data: { organizationId, serviceCallId, visitId, technicianId: visit.technicianId, lastEditedById: actorId, reportNumber: `AM${count + 1}` }, include });
+    const sequence = await prisma.$queryRaw<Array<{ value: bigint }>>`
+      SELECT nextval('work_report_number_seq') AS value
+    `;
+    const next = sequence[0];
+    if (!next) throw new Error("Work report number sequence did not return a value");
+    report = await prisma.workReport.create({ data: { organizationId, serviceCallId, visitId, technicianId: visit.technicianId, lastEditedById: actorId, reportNumber: `AM${next.value}` }, include });
   }
   return { visit, report };
 }

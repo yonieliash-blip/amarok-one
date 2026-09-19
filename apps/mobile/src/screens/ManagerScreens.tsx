@@ -1,7 +1,7 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { Equipment, OrganizationMember, ServiceCall, ServiceCallLifecycleView } from "@amarok-one/types";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, Linking, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useAuth } from "../auth/AuthContext";
 import { listCurrentTechnicianLocations, listCustomers, listEquipment, type CurrentTechnicianLocation } from "../api/manager";
 import { assignServiceCallTechnician, createManagerServiceCall, getServiceCall, getServiceCallLifecycle, listAssignableTechnicians, listMyServiceCalls } from "../api/service-calls";
@@ -83,11 +83,23 @@ export function ManagerNewServiceCallScreen({ navigation }: NewCallProps) {
   const customerEquipment = equipment.filter((item) => item.customerId === customerId && item.status !== "retired");
   async function save(): Promise<void> { if (!user || !accessToken || !customerId || !equipmentId || title.trim().length < 2) { setError("יש למלא מספר קריאה, כותרת, לקוח וציוד."); return; } setSaving(true); setError(null); try { const created = await createManagerServiceCall(user.organization.id, accessToken, { serviceCallNumber: number.trim(), title: title.trim(), description: description.trim() || undefined, priority, customerId, equipmentId }); navigation.replace("ManagerServiceCall", { serviceCallId: created.id, title: created.serviceCallNumber }); } catch (e) { setError(errorMessage(e, "לא ניתן לפתוח את הקריאה")); } finally { setSaving(false); } }
   if (loading) return <Page><ActivityIndicator color={colors.primary} style={styles.loader} /></Page>;
-  return <FlatList style={styles.page} contentContainerStyle={styles.content} data={customers} keyExtractor={(customer) => customer.id}
-    ListHeaderComponent={<><ScreenSubtitle>בחר לקוח, ואז יוצג רק הצי הפעיל ששייך אליו.</ScreenSubtitle><Text style={styles.fieldLabel}>מספר קריאה</Text><TextInput value={number} onChangeText={setNumber} style={styles.input} autoCapitalize="characters" /><Text style={styles.fieldLabel}>כותרת התקלה</Text><TextInput value={title} onChangeText={setTitle} style={styles.input} placeholder="לדוגמה: תקלה הידראולית" placeholderTextColor={colors.textSubtle} /><Text style={styles.fieldLabel}>פירוט (אופציונלי)</Text><TextInput value={description} onChangeText={setDescription} multiline style={[styles.input, styles.textArea]} placeholderTextColor={colors.textSubtle} /><Text style={styles.fieldLabel}>דחיפות</Text><View style={styles.priorityRow}>{(["low", "normal", "high", "urgent"] as const).map((value) => <Pressable key={value} onPress={() => setPriority(value)} style={[styles.choice, priority === value && styles.choiceSelected]}><Text style={styles.choiceText}>{({ low: "נמוכה", normal: "רגילה", high: "גבוהה", urgent: "דחופה" })[value]}</Text></Pressable>)}</View><Text style={styles.fieldLabel}>לקוח</Text>{error ? <Text style={styles.error}>{error}</Text> : null}</>}
-    renderItem={({ item: customer }) => <Pressable onPress={() => { setCustomerId(customer.id); setEquipmentId(null); }} style={[styles.row, customerId === customer.id && styles.selectedRow]}><Text style={styles.rowTitle}>{customer.name}</Text><Text style={styles.rowMeta}>{customer.customerNumber}</Text></Pressable>}
-    ListFooterComponent={customerId ? <View style={styles.footerBlock}><Text style={styles.fieldLabel}>ציוד של הלקוח</Text>{customerEquipment.length ? customerEquipment.map((item) => <Pressable key={item.id} onPress={() => setEquipmentId(item.id)} style={[styles.row, equipmentId === item.id && styles.selectedRow]}><Text style={styles.rowTitle}>{item.name}</Text><Text style={styles.rowMeta}>{item.internalNumber}</Text></Pressable>) : <Text style={styles.empty}>אין ציוד פעיל ללקוח שנבחר.</Text>}<Button label="פתיחת קריאה" loading={saving} onPress={() => void save()} /></View> : null}
+  if (!customerId) return <FlatList style={styles.page} contentContainerStyle={styles.content} data={customers} keyExtractor={(customer) => customer.id}
+    ListHeaderComponent={<><ScreenTitle>בחירת לקוח</ScreenTitle><ScreenSubtitle>בחר לקוח כדי לעבור מיד לציוד ששייך אליו.</ScreenSubtitle>{error ? <Text style={styles.error}>{error}</Text> : null}</>}
+    ListEmptyComponent={<Text style={styles.empty}>אין לקוחות פעילים להצגה.</Text>}
+    renderItem={({ item: customer }) => <Pressable onPress={() => setCustomerId(customer.id)} style={styles.row}><Text style={styles.rowTitle}>{customer.name}</Text><Text style={styles.rowMeta}>{customer.customerNumber}</Text></Pressable>}
   />;
+  const selectedCustomer = customers.find((customer) => customer.id === customerId);
+  return <ScrollView style={styles.page} contentContainerStyle={styles.content}>
+    <Button label="חזרה לבחירת לקוח" variant="secondary" onPress={() => { setCustomerId(null); setEquipmentId(null); }} />
+    <ScreenTitle>פתיחת קריאה</ScreenTitle><ScreenSubtitle>לקוח: {selectedCustomer?.name ?? "—"}</ScreenSubtitle>
+    <Text style={styles.fieldLabel}>ציוד של הלקוח</Text>
+    {customerEquipment.length ? customerEquipment.map((item) => <Pressable key={item.id} onPress={() => setEquipmentId(item.id)} style={[styles.row, equipmentId === item.id && styles.selectedRow]}><Text style={styles.rowTitle}>{item.name}</Text><Text style={styles.rowMeta}>{item.internalNumber}</Text></Pressable>) : <Text style={styles.empty}>אין ציוד פעיל ללקוח שנבחר.</Text>}
+    <Text style={styles.fieldLabel}>מספר קריאה</Text><TextInput value={number} onChangeText={setNumber} style={styles.input} autoCapitalize="characters" />
+    <Text style={styles.fieldLabel}>כותרת התקלה</Text><TextInput value={title} onChangeText={setTitle} style={styles.input} placeholder="לדוגמה: תקלה הידראולית" placeholderTextColor={colors.textSubtle} />
+    <Text style={styles.fieldLabel}>פירוט (אופציונלי)</Text><TextInput value={description} onChangeText={setDescription} multiline style={[styles.input, styles.textArea]} placeholderTextColor={colors.textSubtle} />
+    <Text style={styles.fieldLabel}>דחיפות</Text><View style={styles.priorityRow}>{(["low", "normal", "high", "urgent"] as const).map((value) => <Pressable key={value} onPress={() => setPriority(value)} style={[styles.choice, priority === value && styles.choiceSelected]}><Text style={styles.choiceText}>{({ low: "נמוכה", normal: "רגילה", high: "גבוהה", urgent: "דחופה" })[value]}</Text></Pressable>)}</View>
+    {error ? <Text style={styles.error}>{error}</Text> : null}<Button label="פתיחת קריאה" loading={saving} onPress={() => void save()} />
+  </ScrollView>;
 }
 
 export function ManagerServiceCallScreen({ route, navigation }: CallProps) {
