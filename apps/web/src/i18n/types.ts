@@ -48,6 +48,7 @@ export interface TranslationMessages {
     accounting: string;
     reports: string;
     memberAccess: string;
+    equipmentCatalog: string;
     navGroupOverview: string;
     navGroupOperations: string;
     navGroupField: string;
@@ -478,6 +479,32 @@ export interface TranslationMessages {
     statusOutOfService: string;
     statusRetired: string;
     viewCustomer: string;
+    noManufacturer: string;
+    noModel: string;
+  };
+  equipmentCatalog: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    loading: string;
+    loadError: string;
+    saveError: string;
+    loadDefaults: string;
+    defaultsLoaded: string;
+    types: string;
+    manufacturers: string;
+    models: string;
+    newType: string;
+    newManufacturer: string;
+    newModel: string;
+    addType: string;
+    addManufacturer: string;
+    addModel: string;
+    typeAdded: string;
+    manufacturerAdded: string;
+    modelAdded: string;
+    none: string;
+    modelCount: string;
   };
   serviceCalls: {
     callsEyebrow: string;

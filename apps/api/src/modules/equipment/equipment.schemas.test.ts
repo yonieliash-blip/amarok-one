@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { createEquipmentSchema, updateEquipmentSchema } from "./equipment.schemas.js";
+import {
+  createEquipmentCatalogModelSchema,
+  createEquipmentManufacturerSchema,
+  createEquipmentSchema,
+  createEquipmentTypeSchema,
+  updateEquipmentSchema,
+} from "./equipment.schemas.js";
 
 const validTypeId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const validManufacturerId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 
 describe("equipment.schemas", () => {
   it("accepts valid create payloads", () => {
@@ -32,5 +39,27 @@ describe("equipment.schemas", () => {
     const result = updateEquipmentSchema.safeParse({});
 
     expect(result.success).toBe(false);
+  });
+
+  it("accepts catalog type, manufacturer, and model payloads", () => {
+    expect(createEquipmentTypeSchema.safeParse({ name: "באגר" }).success).toBe(true);
+    expect(createEquipmentManufacturerSchema.safeParse({ name: "קטרפילר" }).success).toBe(true);
+    expect(
+      createEquipmentCatalogModelSchema.safeParse({
+        name: "320 GC",
+        equipmentManufacturerId: validManufacturerId,
+        equipmentTypeId: validTypeId,
+      }).success,
+    ).toBe(true);
+  });
+
+  it("rejects catalog models without valid catalog relationships", () => {
+    expect(
+      createEquipmentCatalogModelSchema.safeParse({
+        name: "320 GC",
+        equipmentManufacturerId: "not-a-uuid",
+        equipmentTypeId: validTypeId,
+      }).success,
+    ).toBe(false);
   });
 });

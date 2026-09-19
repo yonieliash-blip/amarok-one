@@ -8,12 +8,42 @@ export const equipmentIdParamSchema = organizationIdParamSchema.extend({
   equipmentId: z.string().uuid(),
 });
 
+export const catalogManufacturerIdParamSchema = organizationIdParamSchema.extend({
+  manufacturerId: z.string().uuid(),
+});
+
+export const catalogModelIdParamSchema = organizationIdParamSchema.extend({
+  modelId: z.string().uuid(),
+});
+
+export const createEquipmentTypeSchema = z.object({
+  name: z.string().trim().min(2).max(128),
+  description: z.string().trim().max(500).optional(),
+});
+
+export const createEquipmentManufacturerSchema = z.object({
+  name: z.string().trim().min(2).max(128),
+});
+
+export const createEquipmentCatalogModelSchema = z.object({
+  name: z.string().trim().min(1).max(128),
+  equipmentManufacturerId: z.string().uuid(),
+  equipmentTypeId: z.string().uuid(),
+});
+
+export const listEquipmentCatalogModelsQuerySchema = z.object({
+  equipmentManufacturerId: z.string().uuid().optional(),
+  equipmentTypeId: z.string().uuid().optional(),
+});
+
 export const createEquipmentSchema = z.object({
   name: z.string().trim().min(2).max(256),
   internalNumber: codeSchema,
   serialNumber: z.string().trim().min(2).max(128).optional(),
   manufacturer: z.string().trim().min(2).max(128).optional(),
   model: z.string().trim().min(1).max(128).optional(),
+  manufacturerId: z.string().uuid().optional(),
+  modelId: z.string().uuid().optional(),
   year: z.coerce.number().int().min(1900).max(2100).optional(),
   equipmentTypeId: z.string().uuid(),
   customerId: z.string().uuid().optional(),
@@ -34,6 +64,8 @@ export const updateEquipmentSchema = z
     serialNumber: z.string().trim().min(2).max(128).nullable().optional(),
     manufacturer: z.string().trim().min(2).max(128).nullable().optional(),
     model: z.string().trim().min(1).max(128).nullable().optional(),
+    manufacturerId: z.string().uuid().nullable().optional(),
+    modelId: z.string().uuid().nullable().optional(),
     year: z.coerce.number().int().min(1900).max(2100).nullable().optional(),
     equipmentTypeId: z.string().uuid().optional(),
     customerId: z.string().uuid().nullable().optional(),
@@ -61,3 +93,6 @@ export const listEquipmentQuerySchema = paginationQuerySchema.extend({
 
 export type CreateEquipmentInput = z.infer<typeof createEquipmentSchema>;
 export type UpdateEquipmentInput = z.infer<typeof updateEquipmentSchema>;
+export type CreateEquipmentTypeInput = z.infer<typeof createEquipmentTypeSchema>;
+export type CreateEquipmentManufacturerInput = z.infer<typeof createEquipmentManufacturerSchema>;
+export type CreateEquipmentCatalogModelInput = z.infer<typeof createEquipmentCatalogModelSchema>;

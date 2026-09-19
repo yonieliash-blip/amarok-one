@@ -44,6 +44,26 @@ export interface EquipmentType {
   updatedAt: ISODateString;
 }
 
+/** Tenant-scoped equipment manufacturer catalog entry. */
+export interface EquipmentManufacturer {
+  id: EntityId;
+  organizationId: EntityId;
+  name: string;
+  createdAt: ISODateString;
+  updatedAt: ISODateString;
+}
+
+/** Tenant-scoped equipment model catalog entry. */
+export interface EquipmentCatalogModel {
+  id: EntityId;
+  organizationId: EntityId;
+  equipmentManufacturerId: EntityId;
+  equipmentTypeId: EntityId;
+  name: string;
+  createdAt: ISODateString;
+  updatedAt: ISODateString;
+}
+
 /** Equipment asset record */
 export interface Equipment {
   id: EntityId;
@@ -53,6 +73,8 @@ export interface Equipment {
   serialNumber?: string;
   manufacturer?: string;
   model?: string;
+  manufacturerId?: EntityId;
+  modelId?: EntityId;
   year?: number;
   equipmentTypeId: EntityId;
   equipmentType?: Pick<EquipmentType, "id" | "name" | "code">;

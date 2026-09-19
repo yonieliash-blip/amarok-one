@@ -7,15 +7,25 @@ import { tenantGuard } from "../../middleware/tenant-guard.js";
 import { organizationIdParamSchema } from "../organizations/organization.schemas.js";
 import {
   createEquipmentSchema,
+  createEquipmentCatalogModelSchema,
+  createEquipmentManufacturerSchema,
+  createEquipmentTypeSchema,
   equipmentIdParamSchema,
+  listEquipmentCatalogModelsQuerySchema,
   listEquipmentQuerySchema,
   updateEquipmentSchema,
 } from "./equipment.schemas.js";
 import {
   createEquipment,
+  createEquipmentCatalogModel,
+  createEquipmentManufacturer,
+  createEquipmentType,
   getEquipmentById,
   listEquipment,
+  listEquipmentCatalogModels,
+  listEquipmentManufacturers,
   listEquipmentTypes,
+  loadDefaultEquipmentCatalog,
   removeEquipmentFromFleet,
   updateEquipment,
 } from "./equipment.service.js";
@@ -34,6 +44,86 @@ export const equipmentRoutes = new Hono()
       const { organizationId } = context.req.valid("param");
       const types = await listEquipmentTypes(organizationId);
       return context.json(createApiResponse(types));
+    },
+  )
+  .post(
+    "/types",
+    requirePermission("equipment:write"),
+    zValidator("param", organizationIdParamSchema),
+    zValidator("json", createEquipmentTypeSchema),
+    async (context) => {
+      const { organizationId } = context.req.valid("param");
+      const equipmentType = await createEquipmentType(
+        organizationId,
+        context.req.valid("json"),
+        actorId(context),
+      );
+      return context.json(createApiResponse(equipmentType), 201);
+    },
+  )
+  .get(
+    "/catalog/manufacturers",
+    requirePermission("equipment:read"),
+    zValidator("param", organizationIdParamSchema),
+    async (context) => {
+      const { organizationId } = context.req.valid("param");
+      return context.json(createApiResponse(await listEquipmentManufacturers(organizationId)));
+    },
+  )
+  .post(
+    "/catalog/manufacturers",
+    requirePermission("equipment:write"),
+    zValidator("param", organizationIdParamSchema),
+    zValidator("json", createEquipmentManufacturerSchema),
+    async (context) => {
+      const { organizationId } = context.req.valid("param");
+      const manufacturer = await createEquipmentManufacturer(
+        organizationId,
+        context.req.valid("json"),
+        actorId(context),
+      );
+      return context.json(createApiResponse(manufacturer), 201);
+    },
+  )
+  .get(
+    "/catalog/models",
+    requirePermission("equipment:read"),
+    zValidator("param", organizationIdParamSchema),
+    zValidator("query", listEquipmentCatalogModelsQuerySchema),
+    async (context) => {
+      const { organizationId } = context.req.valid("param");
+      const query = context.req.valid("query");
+      const models = await listEquipmentCatalogModels(
+        organizationId,
+        query.equipmentManufacturerId,
+        query.equipmentTypeId,
+      );
+      return context.json(createApiResponse(models));
+    },
+  )
+  .post(
+    "/catalog/models",
+    requirePermission("equipment:write"),
+    zValidator("param", organizationIdParamSchema),
+    zValidator("json", createEquipmentCatalogModelSchema),
+    async (context) => {
+      const { organizationId } = context.req.valid("param");
+      const model = await createEquipmentCatalogModel(
+        organizationId,
+        context.req.valid("json"),
+        actorId(context),
+      );
+      return context.json(createApiResponse(model), 201);
+    },
+  )
+  .post(
+    "/catalog/defaults",
+    requirePermission("equipment:write"),
+    zValidator("param", organizationIdParamSchema),
+    async (context) => {
+      const { organizationId } = context.req.valid("param");
+      const result = await loadDefaultEquipmentCatalog(organizationId, actorId(context));
+      return context.json(createApiResponse(result));
     },
   )
   .get(
@@ -98,11 +188,7 @@ export const equipmentRoutes = new Hono()
     zValidator("param", equipmentIdParamSchema),
     async (context) => {
       const { organizationId, equipmentId } = context.req.valid("param");
-      const result = await removeEquipmentFromFleet(
-        organizationId,
-        equipmentId,
-        actorId(context),
-      );
+      const result = await removeEquipmentFromFleet(organizationId, equipmentId, actorId(context));
       return context.json(createApiResponse(result));
     },
   );

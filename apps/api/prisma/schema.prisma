@@ -24,6 +24,8 @@ model Organization {
   customers             Customer[]
   customerContacts      CustomerContact[]
   equipmentTypes        EquipmentType[]
+  equipmentManufacturers EquipmentManufacturer[]
+  equipmentModels       EquipmentCatalogModel[]
   equipment             Equipment[]
   serviceCalls          ServiceCall[]
   serviceCallVisits     ServiceCallVisit[]
@@ -472,11 +474,56 @@ model EquipmentType {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   equipment    Equipment[]
+  models       EquipmentCatalogModel[]
 
   @@unique([organizationId, code])
   @@index([organizationId])
   @@index([organizationId, deletedAt])
   @@map("equipment_types")
+}
+
+/// Tenant-scoped manufacturer catalog used when registering equipment assets.
+model EquipmentManufacturer {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @db.Uuid
+  name           String
+  key            String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  models       EquipmentCatalogModel[]
+  equipment    Equipment[]
+
+  @@unique([organizationId, key])
+  @@index([organizationId])
+  @@index([organizationId, deletedAt])
+  @@map("equipment_manufacturers")
+}
+
+/// Tenant-scoped model catalog. A model belongs to one manufacturer and equipment type.
+model EquipmentCatalogModel {
+  id                      String                @id @default(uuid()) @db.Uuid
+  organizationId          String                @db.Uuid
+  equipmentManufacturerId String                @db.Uuid
+  equipmentTypeId         String                @db.Uuid
+  name                    String
+  key                     String
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+  deletedAt               DateTime?
+
+  organization          Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  manufacturer          EquipmentManufacturer  @relation(fields: [equipmentManufacturerId], references: [id], onDelete: Restrict)
+  equipmentType         EquipmentType          @relation(fields: [equipmentTypeId], references: [id], onDelete: Restrict)
+  equipment             Equipment[]
+
+  @@unique([equipmentManufacturerId, equipmentTypeId, key])
+  @@index([organizationId])
+  @@index([organizationId, deletedAt])
+  @@index([equipmentManufacturerId, equipmentTypeId])
+  @@map("equipment_models")
 }
 
 /// Tenant-scoped equipment asset (machine, vehicle, or tool).
@@ -491,6 +538,8 @@ model Equipment {
   serialNumber       String?
   manufacturer       String?
   model              String?
+  manufacturerId     String?         @db.Uuid
+  modelId            String?         @db.Uuid
   year               Int?
   status             EquipmentStatus @default(ACTIVE)
   engineHours        Decimal?        @db.Decimal(10, 2)
@@ -505,6 +554,8 @@ model Equipment {
 
   organization  Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   equipmentType EquipmentType @relation(fields: [equipmentTypeId], references: [id], onDelete: Restrict)
+  manufacturerRef EquipmentManufacturer? @relation(fields: [manufacturerId], references: [id], onDelete: SetNull)
+  modelRef        EquipmentCatalogModel? @relation(fields: [modelId], references: [id], onDelete: SetNull)
   customer      Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
   branch        Branch?       @relation(fields: [branchId], references: [id], onDelete: SetNull)
   serviceCalls  ServiceCall[]
@@ -517,6 +568,8 @@ model Equipment {
   @@index([organizationId, equipmentTypeId])
   @@index([organizationId, manufacturer])
   @@index([organizationId, model])
+  @@index([organizationId, manufacturerId])
+  @@index([organizationId, modelId])
   @@map("equipment")
 }
 

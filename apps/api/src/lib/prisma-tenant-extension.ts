@@ -12,6 +12,8 @@ const TENANT_SCOPED_MODELS = new Set([
   "Customer",
   "CustomerContact",
   "EquipmentType",
+  "EquipmentManufacturer",
+  "EquipmentCatalogModel",
   "Equipment",
   "ServiceCall",
   "ServiceCallVisit",

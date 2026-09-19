@@ -3,7 +3,9 @@ import type {
   Branch,
   Company,
   Equipment,
+  EquipmentCatalogModel,
   EquipmentDetail,
+  EquipmentManufacturer,
   EquipmentStatus,
   EquipmentType,
 } from "@amarok-one/types";
@@ -38,6 +40,87 @@ export async function listEquipmentTypesRequest(
     accessToken,
   });
   return response.data ?? [];
+}
+
+export async function createEquipmentTypeRequest(
+  organizationId: string,
+  accessToken: string,
+  input: { name: string; description?: string },
+): Promise<EquipmentType> {
+  const response = await apiRequest<EquipmentType>(`${equipmentBase(organizationId)}/types`, {
+    method: "POST",
+    accessToken,
+    body: JSON.stringify(input),
+  });
+  if (!response.data) throw new Error("Failed to create equipment type");
+  return response.data;
+}
+
+export async function listEquipmentManufacturersRequest(
+  organizationId: string,
+  accessToken: string,
+): Promise<EquipmentManufacturer[]> {
+  const response = await apiRequest<EquipmentManufacturer[]>(
+    `${equipmentBase(organizationId)}/catalog/manufacturers`,
+    { accessToken },
+  );
+  return response.data ?? [];
+}
+
+export async function createEquipmentManufacturerRequest(
+  organizationId: string,
+  accessToken: string,
+  input: { name: string },
+): Promise<EquipmentManufacturer> {
+  const response = await apiRequest<EquipmentManufacturer>(
+    `${equipmentBase(organizationId)}/catalog/manufacturers`,
+    { method: "POST", accessToken, body: JSON.stringify(input) },
+  );
+  if (!response.data) throw new Error("Failed to create manufacturer");
+  return response.data;
+}
+
+export async function listEquipmentCatalogModelsRequest(
+  organizationId: string,
+  accessToken: string,
+  params: { equipmentManufacturerId?: string; equipmentTypeId?: string } = {},
+): Promise<EquipmentCatalogModel[]> {
+  const search = new URLSearchParams();
+  if (params.equipmentManufacturerId) {
+    search.set("equipmentManufacturerId", params.equipmentManufacturerId);
+  }
+  if (params.equipmentTypeId) search.set("equipmentTypeId", params.equipmentTypeId);
+  const query = search.toString();
+  const response = await apiRequest<EquipmentCatalogModel[]>(
+    `${equipmentBase(organizationId)}/catalog/models${query ? `?${query}` : ""}`,
+    { accessToken },
+  );
+  return response.data ?? [];
+}
+
+export async function createEquipmentCatalogModelRequest(
+  organizationId: string,
+  accessToken: string,
+  input: { name: string; equipmentManufacturerId: string; equipmentTypeId: string },
+): Promise<EquipmentCatalogModel> {
+  const response = await apiRequest<EquipmentCatalogModel>(
+    `${equipmentBase(organizationId)}/catalog/models`,
+    { method: "POST", accessToken, body: JSON.stringify(input) },
+  );
+  if (!response.data) throw new Error("Failed to create equipment model");
+  return response.data;
+}
+
+export async function loadDefaultEquipmentCatalogRequest(
+  organizationId: string,
+  accessToken: string,
+): Promise<{ equipmentTypesAdded: number; manufacturersAdded: number }> {
+  const response = await apiRequest<{ equipmentTypesAdded: number; manufacturersAdded: number }>(
+    `${equipmentBase(organizationId)}/catalog/defaults`,
+    { method: "POST", accessToken },
+  );
+  if (!response.data) throw new Error("Failed to load default equipment catalog");
+  return response.data;
 }
 
 export async function listEquipmentRequest(
@@ -82,6 +165,8 @@ export interface EquipmentFormInput {
   serialNumber?: string;
   manufacturer?: string;
   model?: string;
+  manufacturerId?: string;
+  modelId?: string;
   year?: number;
   equipmentTypeId: string;
   customerId?: string;

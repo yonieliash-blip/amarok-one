@@ -24,7 +24,8 @@ export type NavLabelKey =
   | "parts"
   | "accounting"
   | "reports"
-  | "memberAccess";
+  | "memberAccess"
+  | "equipmentCatalog";
 
 export interface NavigationItemDefinition {
   id: string;
@@ -121,6 +122,12 @@ export const NAVIGATION_ITEMS: readonly NavigationItemDefinition[] = [
     to: "/administration/member-access",
     labelKey: "memberAccess",
     permissions: [PERMISSIONS.USERS_READ],
+  },
+  {
+    id: "equipment-catalog",
+    to: "/administration/equipment-catalog",
+    labelKey: "equipmentCatalog",
+    permissions: [PERMISSIONS.EQUIPMENT_WRITE],
   },
 ] as const;
 

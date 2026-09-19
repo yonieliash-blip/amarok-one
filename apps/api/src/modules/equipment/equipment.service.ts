@@ -2,6 +2,8 @@ import type {
   ApiMeta,
   Equipment,
   EquipmentDetail,
+  EquipmentCatalogModel,
+  EquipmentManufacturer,
   EquipmentStatus,
   EquipmentType,
 } from "@amarok-one/types";
@@ -13,13 +15,62 @@ import {
   equipmentInclude,
   fromEquipmentStatusDto,
   toEquipmentDto,
+  toEquipmentCatalogModelDto,
+  toEquipmentManufacturerDto,
   toEquipmentTypeDto,
 } from "../../lib/mappers.js";
 import { paginationMeta, parsePagination } from "../../lib/pagination.js";
 import { prisma } from "../../lib/prisma.js";
 import { assertOrganizationExists } from "../organizations/organization.service.js";
 import { buildEquipmentListWhere } from "./equipment-filters.js";
-import type { CreateEquipmentInput, UpdateEquipmentInput } from "./equipment.schemas.js";
+import type {
+  CreateEquipmentCatalogModelInput,
+  CreateEquipmentInput,
+  CreateEquipmentManufacturerInput,
+  CreateEquipmentTypeInput,
+  UpdateEquipmentInput,
+} from "./equipment.schemas.js";
+
+const DEFAULT_EQUIPMENT_TYPES = [
+  ["באגר", "EXCAVATOR"],
+  ["שופל", "WHEEL_LOADER"],
+  ["מיני מעמיס", "SKID_STEER"],
+  ["מיני באגר", "MINI_EXCAVATOR"],
+  ["פרקית", "ARTICULATED_DUMP_TRUCK"],
+  ["מוביל עפר מחצבה", "QUARRY_EARTH_HAULER"],
+  ["מנוף", "MOBILE_CRANE"],
+  ["מלגזה", "FORKLIFT"],
+  ["מכונת קידוח", "DRILLING_MACHINE"],
+  ["מעמיס טלסקופי", "TELEHANDLER"],
+  ["טאג", "TAG"],
+  ["משאית כביש", "ROAD_TRUCK"],
+  ["גנרטור", "GENERATOR"],
+  ["מכבש", "ROLLER"],
+] as const;
+
+const DEFAULT_MANUFACTURERS = [
+  "קטרפילר",
+  "וולוו",
+  "קומטסו",
+  "היטאצ׳י",
+  "JCB",
+  "בובקט",
+  "דוסאן",
+  "יונדאי",
+  "ליבהר",
+  "BOMAG",
+  "Ammann",
+  "CASE",
+  "Develon",
+] as const;
+
+function catalogKey(value: string): string {
+  return value.trim().normalize("NFKC").toLocaleLowerCase();
+}
+
+function catalogTypeCode(name: string): string {
+  return `catalog-${catalogKey(name)}`;
+}
 
 async function assertEquipmentTypeExists(
   organizationId: string,
@@ -60,6 +111,67 @@ async function assertBranchInOrganization(organizationId: string, branchId: stri
   }
 }
 
+interface CatalogSelection {
+  manufacturerId?: string;
+  manufacturer?: string;
+  modelId?: string;
+  model?: string;
+}
+
+async function resolveCatalogSelection(
+  organizationId: string,
+  equipmentTypeId: string,
+  input: {
+    manufacturerId?: string | null;
+    modelId?: string | null;
+    manufacturer?: string | null;
+    model?: string | null;
+  },
+): Promise<CatalogSelection> {
+  if (input.modelId && !input.manufacturerId) {
+    throw conflict("A manufacturer must be selected before selecting a model");
+  }
+
+  if (input.manufacturerId) {
+    const manufacturer = await prisma.equipmentManufacturer.findFirst({
+      where: { id: input.manufacturerId, organizationId, ...activeOnly },
+      select: { id: true, name: true },
+    });
+    if (!manufacturer) {
+      throw notFound("EquipmentManufacturer", input.manufacturerId);
+    }
+
+    if (input.modelId) {
+      const model = await prisma.equipmentCatalogModel.findFirst({
+        where: {
+          id: input.modelId,
+          organizationId,
+          equipmentManufacturerId: manufacturer.id,
+          equipmentTypeId,
+          ...activeOnly,
+        },
+        select: { id: true, name: true },
+      });
+      if (!model) {
+        throw notFound("EquipmentCatalogModel", input.modelId);
+      }
+      return {
+        manufacturerId: manufacturer.id,
+        manufacturer: manufacturer.name,
+        modelId: model.id,
+        model: model.name,
+      };
+    }
+
+    return { manufacturerId: manufacturer.id, manufacturer: manufacturer.name };
+  }
+
+  return {
+    manufacturer: input.manufacturer ?? undefined,
+    model: input.model ?? undefined,
+  };
+}
+
 export async function listEquipmentTypes(organizationId: string): Promise<EquipmentType[]> {
   await assertOrganizationExists(organizationId);
 
@@ -69,6 +181,178 @@ export async function listEquipmentTypes(organizationId: string): Promise<Equipm
   });
 
   return types.map(toEquipmentTypeDto);
+}
+
+export async function createEquipmentType(
+  organizationId: string,
+  input: CreateEquipmentTypeInput,
+  actorId?: string,
+): Promise<EquipmentType> {
+  await assertOrganizationExists(organizationId);
+  const code = catalogTypeCode(input.name);
+
+  try {
+    const equipmentType = await prisma.equipmentType.create({
+      data: { organizationId, name: input.name, code, description: input.description },
+    });
+    await writeAuditLog({
+      organizationId,
+      actorId,
+      action: "equipment_type.created",
+      entityType: "EquipmentType",
+      entityId: equipmentType.id,
+      metadata: { name: equipmentType.name, code: equipmentType.code },
+    });
+    return toEquipmentTypeDto(equipmentType);
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw conflict("Equipment type already exists in this organization", { name: input.name });
+    }
+    throw error;
+  }
+}
+
+export async function listEquipmentManufacturers(
+  organizationId: string,
+): Promise<EquipmentManufacturer[]> {
+  await assertOrganizationExists(organizationId);
+  const manufacturers = await prisma.equipmentManufacturer.findMany({
+    where: { organizationId, ...activeOnly },
+    orderBy: { name: "asc" },
+  });
+  return manufacturers.map(toEquipmentManufacturerDto);
+}
+
+export async function createEquipmentManufacturer(
+  organizationId: string,
+  input: CreateEquipmentManufacturerInput,
+  actorId?: string,
+): Promise<EquipmentManufacturer> {
+  await assertOrganizationExists(organizationId);
+  try {
+    const manufacturer = await prisma.equipmentManufacturer.create({
+      data: { organizationId, name: input.name, key: catalogKey(input.name) },
+    });
+    await writeAuditLog({
+      organizationId,
+      actorId,
+      action: "equipment_manufacturer.created",
+      entityType: "EquipmentManufacturer",
+      entityId: manufacturer.id,
+      metadata: { name: manufacturer.name },
+    });
+    return toEquipmentManufacturerDto(manufacturer);
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw conflict("Manufacturer already exists in this organization", { name: input.name });
+    }
+    throw error;
+  }
+}
+
+export async function listEquipmentCatalogModels(
+  organizationId: string,
+  equipmentManufacturerId?: string,
+  equipmentTypeId?: string,
+): Promise<EquipmentCatalogModel[]> {
+  await assertOrganizationExists(organizationId);
+  const models = await prisma.equipmentCatalogModel.findMany({
+    where: {
+      organizationId,
+      ...activeOnly,
+      ...(equipmentManufacturerId ? { equipmentManufacturerId } : {}),
+      ...(equipmentTypeId ? { equipmentTypeId } : {}),
+    },
+    orderBy: { name: "asc" },
+  });
+  return models.map(toEquipmentCatalogModelDto);
+}
+
+export async function createEquipmentCatalogModel(
+  organizationId: string,
+  input: CreateEquipmentCatalogModelInput,
+  actorId?: string,
+): Promise<EquipmentCatalogModel> {
+  await assertEquipmentTypeExists(organizationId, input.equipmentTypeId);
+  const manufacturer = await prisma.equipmentManufacturer.findFirst({
+    where: { id: input.equipmentManufacturerId, organizationId, ...activeOnly },
+    select: { id: true },
+  });
+  if (!manufacturer) {
+    throw notFound("EquipmentManufacturer", input.equipmentManufacturerId);
+  }
+
+  try {
+    const model = await prisma.equipmentCatalogModel.create({
+      data: {
+        organizationId,
+        equipmentManufacturerId: input.equipmentManufacturerId,
+        equipmentTypeId: input.equipmentTypeId,
+        name: input.name,
+        key: catalogKey(input.name),
+      },
+    });
+    await writeAuditLog({
+      organizationId,
+      actorId,
+      action: "equipment_model.created",
+      entityType: "EquipmentCatalogModel",
+      entityId: model.id,
+      metadata: { name: model.name, equipmentTypeId: model.equipmentTypeId },
+    });
+    return toEquipmentCatalogModelDto(model);
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw conflict("Equipment model already exists for this manufacturer and type", {
+        name: input.name,
+      });
+    }
+    throw error;
+  }
+}
+
+export async function loadDefaultEquipmentCatalog(
+  organizationId: string,
+  actorId?: string,
+): Promise<{ equipmentTypesAdded: number; manufacturersAdded: number }> {
+  await assertOrganizationExists(organizationId);
+  let equipmentTypesAdded = 0;
+  let manufacturersAdded = 0;
+
+  for (const [name, code] of DEFAULT_EQUIPMENT_TYPES) {
+    const existing = await prisma.equipmentType.findFirst({
+      where: { organizationId, code, ...activeOnly },
+      select: { id: true },
+    });
+    if (!existing) {
+      await prisma.equipmentType.create({ data: { organizationId, name, code } });
+      equipmentTypesAdded += 1;
+    } else {
+      await prisma.equipmentType.update({ where: { id: existing.id }, data: { name } });
+    }
+  }
+
+  for (const name of DEFAULT_MANUFACTURERS) {
+    const key = catalogKey(name);
+    const existing = await prisma.equipmentManufacturer.findFirst({
+      where: { organizationId, key, ...activeOnly },
+      select: { id: true },
+    });
+    if (!existing) {
+      await prisma.equipmentManufacturer.create({ data: { organizationId, name, key } });
+      manufacturersAdded += 1;
+    }
+  }
+
+  await writeAuditLog({
+    organizationId,
+    actorId,
+    action: "equipment_catalog.defaults_loaded",
+    entityType: "Organization",
+    entityId: organizationId,
+    metadata: { equipmentTypesAdded, manufacturersAdded },
+  });
+  return { equipmentTypesAdded, manufacturersAdded };
 }
 
 export async function listEquipment(
@@ -131,6 +415,7 @@ export async function getEquipmentById(
 function buildCreateData(
   organizationId: string,
   input: CreateEquipmentInput,
+  catalog: CatalogSelection,
 ): Prisma.EquipmentCreateInput {
   return {
     organization: { connect: { id: organizationId } },
@@ -140,8 +425,12 @@ function buildCreateData(
     name: input.name,
     internalNumber: input.internalNumber,
     serialNumber: input.serialNumber,
-    manufacturer: input.manufacturer,
-    model: input.model,
+    manufacturer: catalog.manufacturer,
+    model: catalog.model,
+    ...(catalog.manufacturerId
+      ? { manufacturerRef: { connect: { id: catalog.manufacturerId } } }
+      : {}),
+    ...(catalog.modelId ? { modelRef: { connect: { id: catalog.modelId } } } : {}),
     year: input.year,
     status: input.status ? fromEquipmentStatusDto(input.status) : undefined,
     engineHours:
@@ -161,6 +450,7 @@ export async function createEquipment(
 ): Promise<EquipmentDetail> {
   await assertOrganizationExists(organizationId);
   await assertEquipmentTypeExists(organizationId, input.equipmentTypeId);
+  const catalog = await resolveCatalogSelection(organizationId, input.equipmentTypeId, input);
 
   if (input.customerId) {
     await assertCustomerInOrganization(organizationId, input.customerId);
@@ -172,7 +462,7 @@ export async function createEquipment(
 
   try {
     const equipment = await prisma.equipment.create({
-      data: buildCreateData(organizationId, input),
+      data: buildCreateData(organizationId, input, catalog),
       include: equipmentInclude,
     });
 
@@ -205,7 +495,7 @@ export async function updateEquipment(
   input: UpdateEquipmentInput,
   actorId?: string,
 ): Promise<EquipmentDetail> {
-  await getEquipmentById(organizationId, equipmentId);
+  const existing = await getEquipmentById(organizationId, equipmentId);
 
   if (input.equipmentTypeId) {
     await assertEquipmentTypeExists(organizationId, input.equipmentTypeId);
@@ -219,12 +509,54 @@ export async function updateEquipment(
     await assertBranchInOrganization(organizationId, input.branchId);
   }
 
+  const nextEquipmentTypeId = input.equipmentTypeId ?? existing.equipmentTypeId;
+  const manufacturerWasChanged = input.manufacturerId !== undefined;
+  const nextManufacturerId = manufacturerWasChanged
+    ? input.manufacturerId
+    : (existing.manufacturerId ?? undefined);
+  const nextModelId =
+    input.modelId !== undefined
+      ? input.modelId
+      : manufacturerWasChanged
+        ? undefined
+        : (existing.modelId ?? undefined);
+  const catalog = await resolveCatalogSelection(organizationId, nextEquipmentTypeId, {
+    manufacturerId: nextManufacturerId,
+    modelId: nextModelId,
+    manufacturer:
+      input.manufacturerId === null
+        ? null
+        : input.manufacturer !== undefined
+          ? input.manufacturer
+          : (existing.manufacturer ?? undefined),
+    model:
+      input.manufacturerId === null || input.modelId === null
+        ? null
+        : input.model !== undefined
+          ? input.model
+          : (existing.model ?? undefined),
+  });
+
   const data: Prisma.EquipmentUpdateInput = {
     ...(input.name !== undefined ? { name: input.name } : {}),
     ...(input.internalNumber !== undefined ? { internalNumber: input.internalNumber } : {}),
     ...(input.serialNumber !== undefined ? { serialNumber: input.serialNumber } : {}),
-    ...(input.manufacturer !== undefined ? { manufacturer: input.manufacturer } : {}),
-    ...(input.model !== undefined ? { model: input.model } : {}),
+    ...(input.manufacturerId !== undefined || input.manufacturer !== undefined
+      ? { manufacturer: catalog.manufacturer ?? null }
+      : {}),
+    ...(input.modelId !== undefined || input.model !== undefined || manufacturerWasChanged
+      ? { model: catalog.model ?? null }
+      : {}),
+    ...(input.manufacturerId !== undefined
+      ? catalog.manufacturerId
+        ? { manufacturerRef: { connect: { id: catalog.manufacturerId } } }
+        : { manufacturerRef: { disconnect: true } }
+      : {}),
+    ...(input.modelId !== undefined || manufacturerWasChanged
+      ? catalog.modelId
+        ? { modelRef: { connect: { id: catalog.modelId } } }
+        : { modelRef: { disconnect: true } }
+      : {}),
     ...(input.year !== undefined ? { year: input.year } : {}),
     ...(input.equipmentTypeId !== undefined
       ? { equipmentType: { connect: { id: input.equipmentTypeId } } }

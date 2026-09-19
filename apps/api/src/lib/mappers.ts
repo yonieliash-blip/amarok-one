@@ -5,6 +5,8 @@ import type {
   CustomerContact,
   CustomerStatus,
   Equipment,
+  EquipmentCatalogModel,
+  EquipmentManufacturer,
   EquipmentStatus,
   EquipmentType,
   Organization,
@@ -20,6 +22,8 @@ import type {
   CustomerContact as CustomerContactModel,
   CustomerStatus as CustomerStatusModel,
   Equipment as EquipmentModel,
+  EquipmentCatalogModel as EquipmentCatalogModelEntity,
+  EquipmentManufacturer as EquipmentManufacturerModel,
   EquipmentStatus as EquipmentStatusModel,
   EquipmentType as EquipmentTypeModel,
   Organization as OrganizationModel,
@@ -131,12 +135,16 @@ export const activeOnly = { deletedAt: null } as const;
 
 export const equipmentInclude = {
   equipmentType: { select: { id: true, name: true, code: true } },
+  manufacturerRef: { select: { id: true, name: true } },
+  modelRef: { select: { id: true, name: true } },
   customer: { select: { id: true, name: true, customerNumber: true } },
   branch: { select: { id: true, name: true, code: true } },
 } satisfies Prisma.EquipmentInclude;
 
 type EquipmentWithRelations = EquipmentModel & {
   equipmentType: { id: string; name: string; code: string };
+  manufacturerRef: { id: string; name: string } | null;
+  modelRef: { id: string; name: string } | null;
   customer: { id: string; name: string; customerNumber: string } | null;
   branch: { id: string; name: string; code: string } | null;
 };
@@ -175,6 +183,32 @@ export function toEquipmentTypeDto(model: EquipmentTypeModel): EquipmentType {
   };
 }
 
+export function toEquipmentManufacturerDto(
+  model: EquipmentManufacturerModel,
+): EquipmentManufacturer {
+  return {
+    id: model.id,
+    organizationId: model.organizationId,
+    name: model.name,
+    createdAt: model.createdAt.toISOString(),
+    updatedAt: model.updatedAt.toISOString(),
+  };
+}
+
+export function toEquipmentCatalogModelDto(
+  model: EquipmentCatalogModelEntity,
+): EquipmentCatalogModel {
+  return {
+    id: model.id,
+    organizationId: model.organizationId,
+    equipmentManufacturerId: model.equipmentManufacturerId,
+    equipmentTypeId: model.equipmentTypeId,
+    name: model.name,
+    createdAt: model.createdAt.toISOString(),
+    updatedAt: model.updatedAt.toISOString(),
+  };
+}
+
 export function toEquipmentDto(model: EquipmentWithRelations): Equipment {
   return {
     id: model.id,
@@ -184,6 +218,8 @@ export function toEquipmentDto(model: EquipmentWithRelations): Equipment {
     serialNumber: model.serialNumber ?? undefined,
     manufacturer: model.manufacturer ?? undefined,
     model: model.model ?? undefined,
+    manufacturerId: model.manufacturerId ?? undefined,
+    modelId: model.modelId ?? undefined,
     year: model.year ?? undefined,
     equipmentTypeId: model.equipmentTypeId,
     equipmentType: {

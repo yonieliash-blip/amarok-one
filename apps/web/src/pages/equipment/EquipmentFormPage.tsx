@@ -1,7 +1,14 @@
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import type { Branch, Customer, EquipmentStatus, EquipmentType } from "@amarok-one/types";
+import type {
+  Branch,
+  Customer,
+  EquipmentCatalogModel,
+  EquipmentManufacturer,
+  EquipmentStatus,
+  EquipmentType,
+} from "@amarok-one/types";
 import { Button } from "@amarok-one/ui";
 import { useAuth } from "../../auth/useAuth";
 import { ErrorState } from "../../components/ErrorState";
@@ -14,6 +21,8 @@ import {
   createEquipmentRequest,
   getEquipmentRequest,
   listBranchesRequest,
+  listEquipmentCatalogModelsRequest,
+  listEquipmentManufacturersRequest,
   listCompaniesRequest,
   listEquipmentTypesRequest,
   updateEquipmentRequest,
@@ -59,6 +68,8 @@ export function EquipmentFormPage() {
     customerId: customerIdFromQuery,
   }));
   const [equipmentTypes, setEquipmentTypes] = useState<EquipmentType[]>([]);
+  const [manufacturers, setManufacturers] = useState<EquipmentManufacturer[]>([]);
+  const [catalogModels, setCatalogModels] = useState<EquipmentCatalogModel[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -75,8 +86,9 @@ export function EquipmentFormPage() {
 
     async function loadOptions(): Promise<void> {
       try {
-        const [types, customerResult, companies] = await Promise.all([
+        const [types, manufacturersResult, customerResult, companies] = await Promise.all([
           listEquipmentTypesRequest(user!.organization.id, accessToken!),
+          listEquipmentManufacturersRequest(user!.organization.id, accessToken!),
           listCustomersRequest(user!.organization.id, accessToken!, { pageSize: 100 }),
           listCompaniesRequest(user!.organization.id, accessToken!),
         ]);
@@ -89,6 +101,7 @@ export function EquipmentFormPage() {
 
         if (!cancelled) {
           setEquipmentTypes(types);
+          setManufacturers(manufacturersResult);
           setCustomers(customerResult.data);
           setBranches(branchLists.flat());
         }
@@ -103,6 +116,24 @@ export function EquipmentFormPage() {
       cancelled = true;
     };
   }, [user, accessToken]);
+
+  useEffect(() => {
+    if (!user || !accessToken || !form.equipmentTypeId || !form.manufacturerId) {
+      return;
+    }
+
+    let cancelled = false;
+    void listEquipmentCatalogModelsRequest(user.organization.id, accessToken, {
+      equipmentManufacturerId: form.manufacturerId,
+      equipmentTypeId: form.equipmentTypeId,
+    }).then((models) => {
+      if (!cancelled) setCatalogModels(models);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, form.equipmentTypeId, form.manufacturerId, user]);
 
   useEffect(() => {
     if (!isEdit || !equipmentId || !user || !accessToken) {
@@ -128,6 +159,8 @@ export function EquipmentFormPage() {
           serialNumber: item.serialNumber ?? "",
           manufacturer: item.manufacturer ?? "",
           model: item.model ?? "",
+          manufacturerId: item.manufacturerId ?? "",
+          modelId: item.modelId ?? "",
           year: item.year,
           equipmentTypeId: item.equipmentTypeId,
           customerId: item.customerId ?? "",
@@ -186,6 +219,8 @@ export function EquipmentFormPage() {
       serialNumber: form.serialNumber?.trim() || undefined,
       manufacturer: form.manufacturer?.trim() || undefined,
       model: form.model?.trim() || undefined,
+      manufacturerId: form.manufacturerId || undefined,
+      modelId: form.modelId || undefined,
       year: form.year ? Number(form.year) : undefined,
       customerId: form.customerId?.trim() || undefined,
       branchId: form.branchId?.trim() || undefined,
@@ -309,7 +344,11 @@ export function EquipmentFormPage() {
               <select
                 required
                 value={form.equipmentTypeId}
-                onChange={(event) => updateField("equipmentTypeId", event.target.value)}
+                onChange={(event) => {
+                  updateField("equipmentTypeId", event.target.value);
+                  updateField("modelId", "");
+                  updateField("model", "");
+                }}
               >
                 <option value="" disabled>
                   —
@@ -358,17 +397,48 @@ export function EquipmentFormPage() {
           <div className="customer-form__grid">
             <label className="customer-form__field">
               <span>{t("equipment", "manufacturer")}</span>
-              <input
-                value={form.manufacturer ?? ""}
-                onChange={(event) => updateField("manufacturer", event.target.value)}
-              />
+              <select
+                value={form.manufacturerId ?? ""}
+                onChange={(event) => {
+                  const selected = manufacturers.find((item) => item.id === event.target.value);
+                  updateField("manufacturerId", event.target.value);
+                  updateField("manufacturer", selected?.name ?? "");
+                  updateField("modelId", "");
+                  updateField("model", "");
+                }}
+              >
+                <option value="">
+                  {form.manufacturer && !form.manufacturerId
+                    ? form.manufacturer
+                    : t("equipment", "noManufacturer")}
+                </option>
+                {manufacturers.map((manufacturer) => (
+                  <option key={manufacturer.id} value={manufacturer.id}>
+                    {manufacturer.name}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className="customer-form__field">
               <span>{t("equipment", "model")}</span>
-              <input
-                value={form.model ?? ""}
-                onChange={(event) => updateField("model", event.target.value)}
-              />
+              <select
+                value={form.modelId ?? ""}
+                disabled={!form.manufacturerId || !form.equipmentTypeId}
+                onChange={(event) => {
+                  const selected = catalogModels.find((item) => item.id === event.target.value);
+                  updateField("modelId", event.target.value);
+                  updateField("model", selected?.name ?? "");
+                }}
+              >
+                <option value="">
+                  {form.model && !form.modelId ? form.model : t("equipment", "noModel")}
+                </option>
+                {catalogModels.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.name}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className="customer-form__field">
               <span>{t("equipment", "year")}</span>
