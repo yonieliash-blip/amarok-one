@@ -1,12 +1,13 @@
 /** AMAROK ONE design tokens (aligned with apps/web design-system/tokens.css). */
 export const colors = {
-  primary: "#ffc928",
-  primaryPressed: "#eab51c",
+  primary: "#feba1b",
+  primaryPressed: "#d89d13",
   primarySoft: "#2b2512",
   primaryOn: "#111111",
-  bg: "#0b0c0e",
+  bg: "transparent",
   bgPanel: "#131519",
   bgElevated: "#1a1d22",
+  actionSurface: "rgba(0, 0, 0, 0.5)",
   border: "#2a2e35",
   borderStrong: "#3b414b",
   text: "#f7f7f8",

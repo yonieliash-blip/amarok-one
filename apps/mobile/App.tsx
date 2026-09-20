@@ -1,12 +1,14 @@
 import { useEffect, useState, type JSX } from "react";
 import { useFonts } from "expo-font";
 import { StatusBar } from "expo-status-bar";
+import { ImageBackground } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider } from "./src/auth/AuthContext";
 import { RootNavigator } from "./src/navigation/RootNavigator";
 import "./src/location/background-shift-location";
 import AlefRegular from "./assets/fonts/Alef-Regular.ttf";
 import AlefBold from "./assets/fonts/Alef-Bold.ttf";
+import mobileBackground from "./assets/mobile-background.jpeg";
 import { StartupSplash } from "./src/components/StartupSplash";
 
 export default function App(): JSX.Element {
@@ -26,10 +28,12 @@ export default function App(): JSX.Element {
 
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <RootNavigator />
-        <StatusBar style="light" />
-      </AuthProvider>
+      <ImageBackground source={mobileBackground} style={{ flex: 1 }} resizeMode="cover">
+        <AuthProvider>
+          <RootNavigator />
+          <StatusBar style="light" />
+        </AuthProvider>
+      </ImageBackground>
     </SafeAreaProvider>
   );
 }

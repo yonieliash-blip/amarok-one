@@ -6,7 +6,7 @@ import { useAuth } from "../auth/AuthContext";
 import { createCustomer, createEquipment, listCurrentTechnicianLocations, listCustomers, listEquipment, listEquipmentTypes, type CurrentTechnicianLocation } from "../api/manager";
 import { assignServiceCallTechnician, createManagerServiceCall, getServiceCall, getServiceCallLifecycle, listAssignableTechnicians, listMyServiceCalls } from "../api/service-calls";
 import { isApiRequestError } from "../api/client";
-import { BrandWordmark, Button, Card, Eyebrow, ScreenSubtitle, ScreenTitle, StatusPill } from "../components/ui";
+import { BrandWordmark, Button, Card, ScreenSubtitle, ScreenTitle, StatusPill } from "../components/ui";
 import type { RootStackParamList } from "../navigation/types";
 import { colors, radius, spacing, typography } from "../theme";
 
@@ -41,20 +41,27 @@ function Page({ children }: { children: React.ReactNode }) {
 
 export function ManagerHomeScreen({ navigation }: HomeProps) {
   const { user, logout } = useAuth();
-  return <FlatList
-    style={styles.page}
-    contentContainerStyle={styles.content}
-    data={[
-      ["קריאות שירות", "הצגה, הקצאה ודוחות עבודה", "ManagerServiceCalls"],
-      ["לקוחות", "רשימת הלקוחות הפעילים", "ManagerCustomers"],
-      ["ציוד", "הצי הפעיל והצי שהוסר", "ManagerEquipment"],
-      ["מיקומי טכנאים", "המיקום האחרון ביום עבודה פעיל", "ManagerLocations"],
-    ] as const}
-    keyExtractor={([title]) => title}
-    ListHeaderComponent={<View style={styles.header}><View style={styles.brandStrip}><BrandWordmark /><View style={styles.brandAccent} /></View><Eyebrow>מרכז שליטה</Eyebrow><ScreenTitle>ניהול מהנייד</ScreenTitle><ScreenSubtitle>{user?.organization.name} · גישה מהירה לעבודה בשטח</ScreenSubtitle></View>}
-    renderItem={({ item: [title, subtitle, route] }) => <Pressable style={styles.menuCard} onPress={() => navigation.navigate(route)}><Text style={styles.menuTitle}>{title}</Text><Text style={styles.menuSubtitle}>{subtitle}</Text><Text style={styles.arrow}>‹</Text></Pressable>}
-    ListFooterComponent={<Button label="יציאה מהחשבון" variant="secondary" onPress={() => void logout()} />}
-  />;
+  return <ScrollView style={styles.page} contentContainerStyle={styles.managerHomeContent}>
+    <BrandWordmark style={styles.managerWordmark} />
+    <Text style={styles.managerHeading}>מרכז שליטה מנהל</Text>
+    <View style={styles.managerActions}>
+      <ManagerMenuButton label="פתח קריאה" onPress={() => navigation.navigate("ManagerNewServiceCall")} />
+      <ManagerMenuButton label="הוסף לקוח" onPress={() => navigation.navigate("ManagerCustomers")} />
+      <ManagerMenuButton label="הוסף ציוד" onPress={() => navigation.navigate("ManagerEquipment")} />
+      <ManagerMenuButton label="מיקומי טכנאים" onPress={() => navigation.navigate("ManagerLocations")} />
+      <ManagerMenuButton label="קריאות שירות" onPress={() => navigation.navigate("ManagerServiceCalls")} />
+    </View>
+    <Button label={`יציאה · ${user?.organization.name ?? ""}`} variant="secondary" onPress={() => void logout()} />
+  </ScrollView>;
+}
+
+function ManagerMenuButton({ label, onPress }: { label: string; onPress: () => void }) {
+  return <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.managerMenuButton, pressed && styles.managerMenuButtonPressed]}>
+    <View style={styles.managerMenuButtonContent}>
+      <Text style={styles.managerMenuButtonLabel}>{label}</Text>
+      <Text style={styles.managerMenuButtonArrow}>‹</Text>
+    </View>
+  </Pressable>;
 }
 
 export function ManagerServiceCallsScreen({ navigation }: CallsProps) {
@@ -232,10 +239,19 @@ export function ManagerEquipmentScreen(_: EquipmentProps) {
 export function ManagerLocationsScreen(_: LocationsProps) { const { user, accessToken } = useAuth(); return <DirectoryScreen title="מיקומי טכנאים" subtitle="מיקום אחרון נשמר רק בזמן יום עבודה פעיל." load={() => user && accessToken ? listCurrentTechnicianLocations(user.organization.id, accessToken) : Promise.resolve([])} itemKey={(entry) => entry.userId} render={(entry: CurrentTechnicianLocation) => <><Text style={styles.rowTitle}>{entry.displayName}</Text><Text style={styles.rowMeta}>{entry.workDayId ? `יום עבודה החל ב־${time(entry.startedAt)}` : "לא ביום עבודה פעיל"}</Text>{entry.location ? <><Text style={styles.rowMeta}>עודכן: {time(entry.location.recordedAt)} · דיוק: {Math.round(entry.location.accuracy ?? 0)} מ׳</Text><Button label="פתיחה במפה" variant="secondary" onPress={() => void Linking.openURL(`https://www.google.com/maps?q=${entry.location!.latitude},${entry.location!.longitude}`)} /></> : <Text style={styles.rowMeta}>אין מיקום זמין</Text>}</>} />; }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: "#444444" },
+  page: { flex: 1, backgroundColor: "transparent" },
   content: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl },
+  managerHomeContent: { alignItems: "center", paddingHorizontal: spacing.md, paddingTop: 96, paddingBottom: spacing.xl, gap: spacing.lg },
+  managerWordmark: { width: "72%", height: 132 },
+  managerHeading: { color: colors.primary, fontFamily: typography.bold, fontSize: 27, textAlign: "center", writingDirection: "rtl", marginBottom: spacing.xl },
+  managerActions: { width: "68%", gap: spacing.lg },
+  managerMenuButton: { minHeight: 96, borderWidth: 3, borderColor: colors.primary, borderRadius: radius.lg, backgroundColor: colors.actionSurface, alignItems: "center", justifyContent: "center", paddingHorizontal: spacing.md },
+  managerMenuButtonPressed: { opacity: 0.82, transform: [{ scale: 0.99 }] },
+  managerMenuButtonContent: { flexDirection: "row-reverse", alignItems: "center", justifyContent: "center", gap: spacing.sm },
+  managerMenuButtonLabel: { color: colors.primary, fontFamily: typography.bold, fontSize: 25, textAlign: "center", writingDirection: "rtl" },
+  managerMenuButtonArrow: { color: colors.primary, fontFamily: typography.regular, fontSize: 40, lineHeight: 32 },
   header: { gap: spacing.sm, marginHorizontal: -spacing.md, marginTop: -spacing.md, marginBottom: spacing.sm, paddingBottom: spacing.md },
-  brandStrip: { height: 76, backgroundColor: "#444444", borderBottomWidth: 4, borderBottomColor: colors.primary, flexDirection: "row-reverse", alignItems: "center", paddingHorizontal: spacing.md },
+  brandStrip: { height: 76, backgroundColor: "transparent", borderBottomWidth: 4, borderBottomColor: colors.primary, flexDirection: "row-reverse", alignItems: "center", paddingHorizontal: spacing.md },
   brandAccent: { position: "absolute", right: 0, top: 0, height: 72, width: 7, backgroundColor: colors.primary },
   menuCard: { backgroundColor: colors.bgPanel, borderColor: colors.border, borderWidth: 1, borderRightWidth: 4, borderRightColor: colors.primary, borderRadius: radius.lg, padding: spacing.lg, minHeight: 96, justifyContent: "center", gap: spacing.xs },
   menuTitle: { color: colors.text, fontFamily: typography.bold, fontSize: 19, textAlign: "right", writingDirection: "rtl" },

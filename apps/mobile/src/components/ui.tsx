@@ -45,16 +45,20 @@ export function Button({
       {...props}
     >
       {loading ? (
-        <ActivityIndicator color={variant === "primary" ? colors.primaryOn : colors.text} />
+        <ActivityIndicator color={variant === "danger" ? colors.error : colors.primary} />
       ) : (
-        <Text
-          style={[
-            styles.label,
-            variant === "primary" ? styles.labelPrimary : styles.labelSecondary,
-          ]}
-        >
-          {label}
-        </Text>
+        <View style={styles.buttonContent}>
+          <Text
+            style={[styles.label, variant === "danger" ? styles.labelDanger : styles.labelPrimary]}
+          >
+            {label}
+          </Text>
+          <Text
+            style={[styles.buttonArrow, variant === "danger" ? styles.labelDanger : styles.labelPrimary]}
+          >
+            ‹
+          </Text>
+        </View>
       )}
     </Pressable>
   );
@@ -77,7 +81,9 @@ export function BrandMark({ style }: { style?: StyleProp<ImageStyle> }) {
 }
 
 export function BrandWordmark({ style }: { style?: StyleProp<ImageStyle> }) {
-  return <Image source={brand.wordmark} style={[styles.brandWordmark, style]} resizeMode="contain" />;
+  return (
+    <Image source={brand.wordmark} style={[styles.brandWordmark, style]} resizeMode="contain" />
+  );
 }
 
 export function Card({
@@ -121,22 +127,24 @@ export function StatusPill({
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: 52,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
+    minHeight: 60,
+    borderRadius: radius.lg,
+    borderWidth: 3,
+    paddingHorizontal: spacing.lg,
     alignItems: "center",
     justifyContent: "center",
   },
   primary: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.actionSurface,
+    borderColor: colors.primary,
   },
   secondary: {
-    backgroundColor: colors.bgElevated,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.actionSurface,
+    borderColor: colors.primary,
   },
   danger: {
-    backgroundColor: colors.error,
+    backgroundColor: colors.actionSurface,
+    borderColor: colors.error,
   },
   pressed: {
     opacity: 0.82,
@@ -150,11 +158,22 @@ const styles = StyleSheet.create({
     fontFamily: typography.bold,
     textAlign: "center",
   },
-  labelPrimary: {
-    color: colors.primaryOn,
+  buttonContent: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.sm,
   },
-  labelSecondary: {
-    color: colors.text,
+  buttonArrow: {
+    fontFamily: typography.regular,
+    fontSize: 28,
+    lineHeight: 24,
+  },
+  labelPrimary: {
+    color: colors.primary,
+  },
+  labelDanger: {
+    color: colors.error,
   },
   title: {
     fontSize: 28,
@@ -222,5 +241,11 @@ const styles = StyleSheet.create({
   pillDotSuccess: { backgroundColor: colors.success },
   pillDotWarning: { backgroundColor: colors.warning },
   pillDotDanger: { backgroundColor: colors.error },
-  pillLabel: { color: colors.text, fontFamily: typography.bold, fontSize: 12, textAlign: "right", writingDirection: "rtl" },
+  pillLabel: {
+    color: colors.text,
+    fontFamily: typography.bold,
+    fontSize: 12,
+    textAlign: "right",
+    writingDirection: "rtl",
+  },
 });

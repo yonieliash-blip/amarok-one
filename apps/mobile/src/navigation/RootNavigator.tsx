@@ -49,19 +49,19 @@ export function RootNavigator() {
     <NavigationContainer theme={navTheme}>
       <Stack.Navigator
         screenOptions={{
-          headerStyle: { backgroundColor: colors.bg },
+          headerStyle: { backgroundColor: "transparent" },
           headerShadowVisible: false,
           headerTintColor: colors.text,
           headerTitleStyle: { fontFamily: typography.bold, fontSize: 18 },
           headerTitleAlign: "center",
           headerRight: () => <BrandWordmark style={styles.headerWordmark} />,
-          contentStyle: { backgroundColor: colors.bg },
+          contentStyle: { backgroundColor: "transparent" },
         }}
       >
         {status === "authenticated" ? (
           isManager ? (
             <>
-              <Stack.Screen name="ManagerHome" component={ManagerHomeScreen} options={{ title: "ניהול" }} />
+              <Stack.Screen name="ManagerHome" component={ManagerHomeScreen} options={{ headerShown: false }} />
               <Stack.Screen name="ManagerServiceCalls" component={ManagerServiceCallsScreen} options={{ title: "קריאות שירות" }} />
               <Stack.Screen name="ManagerNewServiceCall" component={ManagerNewServiceCallScreen} options={{ title: "פתיחת קריאה" }} />
               <Stack.Screen name="ManagerServiceCall" component={ManagerServiceCallScreen} options={({ route }) => ({ title: route.params.title })} />
@@ -91,11 +91,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.bg,
+    backgroundColor: "transparent",
   },
   headerWordmark: {
     width: 108,
     height: 32,
-    backgroundColor: "#444444",
+    backgroundColor: "transparent",
   },
 });
