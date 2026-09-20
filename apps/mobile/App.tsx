@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type JSX } from "react";
+import { useEffect, useState, type JSX } from "react";
 import { useFonts } from "expo-font";
 import { StatusBar } from "expo-status-bar";
 import { ImageBackground } from "react-native";
@@ -17,29 +17,21 @@ export default function App(): JSX.Element {
     "Alef-Bold": AlefBold,
   });
   const [showIntro, setShowIntro] = useState(true);
-  const [backgroundIndex, setBackgroundIndex] = useState(0);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowIntro(false), 2100);
     return () => clearTimeout(timer);
   }, []);
 
-  const selectNextBackground = useCallback(() => {
-    setBackgroundIndex((current) => {
-      if (backgroundPool.length < 2) return current;
-      const random = Math.floor(Math.random() * (backgroundPool.length - 1));
-      return random >= current ? random + 1 : random;
-    });
-  }, []);
 
   if (!fontsLoaded) return <></>;
   if (showIntro) return <StartupSplash />;
 
   return (
     <SafeAreaProvider>
-      <ImageBackground source={backgroundPool[backgroundIndex]} style={{ flex: 1 }} resizeMode="cover">
+      <ImageBackground source={backgroundPool[0]} style={{ flex: 1 }} resizeMode="cover">
         <AuthProvider>
-          <RootNavigator onScreenChange={selectNextBackground} />
+          <RootNavigator />
           <StatusBar style="light" />
         </AuthProvider>
       </ImageBackground>
