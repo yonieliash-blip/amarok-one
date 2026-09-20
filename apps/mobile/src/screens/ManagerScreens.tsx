@@ -1,9 +1,9 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import type { Customer, CustomerSite, Equipment, EquipmentType, OrganizationMember, ServiceCall, ServiceCallLifecycleView } from "@amarok-one/types";
+import type { Customer, CustomerContact, CustomerSite, Equipment, EquipmentType, OrganizationMember, ServiceCall, ServiceCallLifecycleView } from "@amarok-one/types";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useAuth } from "../auth/AuthContext";
-import { createCustomer, createCustomerSite, createEquipment, listCurrentTechnicianLocations, listCustomers, listCustomerSites, listEquipment, listEquipmentTypes, type CurrentTechnicianLocation } from "../api/manager";
+import { createCustomer, createCustomerContact, createCustomerSite, createEquipment, listCurrentTechnicianLocations, listCustomerContacts, listCustomers, listCustomerSites, listEquipment, listEquipmentTypes, type CurrentTechnicianLocation } from "../api/manager";
 import { assignServiceCallTechnician, createManagerServiceCall, getServiceCall, getServiceCallLifecycle, listAssignableTechnicians, listMyServiceCalls } from "../api/service-calls";
 import { isApiRequestError } from "../api/client";
 import { BrandWordmark, Button, Card, ScreenSubtitle, ScreenTitle, StatusPill } from "../components/ui";
@@ -149,10 +149,13 @@ export function ManagerCustomersScreen(_: CustomersProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
+  const [registrationNumber, setRegistrationNumber] = useState("");
+  const [contactName, setContactName] = useState("");
   const [phone, setPhone] = useState("");
   const [city, setCity] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [sites, setSites] = useState<CustomerSite[]>([]);
+  const [contacts, setContacts] = useState<CustomerContact[]>([]);
   const [addingSite, setAddingSite] = useState(false);
   const [siteName, setSiteName] = useState("");
   const [siteAddress, setSiteAddress] = useState("");
@@ -170,16 +173,17 @@ export function ManagerCustomersScreen(_: CustomersProps) {
   useEffect(() => { void load(); }, [load]);
 
   async function save(): Promise<void> {
-    if (!user || !accessToken || name.trim().length < 2) {
-      setError("יש למלא שם לקוח.");
+    if (!user || !accessToken || name.trim().length < 2 || registrationNumber.trim().length < 2 || contactName.trim().length < 2) {
+      setError("יש למלא שם לקוח, ח.פ. ואיש קשר.");
       return;
     }
     setSaving(true); setError(null);
     try {
-      await createCustomer(user.organization.id, accessToken, {
-        name: name.trim(), phone: phone.trim() || undefined, city: city.trim() || undefined,
+      const created = await createCustomer(user.organization.id, accessToken, {
+        name: name.trim(), registrationNumber: registrationNumber.trim(), phone: phone.trim() || undefined, city: city.trim() || undefined,
       });
-      setName(""); setPhone(""); setCity(""); setAdding(false); setLoading(true); await load();
+      await createCustomerContact(user.organization.id, created.id, accessToken, { name: contactName.trim(), phone: phone.trim() || undefined, isPrimary: true });
+      setName(""); setRegistrationNumber(""); setContactName(""); setPhone(""); setCity(""); setAdding(false); setLoading(true); await load();
     } catch (e) { setError(errorMessage(e, "לא ניתן להוסיף את הלקוח")); }
     finally { setSaving(false); }
   }
@@ -187,8 +191,13 @@ export function ManagerCustomersScreen(_: CustomersProps) {
   async function openCustomer(customer: Customer): Promise<void> {
     if (!user || !accessToken) return;
     setSelectedCustomer(customer); setAddingSite(false); setError(null);
-    try { setSites(await listCustomerSites(user.organization.id, customer.id, accessToken)); }
-    catch (e) { setError(errorMessage(e, "לא ניתן לטעון אתרי לקוח")); }
+    try {
+      const [nextSites, nextContacts] = await Promise.all([
+        listCustomerSites(user.organization.id, customer.id, accessToken),
+        listCustomerContacts(user.organization.id, customer.id, accessToken),
+      ]);
+      setSites(nextSites); setContacts(nextContacts);
+    } catch (e) { setError(errorMessage(e, "לא ניתן לטעון את פרטי הלקוח")); }
   }
 
   async function saveSite(): Promise<void> {
@@ -203,7 +212,10 @@ export function ManagerCustomersScreen(_: CustomersProps) {
 
   if (selectedCustomer) return <ScrollView style={styles.page} contentContainerStyle={styles.content}>
     <Button label="חזרה ללקוחות" variant="secondary" onPress={() => { setSelectedCustomer(null); setError(null); }} />
-    <ScreenTitle>{selectedCustomer.name}</ScreenTitle><ScreenSubtitle>כל אתר נשמר תחת אותו לקוח לצורכי חיוב, ובו אנשי קשר וציוד נפרדים.</ScreenSubtitle>
+    <ScreenTitle>{selectedCustomer.name}</ScreenTitle>
+    <Text style={styles.rowMeta}>ח.פ.: {selectedCustomer.registrationNumber ?? "לא הוזן"}</Text>
+    {contacts[0] ? <Text style={styles.rowMeta}>איש קשר ראשי: {contacts[0].name}{contacts[0].phone ? ` · ${contacts[0].phone}` : ""}</Text> : null}
+    <ScreenSubtitle>כל אתר נשמר תחת אותו לקוח לצורכי חיוב, ובו אנשי קשר וציוד נפרדים.</ScreenSubtitle>
     {sites.map((site) => <View key={site.id} style={styles.row}><Text style={styles.rowTitle}>{site.name}</Text>{site.contactName ? <Text style={styles.rowMeta}>איש קשר: {site.contactName}{site.contactPhone ? ` · ${site.contactPhone}` : ""}</Text> : null}{site.address ? <Text style={styles.rowMeta}>{site.address}</Text> : null}</View>)}
     {addingSite ? <View style={styles.formCard}><Text style={styles.formTitle}>הוספת אתר</Text>
       <Text style={styles.fieldLabel}>שם האתר</Text><TextInput value={siteName} onChangeText={setSiteName} style={styles.input} placeholder="לדוגמה: אבן וסיד מודיעים" placeholderTextColor={colors.textSubtle} />
@@ -219,9 +231,11 @@ export function ManagerCustomersScreen(_: CustomersProps) {
     refreshControl={<RefreshControl refreshing={loading} onRefresh={() => { setLoading(true); void load(); }} />}
     ListHeaderComponent={<><ScreenTitle>לקוחות</ScreenTitle><ScreenSubtitle>ניהול לקוחות ישירות מהנייד.</ScreenSubtitle>
       {adding ? <View style={styles.formCard}><Text style={styles.formTitle}>הוספת לקוח</Text>
-        <Text style={styles.fieldLabel}>שם הלקוח</Text><TextInput value={name} onChangeText={setName} style={styles.input} placeholder="לדוגמה: א.ב. עבודות עפר" placeholderTextColor={colors.textSubtle} />
+        <Text style={styles.fieldLabel}>שם הלקוח</Text><TextInput value={name} onChangeText={setName} style={styles.input} placeholder="לדוגמה: אבן וסיד בע״מ" placeholderTextColor={colors.textSubtle} />
         <Text style={styles.rowMeta}>מספר הלקוח ייווצר אוטומטית בעת השמירה.</Text>
-        <Text style={styles.fieldLabel}>טלפון (אופציונלי)</Text><TextInput value={phone} onChangeText={setPhone} style={styles.input} keyboardType="phone-pad" />
+        <Text style={styles.fieldLabel}>מספר ח.פ. / ע.מ.</Text><TextInput value={registrationNumber} onChangeText={setRegistrationNumber} style={styles.input} keyboardType="number-pad" />
+        <Text style={styles.fieldLabel}>איש קשר ראשי</Text><TextInput value={contactName} onChangeText={setContactName} style={styles.input} />
+        <Text style={styles.fieldLabel}>טלפון איש קשר (אופציונלי)</Text><TextInput value={phone} onChangeText={setPhone} style={styles.input} keyboardType="phone-pad" />
         <Text style={styles.fieldLabel}>עיר (אופציונלי)</Text><TextInput value={city} onChangeText={setCity} style={styles.input} />
         {error ? <Text style={styles.error}>{error}</Text> : null}<Button label="שמירת לקוח" loading={saving} onPress={() => void save()} /><Button label="ביטול" variant="secondary" onPress={() => setAdding(false)} />
       </View> : <Button label="הוספת לקוח" onPress={() => { setError(null); setAdding(true); }} />}{error && !adding ? <Text style={styles.error}>{error}</Text> : null}</>}

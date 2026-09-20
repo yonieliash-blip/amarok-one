@@ -1,10 +1,17 @@
-import type { Customer, CustomerSite, Equipment, EquipmentType } from "@amarok-one/types";
+import type { Customer, CustomerContact, CustomerSite, Equipment, EquipmentType } from "@amarok-one/types";
 import { apiRequest } from "./client";
 
 export interface CreateCustomerPayload {
   name: string;
+  registrationNumber: string;
   phone?: string;
   city?: string;
+}
+
+export interface CreateCustomerContactPayload {
+  name: string;
+  phone?: string;
+  isPrimary?: boolean;
 }
 
 export interface CreateCustomerSitePayload {
@@ -58,6 +65,16 @@ export async function listCustomerSites(organizationId: string, customerId: stri
 export async function createCustomerSite(organizationId: string, customerId: string, accessToken: string, payload: CreateCustomerSitePayload): Promise<CustomerSite> {
   const response = await apiRequest<CustomerSite>(`/organizations/${organizationId}/customers/${customerId}/sites`, { method: "POST", accessToken, body: JSON.stringify(payload) });
   return response.data as CustomerSite;
+}
+
+export async function listCustomerContacts(organizationId: string, customerId: string, accessToken: string): Promise<CustomerContact[]> {
+  const response = await apiRequest<CustomerContact[]>(`/organizations/${organizationId}/customers/${customerId}/contacts`, { accessToken });
+  return response.data ?? [];
+}
+
+export async function createCustomerContact(organizationId: string, customerId: string, accessToken: string, payload: CreateCustomerContactPayload): Promise<CustomerContact> {
+  const response = await apiRequest<CustomerContact>(`/organizations/${organizationId}/customers/${customerId}/contacts`, { method: "POST", accessToken, body: JSON.stringify(payload) });
+  return response.data as CustomerContact;
 }
 
 export async function createCustomer(
