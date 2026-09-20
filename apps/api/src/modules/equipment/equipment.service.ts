@@ -111,6 +111,20 @@ async function assertBranchInOrganization(organizationId: string, branchId: stri
   }
 }
 
+async function assertCustomerSiteInOrganization(
+  organizationId: string,
+  customerSiteId: string,
+  customerId?: string,
+): Promise<void> {
+  const site = await prisma.customerSite.findFirst({
+    where: { id: customerSiteId, organizationId, deletedAt: null },
+    select: { customerId: true },
+  });
+  if (!site || (customerId && site.customerId !== customerId)) {
+    throw notFound("CustomerSite", customerSiteId);
+  }
+}
+
 interface CatalogSelection {
   manufacturerId?: string;
   manufacturer?: string;
@@ -421,6 +435,7 @@ function buildCreateData(
     organization: { connect: { id: organizationId } },
     equipmentType: { connect: { id: input.equipmentTypeId } },
     ...(input.customerId ? { customer: { connect: { id: input.customerId } } } : {}),
+    ...(input.customerSiteId ? { customerSite: { connect: { id: input.customerSiteId } } } : {}),
     ...(input.branchId ? { branch: { connect: { id: input.branchId } } } : {}),
     name: input.name,
     internalNumber: input.internalNumber,
@@ -454,6 +469,9 @@ export async function createEquipment(
 
   if (input.customerId) {
     await assertCustomerInOrganization(organizationId, input.customerId);
+  }
+  if (input.customerSiteId) {
+    await assertCustomerSiteInOrganization(organizationId, input.customerSiteId, input.customerId);
   }
 
   if (input.branchId) {
@@ -503,6 +521,13 @@ export async function updateEquipment(
 
   if (input.customerId) {
     await assertCustomerInOrganization(organizationId, input.customerId);
+  }
+  if (input.customerSiteId) {
+    await assertCustomerSiteInOrganization(
+      organizationId,
+      input.customerSiteId,
+      input.customerId ?? existing.customerId,
+    );
   }
 
   if (input.branchId) {
@@ -565,6 +590,11 @@ export async function updateEquipment(
       ? input.customerId === null
         ? { customer: { disconnect: true } }
         : { customer: { connect: { id: input.customerId } } }
+        : {}),
+    ...(input.customerSiteId !== undefined
+      ? input.customerSiteId === null
+        ? { customerSite: { disconnect: true } }
+        : { customerSite: { connect: { id: input.customerSiteId } } }
       : {}),
     ...(input.branchId !== undefined
       ? input.branchId === null

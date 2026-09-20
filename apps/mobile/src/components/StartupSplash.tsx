@@ -30,6 +30,6 @@ export function StartupSplash() {
 
 const styles = StyleSheet.create({
   page: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.primary },
-  logoFrame: { width: "78%", maxWidth: 360, backgroundColor: "#000000" },
+  logoFrame: { width: "78%", maxWidth: 360 },
   logo: { width: "100%", height: 104 },
 });

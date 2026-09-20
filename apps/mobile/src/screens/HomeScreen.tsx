@@ -54,6 +54,12 @@ function priorityLabel(priority: ServiceCall["priority"]): string {
   return labels[priority];
 }
 
+function greetingForCurrentHour(hour = new Date().getHours()): string {
+  if (hour < 12) return "בוקר טוב";
+  if (hour < 18) return "צהריים טובים";
+  return "ערב טוב";
+}
+
 export function HomeScreen({ navigation }: Props) {
   const { user, accessToken, logout } = useAuth();
   const [workDay, setWorkDay] = useState<WorkDay | null>(null);
@@ -235,7 +241,7 @@ export function HomeScreen({ navigation }: Props) {
         <View style={styles.topContent}>
           <View style={styles.header}>
             <Eyebrow>ניהול עבודות שטח</Eyebrow>
-            <ScreenTitle>שלום, {user?.displayName?.split(" ")[0] ?? "טכנאי"}</ScreenTitle>
+            <ScreenTitle>{greetingForCurrentHour()}, {user?.displayName?.split(" ")[0] ?? "טכנאי"}</ScreenTitle>
             <ScreenSubtitle>{`${user?.organization.name} · תמונת מצב להיום`}</ScreenSubtitle>
           </View>
 

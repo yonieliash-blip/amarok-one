@@ -3,6 +3,7 @@ import type {
   Customer,
   CustomerContact,
   CustomerDetail,
+  CustomerSite,
   CustomerStatus,
 } from "@amarok-one/types";
 import { Prisma } from "@prisma/client";
@@ -12,6 +13,7 @@ import {
   activeOnly,
   fromCustomerStatusDto,
   toCustomerContactDto,
+  toCustomerSiteDto,
   toCustomerDto,
 } from "../../lib/mappers.js";
 import { paginationMeta, parsePagination } from "../../lib/pagination.js";
@@ -26,6 +28,7 @@ import {
 import type {
   CreateContactInput,
   CreateCustomerInput,
+  CreateCustomerSiteInput,
   UpdateContactInput,
   UpdateCustomerInput,
 } from "./customer.schemas.js";
@@ -87,6 +90,7 @@ export async function getCustomerDetail(
         where: activeOnly,
         orderBy: [{ isPrimary: "desc" }, { name: "asc" }],
       },
+      sites: { where: activeOnly, orderBy: { name: "asc" } },
     },
   });
 
@@ -97,6 +101,7 @@ export async function getCustomerDetail(
   return {
     ...toCustomerDto(customer),
     contacts: customer.contacts.map(toCustomerContactDto),
+    sites: customer.sites.map(toCustomerSiteDto),
   };
 }
 
@@ -114,7 +119,7 @@ export async function createCustomer(
         name: input.name,
         legalName: input.legalName,
         registrationNumber: input.registrationNumber,
-        customerNumber: input.customerNumber,
+        customerNumber: input.customerNumber ?? (await nextCustomerNumber(organizationId)),
         email: input.email,
         phone: input.phone,
         address: input.address,
@@ -143,6 +148,18 @@ export async function createCustomer(
     }
     throw error;
   }
+}
+
+async function nextCustomerNumber(organizationId: string): Promise<string> {
+  const customers = await prisma.customer.findMany({
+    where: { organizationId },
+    select: { customerNumber: true },
+  });
+  const highest = customers.reduce((current, customer) => {
+    const match = /^C-(\d+)$/.exec(customer.customerNumber);
+    return match ? Math.max(current, Number(match[1])) : current;
+  }, 0);
+  return `C-${String(highest + 1).padStart(4, "0")}`;
 }
 
 export async function updateCustomer(
@@ -233,6 +250,39 @@ async function assertCustomerExists(organizationId: string, customerId: string):
   if (!customer) {
     throw notFound("Customer", customerId);
   }
+}
+
+export async function listCustomerSites(
+  organizationId: string,
+  customerId: string,
+): Promise<CustomerSite[]> {
+  await assertCustomerExists(organizationId, customerId);
+  const sites = await prisma.customerSite.findMany({
+    where: { organizationId, customerId, ...activeOnly },
+    orderBy: { name: "asc" },
+  });
+  return sites.map(toCustomerSiteDto);
+}
+
+export async function createCustomerSite(
+  organizationId: string,
+  customerId: string,
+  input: CreateCustomerSiteInput,
+  actorId?: string,
+): Promise<CustomerSite> {
+  await assertCustomerExists(organizationId, customerId);
+  const site = await prisma.customerSite.create({
+    data: { organizationId, customerId, ...input },
+  });
+  await writeAuditLog({
+    organizationId,
+    actorId,
+    action: "customer_site.created",
+    entityType: "CustomerSite",
+    entityId: site.id,
+    metadata: { customerId, name: site.name },
+  });
+  return toCustomerSiteDto(site);
 }
 
 export async function listContacts(

@@ -23,6 +23,7 @@ model Organization {
   branches              Branch[]
   customers             Customer[]
   customerContacts      CustomerContact[]
+  customerSites         CustomerSite[]
   equipmentTypes        EquipmentType[]
   equipmentManufacturers EquipmentManufacturer[]
   equipmentModels       EquipmentCatalogModel[]
@@ -425,6 +426,7 @@ model Customer {
 
   organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   contacts     CustomerContact[]
+  sites        CustomerSite[]
   equipment    Equipment[]
   serviceCalls ServiceCall[]
 
@@ -433,6 +435,31 @@ model Customer {
   @@index([organizationId, deletedAt])
   @@index([organizationId, status])
   @@map("customers")
+}
+
+/// Operational site belonging to a customer, such as a quarry or a depot.
+model CustomerSite {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @db.Uuid
+  customerId     String    @db.Uuid
+  name           String
+  address        String?
+  city           String?
+  contactName    String?
+  contactPhone   String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  customer     Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  equipment    Equipment[]
+  serviceCalls ServiceCall[]
+
+  @@unique([customerId, name])
+  @@index([organizationId])
+  @@index([customerId, deletedAt])
+  @@map("customer_sites")
 }
 
 /// Contact person belonging to a customer (tenant-scoped).
@@ -538,6 +565,7 @@ model Equipment {
   organizationId     String          @db.Uuid
   equipmentTypeId    String          @db.Uuid
   customerId         String?         @db.Uuid
+  customerSiteId     String?         @db.Uuid
   branchId           String?         @db.Uuid
   name               String
   internalNumber     String
@@ -563,6 +591,7 @@ model Equipment {
   manufacturerRef EquipmentManufacturer? @relation(fields: [manufacturerId], references: [id], onDelete: SetNull)
   modelRef        EquipmentCatalogModel? @relation(fields: [modelId], references: [id], onDelete: SetNull)
   customer      Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerSite  CustomerSite? @relation(fields: [customerSiteId], references: [id], onDelete: SetNull)
   branch        Branch?       @relation(fields: [branchId], references: [id], onDelete: SetNull)
   serviceCalls  ServiceCall[]
 
@@ -571,6 +600,7 @@ model Equipment {
   @@index([organizationId, deletedAt])
   @@index([organizationId, status])
   @@index([organizationId, customerId])
+  @@index([organizationId, customerSiteId])
   @@index([organizationId, equipmentTypeId])
   @@index([organizationId, manufacturer])
   @@index([organizationId, model])
@@ -638,6 +668,7 @@ model ServiceCall {
   scheduledAt       DateTime?
   completedAt       DateTime?
   customerId        String                    @db.Uuid
+  customerSiteId    String?                   @db.Uuid
   equipmentId       String                    @db.Uuid
   branchId          String?                   @db.Uuid
   assignedUserId    String?                   @db.Uuid
@@ -651,6 +682,7 @@ model ServiceCall {
 
   organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   customer     Customer           @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  customerSite CustomerSite?      @relation(fields: [customerSiteId], references: [id], onDelete: SetNull)
   equipment    Equipment          @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
   branch       Branch?            @relation(fields: [branchId], references: [id], onDelete: SetNull)
   assignedUser User?              @relation("AssignedTechnician", fields: [assignedUserId], references: [id], onDelete: SetNull)
@@ -663,6 +695,7 @@ model ServiceCall {
   @@index([organizationId, status])
   @@index([organizationId, priority])
   @@index([organizationId, customerId])
+  @@index([organizationId, customerSiteId])
   @@index([organizationId, equipmentId])
   @@index([organizationId, assignedUserId])
   @@index([organizationId, openedAt])

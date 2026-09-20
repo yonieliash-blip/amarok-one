@@ -3,6 +3,7 @@ import type {
   Company,
   Customer,
   CustomerContact,
+  CustomerSite,
   CustomerStatus,
   Equipment,
   EquipmentCatalogModel,
@@ -20,6 +21,7 @@ import type {
   Company as CompanyModel,
   Customer as CustomerModel,
   CustomerContact as CustomerContactModel,
+  CustomerSite as CustomerSiteModel,
   CustomerStatus as CustomerStatusModel,
   Equipment as EquipmentModel,
   EquipmentCatalogModel as EquipmentCatalogModelEntity,
@@ -111,6 +113,21 @@ export function toCustomerContactDto(model: CustomerContactModel): CustomerConta
   };
 }
 
+export function toCustomerSiteDto(model: CustomerSiteModel): CustomerSite {
+  return {
+    id: model.id,
+    organizationId: model.organizationId,
+    customerId: model.customerId,
+    name: model.name,
+    address: model.address ?? undefined,
+    city: model.city ?? undefined,
+    contactName: model.contactName ?? undefined,
+    contactPhone: model.contactPhone ?? undefined,
+    createdAt: model.createdAt.toISOString(),
+    updatedAt: model.updatedAt.toISOString(),
+  };
+}
+
 export function toCustomerDto(model: CustomerModel): Customer {
   return {
     id: model.id,
@@ -138,6 +155,7 @@ export const equipmentInclude = {
   manufacturerRef: { select: { id: true, name: true } },
   modelRef: { select: { id: true, name: true } },
   customer: { select: { id: true, name: true, customerNumber: true } },
+  customerSite: { select: { id: true, name: true, contactName: true, contactPhone: true } },
   branch: { select: { id: true, name: true, code: true } },
 } satisfies Prisma.EquipmentInclude;
 
@@ -146,6 +164,7 @@ type EquipmentWithRelations = EquipmentModel & {
   manufacturerRef: { id: string; name: string } | null;
   modelRef: { id: string; name: string } | null;
   customer: { id: string; name: string; customerNumber: string } | null;
+  customerSite: { id: string; name: string; contactName: string | null; contactPhone: string | null } | null;
   branch: { id: string; name: string; code: string } | null;
 };
 
@@ -235,6 +254,10 @@ export function toEquipmentDto(model: EquipmentWithRelations): Equipment {
           customerNumber: model.customer.customerNumber,
         }
       : undefined,
+    customerSiteId: model.customerSiteId ?? undefined,
+    customerSite: model.customerSite
+      ? { id: model.customerSite.id, name: model.customerSite.name, contactName: model.customerSite.contactName ?? undefined, contactPhone: model.customerSite.contactPhone ?? undefined }
+      : undefined,
     branchId: model.branchId ?? undefined,
     branch: model.branch
       ? {
@@ -259,6 +282,7 @@ export function toEquipmentDto(model: EquipmentWithRelations): Equipment {
 
 export const serviceCallInclude = {
   customer: { select: { id: true, name: true, customerNumber: true } },
+  customerSite: { select: { id: true, name: true, contactName: true, contactPhone: true } },
   equipment: {
     select: { id: true, name: true, internalNumber: true, manufacturer: true, model: true },
   },
@@ -268,6 +292,7 @@ export const serviceCallInclude = {
 
 type ServiceCallWithRelations = ServiceCallModel & {
   customer: { id: string; name: string; customerNumber: string };
+  customerSite: { id: string; name: string; contactName: string | null; contactPhone: string | null } | null;
   equipment: {
     id: string;
     name: string;
@@ -366,6 +391,15 @@ export function toServiceCallDto(model: ServiceCallWithRelations): ServiceCall {
       name: model.customer.name,
       customerNumber: model.customer.customerNumber,
     },
+    customerSiteId: model.customerSiteId ?? undefined,
+    customerSite: model.customerSite
+      ? {
+          id: model.customerSite.id,
+          name: model.customerSite.name,
+          contactName: model.customerSite.contactName ?? undefined,
+          contactPhone: model.customerSite.contactPhone ?? undefined,
+        }
+      : undefined,
     equipmentId: model.equipmentId,
     equipment: {
       id: model.equipment.id,

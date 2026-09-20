@@ -80,6 +80,8 @@ export interface Equipment {
   equipmentType?: Pick<EquipmentType, "id" | "name" | "code">;
   customerId?: EntityId;
   customer?: Pick<Customer, "id" | "name" | "customerNumber">;
+  customerSiteId?: EntityId;
+  customerSite?: Pick<CustomerSite, "id" | "name" | "contactName" | "contactPhone">;
   branchId?: EntityId;
   branch?: Pick<Branch, "id" | "name" | "code">;
   status: EquipmentStatus;
@@ -171,9 +173,24 @@ export interface CustomerContact {
   updatedAt: ISODateString;
 }
 
+/** A physical customer site such as a quarry, depot, or project location. */
+export interface CustomerSite {
+  id: EntityId;
+  organizationId: EntityId;
+  customerId: EntityId;
+  name: string;
+  address?: string;
+  city?: string;
+  contactName?: string;
+  contactPhone?: string;
+  createdAt: ISODateString;
+  updatedAt: ISODateString;
+}
+
 /** Customer with nested contacts */
 export interface CustomerDetail extends Customer {
   contacts: CustomerContact[];
+  sites: CustomerSite[];
 }
 
 /** Service call lifecycle status */
@@ -284,6 +301,8 @@ export interface ServiceCall {
   completedAt?: ISODateString;
   customerId: EntityId;
   customer?: Pick<Customer, "id" | "name" | "customerNumber">;
+  customerSiteId?: EntityId;
+  customerSite?: Pick<CustomerSite, "id" | "name" | "contactName" | "contactPhone">;
   equipmentId: EntityId;
   equipment?: Pick<Equipment, "id" | "name" | "internalNumber" | "manufacturer" | "model">;
   branchId?: EntityId;

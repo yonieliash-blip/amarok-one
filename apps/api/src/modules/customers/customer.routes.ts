@@ -8,6 +8,7 @@ import { organizationIdParamSchema } from "../organizations/organization.schemas
 import {
   contactIdParamSchema,
   createContactSchema,
+  createCustomerSiteSchema,
   createCustomerSchema,
   customerIdParamSchema,
   listCustomersQuerySchema,
@@ -17,8 +18,10 @@ import {
 import {
   createContact,
   createCustomer,
+  createCustomerSite,
   getCustomerDetail,
   listContacts,
+  listCustomerSites,
   listCustomers,
   softDeleteContact,
   softDeleteCustomer,
@@ -32,6 +35,25 @@ function actorId(context: Parameters<typeof getAuth>[0]): string {
 
 export const customerRoutes = new Hono()
   .use("*", tenantGuard)
+  .get(
+    "/:customerId/sites",
+    requirePermission("customers:read"),
+    zValidator("param", customerIdParamSchema),
+    async (context) => {
+      const { organizationId, customerId } = context.req.valid("param");
+      return context.json(createApiResponse(await listCustomerSites(organizationId, customerId)));
+    },
+  )
+  .post(
+    "/:customerId/sites",
+    requirePermission("customers:write"),
+    zValidator("param", customerIdParamSchema),
+    zValidator("json", createCustomerSiteSchema),
+    async (context) => {
+      const { organizationId, customerId } = context.req.valid("param");
+      return context.json(createApiResponse(await createCustomerSite(organizationId, customerId, context.req.valid("json"), actorId(context))), 201);
+    },
+  )
   .get(
     "/",
     requirePermission("customers:read"),

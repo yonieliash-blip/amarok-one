@@ -154,7 +154,8 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   label: {
-    fontSize: 16,
+    fontSize: 15,
+    lineHeight: 24,
     fontFamily: typography.bold,
     textAlign: "center",
   },
@@ -163,11 +164,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: spacing.sm,
+    minHeight: 28,
   },
   buttonArrow: {
     fontFamily: typography.regular,
-    fontSize: 28,
-    lineHeight: 24,
+    fontSize: 24,
+    lineHeight: 28,
   },
   labelPrimary: {
     color: colors.primary,

@@ -17,6 +17,7 @@ export interface CreateManagerServiceCallInput {
   description?: string;
   priority: ServiceCall["priority"];
   customerId: string;
+  customerSiteId?: string;
   equipmentId: string;
 }
 

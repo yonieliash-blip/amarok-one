@@ -12,7 +12,7 @@ export const createCustomerSchema = z.object({
   name: z.string().trim().min(2).max(256),
   legalName: z.string().trim().min(2).max(256).optional(),
   registrationNumber: z.string().trim().min(2).max(64).optional(),
-  customerNumber: codeSchema,
+  customerNumber: codeSchema.optional(),
   email: z.string().trim().email().max(256).optional(),
   phone: z.string().trim().min(3).max(32).optional(),
   address: z.string().trim().min(2).max(256).optional(),
@@ -61,6 +61,18 @@ export const contactIdParamSchema = customerIdParamSchema.extend({
   contactId: z.string().uuid(),
 });
 
+export const customerSiteIdParamSchema = customerIdParamSchema.extend({
+  customerSiteId: z.string().uuid(),
+});
+
+export const createCustomerSiteSchema = z.object({
+  name: z.string().trim().min(2).max(256),
+  address: z.string().trim().min(2).max(256).optional(),
+  city: z.string().trim().min(2).max(128).optional(),
+  contactName: z.string().trim().min(2).max(128).optional(),
+  contactPhone: z.string().trim().min(3).max(32).optional(),
+});
+
 export const createContactSchema = z.object({
   name: z.string().trim().min(2).max(128),
   email: z.string().trim().email().max(256).optional(),
@@ -87,3 +99,4 @@ export type CreateCustomerInput = z.infer<typeof createCustomerSchema>;
 export type UpdateCustomerInput = z.infer<typeof updateCustomerSchema>;
 export type CreateContactInput = z.infer<typeof createContactSchema>;
 export type UpdateContactInput = z.infer<typeof updateContactSchema>;
+export type CreateCustomerSiteInput = z.infer<typeof createCustomerSiteSchema>;
