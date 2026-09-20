@@ -2,22 +2,27 @@
 export const colors = {
   primary: "#ffc928",
   primaryPressed: "#eab51c",
-  primarySoft: "#2b2512",
+  primarySoft: "#fff4cf",
   primaryOn: "#111111",
-  bg: "#0b0c0e",
-  bgPanel: "#131519",
-  bgElevated: "#1a1d22",
-  border: "#2a2e35",
-  borderStrong: "#3b414b",
-  text: "#f7f7f8",
-  textMuted: "#a4a9b2",
-  textSubtle: "#747b86",
-  success: "#36d17c",
-  successSoft: "#10271c",
-  error: "#ff5d65",
-  errorSoft: "#30171a",
-  warning: "#ffc928",
-  warningSoft: "#2b2512",
+  bg: "#ffffff",
+  bgPanel: "#ffffff",
+  bgElevated: "#f6f7f8",
+  border: "#e2e5e9",
+  borderStrong: "#c5cbd3",
+  text: "#1c232b",
+  textMuted: "#5f6974",
+  textSubtle: "#8a949f",
+  success: "#218c55",
+  successSoft: "#e8f7ee",
+  error: "#c72e3b",
+  errorSoft: "#ffedef",
+  warning: "#bf8500",
+  warningSoft: "#fff4cf",
+} as const;
+
+export const typography = {
+  regular: "Alef",
+  bold: "Alef-Bold",
 } as const;
 
 export const spacing = {

@@ -5,13 +5,13 @@
     "owner": "amaroksoftware",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "light",
     "icon": "./assets/icon.png",
     "platforms": ["ios", "android", "web"],
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#101010"
+      "backgroundColor": "#ffc928"
     },
     "ios": {
       "supportsTablet": true,
@@ -28,7 +28,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#101010"
+        "backgroundColor": "#ffc928"
       },
       "package": "com.amarokone.mobile",
       "versionCode": 1,

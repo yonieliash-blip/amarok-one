@@ -1,7 +1,8 @@
-import { NavigationContainer, DarkTheme } from "@react-navigation/native";
+import { DefaultTheme, NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuth } from "../auth/AuthContext";
-import { colors } from "../theme";
+import { colors, typography } from "../theme";
+import { BrandWordmark } from "../components/ui";
 import type { RootStackParamList } from "./types";
 import { LoginScreen } from "../screens/LoginScreen";
 import { HomeScreen } from "../screens/HomeScreen";
@@ -22,9 +23,9 @@ import { ActivityIndicator, StyleSheet, View } from "react-native";
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const navTheme = {
-  ...DarkTheme,
+  ...DefaultTheme,
   colors: {
-    ...DarkTheme.colors,
+    ...DefaultTheme.colors,
     primary: colors.primary,
     background: colors.bg,
     card: colors.bgPanel,
@@ -48,10 +49,12 @@ export function RootNavigator() {
     <NavigationContainer theme={navTheme}>
       <Stack.Navigator
         screenOptions={{
-          headerStyle: { backgroundColor: colors.bg },
+          headerStyle: { backgroundColor: colors.primary },
           headerShadowVisible: false,
-          headerTintColor: colors.text,
-          headerTitleStyle: { fontWeight: "800" },
+          headerTintColor: colors.primaryOn,
+          headerTitleStyle: { fontFamily: typography.bold, fontSize: 18 },
+          headerTitleAlign: "center",
+          headerRight: () => <BrandWordmark style={styles.headerWordmark} />,
           contentStyle: { backgroundColor: colors.bg },
         }}
       >
@@ -89,5 +92,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: colors.bg,
+  },
+  headerWordmark: {
+    width: 108,
+    height: 32,
+    backgroundColor: "#444444",
   },
 });

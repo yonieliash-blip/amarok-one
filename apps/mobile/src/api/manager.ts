@@ -1,5 +1,22 @@
-import type { Customer, Equipment } from "@amarok-one/types";
+import type { Customer, Equipment, EquipmentType } from "@amarok-one/types";
 import { apiRequest } from "./client";
+
+export interface CreateCustomerPayload {
+  name: string;
+  customerNumber: string;
+  phone?: string;
+  city?: string;
+}
+
+export interface CreateEquipmentPayload {
+  name: string;
+  internalNumber: string;
+  equipmentTypeId: string;
+  customerId: string;
+  manufacturer?: string;
+  model?: string;
+  serialNumber?: string;
+}
 
 interface CurrentTechnicianLocation {
   userId: string;
@@ -18,6 +35,37 @@ export async function listCustomers(organizationId: string, accessToken: string)
 export async function listEquipment(organizationId: string, accessToken: string): Promise<Equipment[]> {
   const response = await apiRequest<Equipment[]>(`/organizations/${organizationId}/equipment?pageSize=100`, { accessToken });
   return response.data ?? [];
+}
+
+export async function listEquipmentTypes(organizationId: string, accessToken: string): Promise<EquipmentType[]> {
+  const response = await apiRequest<EquipmentType[]>(`/organizations/${organizationId}/equipment/types`, { accessToken });
+  return response.data ?? [];
+}
+
+export async function createCustomer(
+  organizationId: string,
+  accessToken: string,
+  payload: CreateCustomerPayload,
+): Promise<Customer> {
+  const response = await apiRequest<Customer>(`/organizations/${organizationId}/customers`, {
+    method: "POST",
+    accessToken,
+    body: JSON.stringify(payload),
+  });
+  return response.data as Customer;
+}
+
+export async function createEquipment(
+  organizationId: string,
+  accessToken: string,
+  payload: CreateEquipmentPayload,
+): Promise<Equipment> {
+  const response = await apiRequest<Equipment>(`/organizations/${organizationId}/equipment`, {
+    method: "POST",
+    accessToken,
+    body: JSON.stringify(payload),
+  });
+  return response.data as Equipment;
 }
 
 export async function listCurrentTechnicianLocations(organizationId: string, accessToken: string): Promise<CurrentTechnicianLocation[]> {

@@ -1,14 +1,14 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import type { Equipment, OrganizationMember, ServiceCall, ServiceCallLifecycleView } from "@amarok-one/types";
+import type { Customer, Equipment, EquipmentType, OrganizationMember, ServiceCall, ServiceCallLifecycleView } from "@amarok-one/types";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useAuth } from "../auth/AuthContext";
-import { listCurrentTechnicianLocations, listCustomers, listEquipment, type CurrentTechnicianLocation } from "../api/manager";
+import { createCustomer, createEquipment, listCurrentTechnicianLocations, listCustomers, listEquipment, listEquipmentTypes, type CurrentTechnicianLocation } from "../api/manager";
 import { assignServiceCallTechnician, createManagerServiceCall, getServiceCall, getServiceCallLifecycle, listAssignableTechnicians, listMyServiceCalls } from "../api/service-calls";
 import { isApiRequestError } from "../api/client";
 import { BrandWordmark, Button, Card, Eyebrow, ScreenSubtitle, ScreenTitle, StatusPill } from "../components/ui";
 import type { RootStackParamList } from "../navigation/types";
-import { colors, radius, spacing } from "../theme";
+import { colors, radius, spacing, typography } from "../theme";
 
 type HomeProps = NativeStackScreenProps<RootStackParamList, "ManagerHome">;
 type CallsProps = NativeStackScreenProps<RootStackParamList, "ManagerServiceCalls">;
@@ -127,30 +127,128 @@ function DirectoryScreen<T>({ title, subtitle, load, itemKey, render }: { title:
   return <Page><FlatList data={items} contentContainerStyle={styles.content} keyExtractor={itemKey} refreshControl={<RefreshControl refreshing={loading} onRefresh={() => { setLoading(true); void reload(); }} />} ListHeaderComponent={<><Text style={styles.sectionTitle}>{title}</Text><ScreenSubtitle>{subtitle}</ScreenSubtitle>{error ? <Text style={styles.error}>{error}</Text> : null}</>} ListEmptyComponent={loading ? <ActivityIndicator color={colors.primary} style={styles.loader} /> : <Text style={styles.empty}>אין נתונים להצגה.</Text>} renderItem={({ item }) => <View style={styles.row}>{render(item)}</View>} /></Page>;
 }
 
-export function ManagerCustomersScreen(_: CustomersProps) { const { user, accessToken } = useAuth(); return <DirectoryScreen title="לקוחות" subtitle="לצפייה מהירה בלקוחות הקיימים. הוספה ועריכה יתווספו במסך הבא של גרסת המנהל." load={() => user && accessToken ? listCustomers(user.organization.id, accessToken) : Promise.resolve([])} itemKey={(customer) => customer.id} render={(customer) => <><Text style={styles.rowTitle}>{customer.name}</Text><Text style={styles.rowMeta}>{customer.customerNumber} · {customer.phone ?? "ללא טלפון"}</Text></>} />; }
+export function ManagerCustomersScreen(_: CustomersProps) {
+  const { user, accessToken } = useAuth();
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [customerNumber, setCustomerNumber] = useState("");
+  const [phone, setPhone] = useState("");
+  const [city, setCity] = useState("");
 
-export function ManagerEquipmentScreen(_: EquipmentProps) { const { user, accessToken } = useAuth(); return <DirectoryScreen title="ציוד" subtitle="הצי הפעיל והצי שהוסר זמינים כאן לקריאה מהירה." load={() => user && accessToken ? listEquipment(user.organization.id, accessToken) : Promise.resolve([])} itemKey={(equipment) => equipment.id} render={(equipment: Equipment) => <><Text style={styles.rowTitle}>{equipment.name}</Text><Text style={styles.rowMeta}>{equipment.internalNumber} · {equipment.manufacturer ?? "ללא יצרן"} {equipment.model ?? ""}</Text><StatusPill label={equipment.status === "retired" ? "צי שהוסר" : "צי פעיל"} tone={equipment.status === "retired" ? "neutral" : "success"} /></>} />; }
+  const load = useCallback(async () => {
+    if (!user || !accessToken) return;
+    setError(null);
+    try { setCustomers(await listCustomers(user.organization.id, accessToken)); }
+    catch (e) { setError(errorMessage(e, "לא ניתן לטעון לקוחות")); }
+    finally { setLoading(false); }
+  }, [user, accessToken]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void load(); }, [load]);
+
+  async function save(): Promise<void> {
+    if (!user || !accessToken || name.trim().length < 2 || customerNumber.trim().length < 2) {
+      setError("יש למלא שם לקוח ומספר לקוח פנימי.");
+      return;
+    }
+    setSaving(true); setError(null);
+    try {
+      await createCustomer(user.organization.id, accessToken, {
+        name: name.trim(), customerNumber: customerNumber.trim(), phone: phone.trim() || undefined, city: city.trim() || undefined,
+      });
+      setName(""); setCustomerNumber(""); setPhone(""); setCity(""); setAdding(false); setLoading(true); await load();
+    } catch (e) { setError(errorMessage(e, "לא ניתן להוסיף את הלקוח")); }
+    finally { setSaving(false); }
+  }
+
+  return <Page><FlatList data={customers} contentContainerStyle={styles.content} keyExtractor={(customer) => customer.id}
+    refreshControl={<RefreshControl refreshing={loading} onRefresh={() => { setLoading(true); void load(); }} />}
+    ListHeaderComponent={<><ScreenTitle>לקוחות</ScreenTitle><ScreenSubtitle>ניהול לקוחות ישירות מהנייד.</ScreenSubtitle>
+      {adding ? <View style={styles.formCard}><Text style={styles.formTitle}>הוספת לקוח</Text>
+        <Text style={styles.fieldLabel}>שם הלקוח</Text><TextInput value={name} onChangeText={setName} style={styles.input} placeholder="לדוגמה: א.ב. עבודות עפר" placeholderTextColor={colors.textSubtle} />
+        <Text style={styles.fieldLabel}>מספר לקוח פנימי</Text><TextInput value={customerNumber} onChangeText={setCustomerNumber} style={styles.input} placeholder="לדוגמה: C-001" placeholderTextColor={colors.textSubtle} autoCapitalize="characters" />
+        <Text style={styles.fieldLabel}>טלפון (אופציונלי)</Text><TextInput value={phone} onChangeText={setPhone} style={styles.input} keyboardType="phone-pad" />
+        <Text style={styles.fieldLabel}>עיר (אופציונלי)</Text><TextInput value={city} onChangeText={setCity} style={styles.input} />
+        {error ? <Text style={styles.error}>{error}</Text> : null}<Button label="שמירת לקוח" loading={saving} onPress={() => void save()} /><Button label="ביטול" variant="secondary" onPress={() => setAdding(false)} />
+      </View> : <Button label="הוספת לקוח" onPress={() => { setError(null); setAdding(true); }} />}{error && !adding ? <Text style={styles.error}>{error}</Text> : null}</>}
+    ListEmptyComponent={loading ? <ActivityIndicator color={colors.primary} style={styles.loader} /> : <Text style={styles.empty}>אין לקוחות להצגה.</Text>}
+    renderItem={({ item: customer }) => <View style={styles.row}><Text style={styles.rowTitle}>{customer.name}</Text><Text style={styles.rowMeta}>{customer.customerNumber} · {customer.phone ?? "ללא טלפון"}</Text></View>}
+  /></Page>;
+}
+
+export function ManagerEquipmentScreen(_: EquipmentProps) {
+  const { user, accessToken } = useAuth();
+  const [equipment, setEquipment] = useState<Equipment[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [types, setTypes] = useState<EquipmentType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [name, setName] = useState(""); const [internalNumber, setInternalNumber] = useState("");
+  const [manufacturer, setManufacturer] = useState(""); const [model, setModel] = useState(""); const [serialNumber, setSerialNumber] = useState("");
+  const [customerId, setCustomerId] = useState<string | null>(null); const [equipmentTypeId, setEquipmentTypeId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!user || !accessToken) return;
+    setError(null);
+    try { const [nextEquipment, nextCustomers, nextTypes] = await Promise.all([listEquipment(user.organization.id, accessToken), listCustomers(user.organization.id, accessToken), listEquipmentTypes(user.organization.id, accessToken)]); setEquipment(nextEquipment); setCustomers(nextCustomers); setTypes(nextTypes); }
+    catch (e) { setError(errorMessage(e, "לא ניתן לטעון ציוד")); }
+    finally { setLoading(false); }
+  }, [user, accessToken]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void load(); }, [load]);
+
+  function cancel(): void { setAdding(false); setError(null); setName(""); setInternalNumber(""); setManufacturer(""); setModel(""); setSerialNumber(""); setCustomerId(null); setEquipmentTypeId(null); }
+  async function save(): Promise<void> {
+    if (!user || !accessToken || name.trim().length < 2 || internalNumber.trim().length < 2 || !customerId || !equipmentTypeId) { setError("יש למלא שם כלי, מספר צי, לקוח וסוג כלי."); return; }
+    setSaving(true); setError(null);
+    try { await createEquipment(user.organization.id, accessToken, { name: name.trim(), internalNumber: internalNumber.trim(), customerId, equipmentTypeId, manufacturer: manufacturer.trim() || undefined, model: model.trim() || undefined, serialNumber: serialNumber.trim() || undefined }); cancel(); setLoading(true); await load(); }
+    catch (e) { setError(errorMessage(e, "לא ניתן להוסיף את הכלי")); }
+    finally { setSaving(false); }
+  }
+
+  return <Page><FlatList data={equipment} contentContainerStyle={styles.content} keyExtractor={(item) => item.id}
+    refreshControl={<RefreshControl refreshing={loading} onRefresh={() => { setLoading(true); void load(); }} />}
+    ListHeaderComponent={<><ScreenTitle>ציוד</ScreenTitle><ScreenSubtitle>הצי הפעיל והצי שהוסר של לקוחותיך.</ScreenSubtitle>
+      {adding ? <View style={styles.formCard}><Text style={styles.formTitle}>הוספת ציוד</Text>
+        <Text style={styles.fieldLabel}>לקוח</Text><View style={styles.choiceList}>{customers.map((customer) => <Pressable key={customer.id} onPress={() => setCustomerId(customer.id)} style={[styles.choice, customerId === customer.id && styles.choiceSelected]}><Text style={styles.choiceText}>{customer.name}</Text></Pressable>)}</View>
+        <Text style={styles.fieldLabel}>סוג כלי</Text><View style={styles.choiceList}>{types.map((type) => <Pressable key={type.id} onPress={() => setEquipmentTypeId(type.id)} style={[styles.choice, equipmentTypeId === type.id && styles.choiceSelected]}><Text style={styles.choiceText}>{type.name}</Text></Pressable>)}</View>
+        <Text style={styles.fieldLabel}>שם הכלי</Text><TextInput value={name} onChangeText={setName} style={styles.input} placeholder="לדוגמה: שופל וולוו L120H" placeholderTextColor={colors.textSubtle} />
+        <Text style={styles.fieldLabel}>מספר צי פנימי</Text><TextInput value={internalNumber} onChangeText={setInternalNumber} style={styles.input} placeholder="לדוגמה: EQ-001" placeholderTextColor={colors.textSubtle} autoCapitalize="characters" />
+        <Text style={styles.fieldLabel}>יצרן (אופציונלי)</Text><TextInput value={manufacturer} onChangeText={setManufacturer} style={styles.input} placeholder="לדוגמה: וולוו" placeholderTextColor={colors.textSubtle} />
+        <Text style={styles.fieldLabel}>דגם (אופציונלי)</Text><TextInput value={model} onChangeText={setModel} style={styles.input} placeholder="לדוגמה: L120H" placeholderTextColor={colors.textSubtle} />
+        <Text style={styles.fieldLabel}>מספר סידורי (אופציונלי)</Text><TextInput value={serialNumber} onChangeText={setSerialNumber} style={styles.input} />
+        {error ? <Text style={styles.error}>{error}</Text> : null}<Button label="שמירת ציוד" loading={saving} onPress={() => void save()} /><Button label="ביטול" variant="secondary" onPress={cancel} />
+      </View> : <Button label="הוספת ציוד" onPress={() => { setError(null); setAdding(true); }} />}{error && !adding ? <Text style={styles.error}>{error}</Text> : null}</>}
+    ListEmptyComponent={loading ? <ActivityIndicator color={colors.primary} style={styles.loader} /> : <Text style={styles.empty}>אין ציוד להצגה.</Text>}
+    renderItem={({ item }) => <View style={styles.row}><Text style={styles.rowTitle}>{item.name}</Text><Text style={styles.rowMeta}>{item.internalNumber} · {item.manufacturer ?? "ללא יצרן"} {item.model ?? ""}</Text><StatusPill label={item.status === "retired" ? "צי שהוסר" : "צי פעיל"} tone={item.status === "retired" ? "neutral" : "success"} /></View>}
+  /></Page>;
+}
 
 export function ManagerLocationsScreen(_: LocationsProps) { const { user, accessToken } = useAuth(); return <DirectoryScreen title="מיקומי טכנאים" subtitle="מיקום אחרון נשמר רק בזמן יום עבודה פעיל." load={() => user && accessToken ? listCurrentTechnicianLocations(user.organization.id, accessToken) : Promise.resolve([])} itemKey={(entry) => entry.userId} render={(entry: CurrentTechnicianLocation) => <><Text style={styles.rowTitle}>{entry.displayName}</Text><Text style={styles.rowMeta}>{entry.workDayId ? `יום עבודה החל ב־${time(entry.startedAt)}` : "לא ביום עבודה פעיל"}</Text>{entry.location ? <><Text style={styles.rowMeta}>עודכן: {time(entry.location.recordedAt)} · דיוק: {Math.round(entry.location.accuracy ?? 0)} מ׳</Text><Button label="פתיחה במפה" variant="secondary" onPress={() => void Linking.openURL(`https://www.google.com/maps?q=${entry.location!.latitude},${entry.location!.longitude}`)} /></> : <Text style={styles.rowMeta}>אין מיקום זמין</Text>}</>} />; }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: "#444444" },
+  page: { flex: 1, backgroundColor: colors.bg },
   content: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl },
   header: { gap: spacing.sm, marginHorizontal: -spacing.md, marginTop: -spacing.md, marginBottom: spacing.sm, paddingBottom: spacing.md },
-  brandStrip: { height: 76, backgroundColor: "#444444", borderBottomWidth: 4, borderBottomColor: colors.primary, flexDirection: "row-reverse", alignItems: "center", paddingHorizontal: spacing.md },
-  brandAccent: { position: "absolute", right: 0, top: 0, height: 72, width: 7, backgroundColor: colors.primary },
+  brandStrip: { height: 76, backgroundColor: colors.primary, flexDirection: "row-reverse", alignItems: "center", paddingHorizontal: spacing.md },
+  brandAccent: { position: "absolute", right: 0, top: 0, height: 76, width: 8, backgroundColor: "#444444" },
   menuCard: { backgroundColor: colors.bgPanel, borderColor: colors.border, borderWidth: 1, borderRightWidth: 4, borderRightColor: colors.primary, borderRadius: radius.lg, padding: spacing.lg, minHeight: 96, justifyContent: "center", gap: spacing.xs },
-  menuTitle: { color: colors.text, fontSize: 19, fontWeight: "800", textAlign: "right", writingDirection: "rtl" },
-  menuSubtitle: { color: colors.textMuted, fontSize: 14, textAlign: "right", writingDirection: "rtl" },
+  menuTitle: { color: colors.text, fontFamily: typography.bold, fontSize: 19, textAlign: "right", writingDirection: "rtl" },
+  menuSubtitle: { color: colors.textMuted, fontFamily: typography.regular, fontSize: 14, textAlign: "right", writingDirection: "rtl" },
   arrow: { position: "absolute", left: spacing.lg, color: colors.primary, fontSize: 34, fontWeight: "400" },
   row: { backgroundColor: colors.bgPanel, borderColor: colors.border, borderWidth: 1, borderRightWidth: 3, borderRightColor: colors.borderStrong, borderRadius: radius.md, padding: spacing.md, gap: spacing.sm, marginTop: spacing.md },
   selectedRow: { borderColor: colors.primary, borderRightColor: colors.primary, backgroundColor: colors.primarySoft },
   rowTop: { flexDirection: "row-reverse", alignItems: "center", justifyContent: "space-between", gap: spacing.sm },
-  rowNumber: { color: colors.primary, fontSize: 13, fontWeight: "800", textAlign: "right", writingDirection: "rtl" },
-  rowTitle: { color: colors.text, fontSize: 17, fontWeight: "800", textAlign: "right", writingDirection: "rtl" },
-  rowMeta: { color: colors.textMuted, fontSize: 14, lineHeight: 20, textAlign: "right", writingDirection: "rtl" },
-  detailTitle: { color: colors.text, fontSize: 21, fontWeight: "800", textAlign: "right", writingDirection: "rtl" },
-  detailText: { color: colors.textMuted, fontSize: 15, lineHeight: 22, textAlign: "right", writingDirection: "rtl" },
-  sectionTitle: { color: colors.text, fontSize: 19, fontWeight: "800", marginTop: spacing.md, textAlign: "right", writingDirection: "rtl" },
-  chips: { gap: spacing.sm }, loader: { marginTop: spacing.xl }, empty: { color: colors.textMuted, textAlign: "right", writingDirection: "rtl", marginTop: spacing.xl }, error: { color: colors.error, marginTop: spacing.md, lineHeight: 20, textAlign: "right", writingDirection: "rtl" }, fieldLabel: { color: colors.text, fontSize: 15, fontWeight: "800", marginTop: spacing.md, textAlign: "right", writingDirection: "rtl" }, input: { minHeight: 50, backgroundColor: colors.bgPanel, borderColor: colors.border, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.md, color: colors.text, fontSize: 16, textAlign: "right", writingDirection: "rtl" }, textArea: { minHeight: 100, textAlignVertical: "top", paddingTop: spacing.md }, priorityRow: { flexDirection: "row-reverse", flexWrap: "wrap", gap: spacing.sm }, choice: { borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgPanel, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill }, choiceSelected: { borderColor: colors.primary, backgroundColor: colors.primarySoft }, choiceText: { color: colors.text, fontWeight: "700", textAlign: "right", writingDirection: "rtl" }, footerBlock: { gap: spacing.sm, paddingTop: spacing.md },
+  rowNumber: { color: "#9a6a00", fontFamily: typography.bold, fontSize: 13, textAlign: "right", writingDirection: "rtl" },
+  rowTitle: { color: colors.text, fontFamily: typography.bold, fontSize: 17, textAlign: "right", writingDirection: "rtl" },
+  rowMeta: { color: colors.textMuted, fontFamily: typography.regular, fontSize: 14, lineHeight: 20, textAlign: "right", writingDirection: "rtl" },
+  detailTitle: { color: colors.text, fontFamily: typography.bold, fontSize: 21, textAlign: "right", writingDirection: "rtl" },
+  detailText: { color: colors.textMuted, fontFamily: typography.regular, fontSize: 15, lineHeight: 22, textAlign: "right", writingDirection: "rtl" },
+  sectionTitle: { color: colors.text, fontFamily: typography.bold, fontSize: 19, marginTop: spacing.md, textAlign: "right", writingDirection: "rtl" },
+  chips: { gap: spacing.sm }, loader: { marginTop: spacing.xl }, empty: { color: colors.textMuted, fontFamily: typography.regular, textAlign: "right", writingDirection: "rtl", marginTop: spacing.xl }, error: { color: colors.error, fontFamily: typography.regular, marginTop: spacing.md, lineHeight: 20, textAlign: "right", writingDirection: "rtl" }, fieldLabel: { color: colors.text, fontFamily: typography.bold, fontSize: 15, marginTop: spacing.md, textAlign: "right", writingDirection: "rtl" }, input: { minHeight: 50, backgroundColor: colors.bgPanel, borderColor: colors.border, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.md, color: colors.text, fontFamily: typography.regular, fontSize: 16, textAlign: "right", writingDirection: "rtl" }, textArea: { minHeight: 100, textAlignVertical: "top", paddingTop: spacing.md }, priorityRow: { flexDirection: "row-reverse", flexWrap: "wrap", gap: spacing.sm }, choiceList: { flexDirection: "row-reverse", flexWrap: "wrap", gap: spacing.sm }, choice: { borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgPanel, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill }, choiceSelected: { borderColor: colors.primary, backgroundColor: colors.primarySoft }, choiceText: { color: colors.text, fontFamily: typography.regular, textAlign: "right", writingDirection: "rtl" }, formCard: { backgroundColor: colors.bgElevated, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm }, formTitle: { color: colors.text, fontFamily: typography.bold, fontSize: 20, textAlign: "right", writingDirection: "rtl" }, footerBlock: { gap: spacing.sm, paddingTop: spacing.md },
 });

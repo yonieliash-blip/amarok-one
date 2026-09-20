@@ -10,7 +10,7 @@ import {
   type ImageStyle,
   type StyleProp,
 } from "react-native";
-import { colors, radius, spacing } from "../theme";
+import { colors, radius, spacing, typography } from "../theme";
 import { brand } from "../config/brand";
 
 interface ButtonProps extends PressableProps {
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: typography.bold,
     textAlign: "center",
   },
   labelPrimary: {
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: "800",
+    fontFamily: typography.bold,
     letterSpacing: -0.5,
     color: colors.text,
     marginBottom: spacing.sm,
@@ -167,6 +167,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 15,
+    fontFamily: typography.regular,
     color: colors.textMuted,
     lineHeight: 22,
     textAlign: "right",
@@ -187,7 +188,7 @@ const styles = StyleSheet.create({
   eyebrow: {
     color: colors.primary,
     fontSize: 11,
-    fontWeight: "800",
+    fontFamily: typography.bold,
     letterSpacing: 1.6,
     textTransform: "uppercase",
     textAlign: "right",
@@ -221,5 +222,5 @@ const styles = StyleSheet.create({
   pillDotSuccess: { backgroundColor: colors.success },
   pillDotWarning: { backgroundColor: colors.warning },
   pillDotDanger: { backgroundColor: colors.error },
-  pillLabel: { color: colors.text, fontSize: 12, fontWeight: "700", textAlign: "right", writingDirection: "rtl" },
+  pillLabel: { color: colors.text, fontFamily: typography.bold, fontSize: 12, textAlign: "right", writingDirection: "rtl" },
 });
