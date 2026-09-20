@@ -48,12 +48,12 @@ export function ManagerHomeScreen({ navigation }: HomeProps) {
     </View>
     <Text style={styles.managerHeading}>מרכז שליטה מנהל</Text>
     <View style={styles.managerActions}>
-      <ManagerMenuButton label="פתיחת קריאה" icon="document-text-outline" onPress={() => navigation.navigate("ManagerNewServiceCall")} />
       <ManagerMenuButton label="הוסף לקוח" icon="person-add-outline" onPress={() => navigation.navigate("ManagerCustomers")} />
-      <ManagerMenuButton label="הוסף ציוד" icon="construct-outline" onPress={() => navigation.navigate("ManagerEquipment")} />
+      <ManagerMenuButton label="פתיחת קריאה" icon="document-text-outline" onPress={() => navigation.navigate("ManagerNewServiceCall")} />
       <ManagerMenuButton label="מיקומי טכנאים" icon="location-outline" onPress={() => navigation.navigate("ManagerLocations")} />
-      <ManagerMenuButton label="קריאות שירות" icon="list-outline" onPress={() => navigation.navigate("ManagerServiceCalls")} />
+      <ManagerMenuButton label="הוסף ציוד" icon="construct-outline" onPress={() => navigation.navigate("ManagerEquipment")} />
       <ManagerMenuButton label="יציאה" icon="log-out-outline" tone="exit" onPress={() => void logout()} />
+      <ManagerMenuButton label="קריאות שירות" icon="list-outline" onPress={() => navigation.navigate("ManagerServiceCalls")} />
     </View>
   </ScrollView>;
 }
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
   managerBrandFrame: { width: 288, height: 74, alignItems: "center", justifyContent: "center" },
   managerWordmark: { width: 288, height: 74 },
   managerHeading: { color: colors.primary, fontFamily: typography.bold, fontSize: 27, textAlign: "center", writingDirection: "rtl", marginBottom: spacing.xl },
-  managerActions: { width: "100%", flexDirection: "row-reverse", flexWrap: "wrap", justifyContent: "space-between", gap: spacing.md },
+  managerActions: { width: "100%", flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: spacing.md },
   managerMenuButton: { width: "48%", minHeight: 92, borderWidth: 1, borderColor: colors.primary, borderRadius: radius.lg, backgroundColor: colors.actionSurface, alignItems: "center", justifyContent: "center", paddingHorizontal: spacing.sm },
   managerExitButton: { backgroundColor: "rgba(143, 29, 29, 0.78)", borderColor: colors.text },
   managerMenuButtonPressed: { opacity: 0.82, transform: [{ scale: 0.99 }] },
