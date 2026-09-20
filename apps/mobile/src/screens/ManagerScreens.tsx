@@ -42,7 +42,9 @@ function Page({ children }: { children: React.ReactNode }) {
 export function ManagerHomeScreen({ navigation }: HomeProps) {
   const { user, logout } = useAuth();
   return <ScrollView style={styles.page} contentContainerStyle={styles.managerHomeContent}>
-    <BrandWordmark style={styles.managerWordmark} />
+    <View style={styles.managerBrandFrame}>
+      <BrandWordmark style={styles.managerWordmark} />
+    </View>
     <Text style={styles.managerHeading}>מרכז שליטה מנהל</Text>
     <View style={styles.managerActions}>
       <ManagerMenuButton label="פתח קריאה" onPress={() => navigation.navigate("ManagerNewServiceCall")} />
@@ -58,8 +60,8 @@ export function ManagerHomeScreen({ navigation }: HomeProps) {
 function ManagerMenuButton({ label, onPress }: { label: string; onPress: () => void }) {
   return <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.managerMenuButton, pressed && styles.managerMenuButtonPressed]}>
     <View style={styles.managerMenuButtonContent}>
-      <Text style={styles.managerMenuButtonLabel}>{label}</Text>
-      <Text style={styles.managerMenuButtonArrow}>‹</Text>
+      <View style={styles.managerMenuButtonArrowBox}><Text style={styles.managerMenuButtonArrow}>‹</Text></View>
+      <View style={styles.managerMenuButtonLabelBox}><Text style={styles.managerMenuButtonLabel}>{label}</Text></View>
     </View>
   </Pressable>;
 }
@@ -289,15 +291,18 @@ export function ManagerLocationsScreen(_: LocationsProps) { const { user, access
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: "transparent" },
   content: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl },
-  managerHomeContent: { alignItems: "center", paddingHorizontal: spacing.md, paddingTop: 96, paddingBottom: spacing.xl, gap: spacing.lg },
-  managerWordmark: { width: "72%", height: 132 },
+  managerHomeContent: { alignItems: "center", paddingHorizontal: spacing.md, paddingTop: 72, paddingBottom: spacing.xl, gap: spacing.lg },
+  managerBrandFrame: { width: 288, height: 74, alignItems: "center", justifyContent: "center" },
+  managerWordmark: { width: 288, height: 74 },
   managerHeading: { color: colors.primary, fontFamily: typography.bold, fontSize: 27, textAlign: "center", writingDirection: "rtl", marginBottom: spacing.xl },
   managerActions: { width: "68%", gap: spacing.lg },
   managerMenuButton: { minHeight: 96, borderWidth: 3, borderColor: colors.primary, borderRadius: radius.lg, backgroundColor: colors.actionSurface, alignItems: "center", justifyContent: "center", paddingHorizontal: spacing.md },
   managerMenuButtonPressed: { opacity: 0.82, transform: [{ scale: 0.99 }] },
-  managerMenuButtonContent: { flexDirection: "row-reverse", alignItems: "center", justifyContent: "center", gap: spacing.sm },
-  managerMenuButtonLabel: { color: colors.primary, fontFamily: typography.bold, fontSize: 22, lineHeight: 32, textAlign: "center", writingDirection: "rtl" },
-  managerMenuButtonArrow: { color: colors.primary, fontFamily: typography.regular, fontSize: 32, lineHeight: 32 },
+  managerMenuButtonContent: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm, minHeight: 30 },
+  managerMenuButtonLabelBox: { height: 30, justifyContent: "center" },
+  managerMenuButtonArrowBox: { width: 24, height: 30, alignItems: "center", justifyContent: "center" },
+  managerMenuButtonLabel: { color: colors.primary, fontFamily: typography.bold, fontSize: 20, lineHeight: 26, textAlign: "center", writingDirection: "rtl" },
+  managerMenuButtonArrow: { color: colors.primary, fontFamily: typography.regular, fontSize: 30, lineHeight: 30, includeFontPadding: false },
   header: { gap: spacing.sm, marginHorizontal: -spacing.md, marginTop: -spacing.md, marginBottom: spacing.sm, paddingBottom: spacing.md },
   brandStrip: { height: 76, backgroundColor: "transparent", borderBottomWidth: 4, borderBottomColor: colors.primary, flexDirection: "row-reverse", alignItems: "center", paddingHorizontal: spacing.md },
   brandAccent: { position: "absolute", right: 0, top: 0, height: 72, width: 7, backgroundColor: colors.primary },

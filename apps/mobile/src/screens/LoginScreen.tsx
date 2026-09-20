@@ -8,11 +8,10 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { BrandMark, Button, Eyebrow, ScreenSubtitle, ScreenTitle } from "../components/ui";
+import { BrandWordmark, Button } from "../components/ui";
 import { useAuth } from "../auth/AuthContext";
 import { isApiRequestError } from "../api/client";
 import { colors, spacing } from "../theme";
-import { brand } from "../config/brand";
 
 export function LoginScreen() {
   const { login } = useAuth();
@@ -47,12 +46,7 @@ export function LoginScreen() {
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.brandBlock}>
-          <BrandMark />
-          <View style={styles.brandCopy}>
-            <Eyebrow>{brand.fieldAppName}</Eyebrow>
-            <ScreenTitle>{brand.productName}</ScreenTitle>
-            <ScreenSubtitle>ימי עבודה, קריאות שירות וביקורי שטח – במקום אחד.</ScreenSubtitle>
-          </View>
+          <BrandWordmark style={styles.wordmark} />
         </View>
 
         {error ? (
@@ -114,8 +108,8 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.lg,
   },
-  brandBlock: { flexDirection: "row-reverse", alignItems: "center", gap: spacing.md },
-  brandCopy: { flex: 1 },
+  brandBlock: { alignItems: "center", marginBottom: spacing.xl },
+  wordmark: { width: "76%", height: 122 },
   formCard: {
     gap: spacing.md,
     padding: spacing.lg,
@@ -125,7 +119,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   field: { gap: spacing.xs },
-  label: { color: colors.text, fontSize: 13, fontWeight: "700", textAlign: "right" },
+  label: { color: colors.text, fontFamily: "Alef-Bold", fontSize: 16, textAlign: "right", writingDirection: "rtl" },
   input: {
     borderWidth: 1,
     borderColor: colors.border,
@@ -135,6 +129,7 @@ const styles = StyleSheet.create({
     minHeight: 52,
     paddingVertical: 12,
     color: colors.text,
+    fontFamily: "Alef",
     fontSize: 16,
     textAlign: "right",
   },
