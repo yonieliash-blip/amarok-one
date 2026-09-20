@@ -1,5 +1,6 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { Customer, CustomerContact, CustomerSite, Equipment, EquipmentType, OrganizationMember, ServiceCall, ServiceCallLifecycleView } from "@amarok-one/types";
+import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useAuth } from "../auth/AuthContext";
@@ -40,28 +41,31 @@ function Page({ children }: { children: React.ReactNode }) {
 }
 
 export function ManagerHomeScreen({ navigation }: HomeProps) {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   return <ScrollView style={styles.page} contentContainerStyle={styles.managerHomeContent}>
     <View style={styles.managerBrandFrame}>
       <BrandWordmark style={styles.managerWordmark} />
     </View>
     <Text style={styles.managerHeading}>מרכז שליטה מנהל</Text>
     <View style={styles.managerActions}>
-      <ManagerMenuButton label="פתח קריאה" onPress={() => navigation.navigate("ManagerNewServiceCall")} />
-      <ManagerMenuButton label="הוסף לקוח" onPress={() => navigation.navigate("ManagerCustomers")} />
-      <ManagerMenuButton label="הוסף ציוד" onPress={() => navigation.navigate("ManagerEquipment")} />
-      <ManagerMenuButton label="מיקומי טכנאים" onPress={() => navigation.navigate("ManagerLocations")} />
-      <ManagerMenuButton label="קריאות שירות" onPress={() => navigation.navigate("ManagerServiceCalls")} />
+      <ManagerMenuButton label="פתיחת קריאה" icon="document-text-outline" onPress={() => navigation.navigate("ManagerNewServiceCall")} />
+      <ManagerMenuButton label="הוסף לקוח" icon="person-add-outline" onPress={() => navigation.navigate("ManagerCustomers")} />
+      <ManagerMenuButton label="הוסף ציוד" icon="construct-outline" onPress={() => navigation.navigate("ManagerEquipment")} />
+      <ManagerMenuButton label="מיקומי טכנאים" icon="location-outline" onPress={() => navigation.navigate("ManagerLocations")} />
+      <ManagerMenuButton label="קריאות שירות" icon="list-outline" onPress={() => navigation.navigate("ManagerServiceCalls")} />
+      <ManagerMenuButton label="יציאה" icon="log-out-outline" tone="exit" onPress={() => void logout()} />
     </View>
-    <Button label={`יציאה · ${user?.organization.name ?? ""}`} variant="secondary" onPress={() => void logout()} />
   </ScrollView>;
 }
 
-function ManagerMenuButton({ label, onPress }: { label: string; onPress: () => void }) {
-  return <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.managerMenuButton, pressed && styles.managerMenuButtonPressed]}>
+type ManagerMenuIcon = "document-text-outline" | "person-add-outline" | "construct-outline" | "location-outline" | "list-outline" | "log-out-outline";
+
+function ManagerMenuButton({ label, icon, tone = "primary", onPress }: { label: string; icon: ManagerMenuIcon; tone?: "primary" | "exit"; onPress: () => void }) {
+  const isExit = tone === "exit";
+  return <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.managerMenuButton, isExit && styles.managerExitButton, pressed && styles.managerMenuButtonPressed]}>
     <View style={styles.managerMenuButtonContent}>
-      <View style={styles.managerMenuButtonArrowBox}><Text style={styles.managerMenuButtonArrow}>‹</Text></View>
-      <View style={styles.managerMenuButtonLabelBox}><Text style={styles.managerMenuButtonLabel}>{label}</Text></View>
+      <Ionicons name={icon} size={23} color={isExit ? colors.text : colors.primary} />
+      <Text style={[styles.managerMenuButtonLabel, isExit && styles.managerExitButtonLabel]}>{label}</Text>
     </View>
   </Pressable>;
 }
@@ -309,14 +313,13 @@ const styles = StyleSheet.create({
   managerBrandFrame: { width: 288, height: 74, alignItems: "center", justifyContent: "center" },
   managerWordmark: { width: 288, height: 74 },
   managerHeading: { color: colors.primary, fontFamily: typography.bold, fontSize: 27, textAlign: "center", writingDirection: "rtl", marginBottom: spacing.xl },
-  managerActions: { width: "68%", gap: spacing.lg },
-  managerMenuButton: { minHeight: 96, borderWidth: 3, borderColor: colors.primary, borderRadius: radius.lg, backgroundColor: colors.actionSurface, alignItems: "center", justifyContent: "center", paddingHorizontal: spacing.md },
+  managerActions: { width: "100%", flexDirection: "row-reverse", flexWrap: "wrap", justifyContent: "space-between", gap: spacing.md },
+  managerMenuButton: { width: "48%", minHeight: 92, borderWidth: 1, borderColor: colors.primary, borderRadius: radius.lg, backgroundColor: colors.actionSurface, alignItems: "center", justifyContent: "center", paddingHorizontal: spacing.sm },
+  managerExitButton: { backgroundColor: "rgba(143, 29, 29, 0.78)", borderColor: colors.text },
   managerMenuButtonPressed: { opacity: 0.82, transform: [{ scale: 0.99 }] },
-  managerMenuButtonContent: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm, minHeight: 30 },
-  managerMenuButtonLabelBox: { height: 30, justifyContent: "center" },
-  managerMenuButtonArrowBox: { width: 24, height: 30, alignItems: "center", justifyContent: "center" },
-  managerMenuButtonLabel: { color: colors.primary, fontFamily: typography.bold, fontSize: 20, lineHeight: 26, textAlign: "center", writingDirection: "rtl" },
-  managerMenuButtonArrow: { color: colors.primary, fontFamily: typography.regular, fontSize: 30, lineHeight: 30, includeFontPadding: false },
+  managerMenuButtonContent: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.xs, minHeight: 30 },
+  managerMenuButtonLabel: { color: colors.primary, fontFamily: typography.bold, fontSize: 18, lineHeight: 24, textAlign: "center", writingDirection: "rtl" },
+  managerExitButtonLabel: { color: colors.text },
   header: { gap: spacing.sm, marginHorizontal: -spacing.md, marginTop: -spacing.md, marginBottom: spacing.sm, paddingBottom: spacing.md },
   brandStrip: { height: 76, backgroundColor: "transparent", borderBottomWidth: 4, borderBottomColor: colors.primary, flexDirection: "row-reverse", alignItems: "center", paddingHorizontal: spacing.md },
   brandAccent: { position: "absolute", right: 0, top: 0, height: 72, width: 7, backgroundColor: colors.primary },
