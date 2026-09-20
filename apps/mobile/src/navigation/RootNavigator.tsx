@@ -34,7 +34,7 @@ const navTheme = {
   },
 };
 
-export function RootNavigator() {
+export function RootNavigator({ onScreenChange }: { onScreenChange?: () => void }) {
   const { status, isManager } = useAuth();
 
   if (status === "loading") {
@@ -46,7 +46,7 @@ export function RootNavigator() {
   }
 
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer theme={navTheme} onStateChange={onScreenChange}>
       <Stack.Navigator
         screenOptions={{
           headerStyle: { backgroundColor: "transparent" },
