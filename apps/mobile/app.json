@@ -7,7 +7,11 @@
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "icon": "./assets/icon.png",
-    "platforms": ["ios", "android", "web"],
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -16,12 +20,14 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.amarokone.mobile",
-      "buildNumber": "14",
+      "buildNumber": "15",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "הוספת תמונות ביקור השמורות במכשיר לצורך תיעוד העבודה.",
         "NSLocationWhenInUseUsageDescription": "AMAROK ONE מתעדת את מיקומך רק במהלך יום עבודה פעיל, לצורך נוכחות ונסיעות שטח.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "AMAROK ONE יכולה להמשיך לתעד את מיקומך ברקע רק במהלך יום עבודה פעיל.",
-        "UIBackgroundModes": ["location"],
+        "UIBackgroundModes": [
+          "location"
+        ],
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -32,7 +38,9 @@
       },
       "package": "com.amarokone.mobile",
       "versionCode": 1,
-      "permissions": ["android.permission.READ_MEDIA_IMAGES"]
+      "permissions": [
+        "android.permission.READ_MEDIA_IMAGES"
+      ]
     },
     "plugins": [
       [
