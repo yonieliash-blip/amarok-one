@@ -1,4 +1,4 @@
-import { DefaultTheme, NavigationContainer } from "@react-navigation/native";
+import { DarkTheme, NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuth } from "../auth/AuthContext";
 import { colors, typography } from "../theme";
@@ -23,9 +23,9 @@ import { ActivityIndicator, StyleSheet, View } from "react-native";
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const navTheme = {
-  ...DefaultTheme,
+  ...DarkTheme,
   colors: {
-    ...DefaultTheme.colors,
+    ...DarkTheme.colors,
     primary: colors.primary,
     background: colors.bg,
     card: colors.bgPanel,
@@ -49,9 +49,9 @@ export function RootNavigator() {
     <NavigationContainer theme={navTheme}>
       <Stack.Navigator
         screenOptions={{
-          headerStyle: { backgroundColor: colors.primary },
+          headerStyle: { backgroundColor: colors.bg },
           headerShadowVisible: false,
-          headerTintColor: colors.primaryOn,
+          headerTintColor: colors.text,
           headerTitleStyle: { fontFamily: typography.bold, fontSize: 18 },
           headerTitleAlign: "center",
           headerRight: () => <BrandWordmark style={styles.headerWordmark} />,

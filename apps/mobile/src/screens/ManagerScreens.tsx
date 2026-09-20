@@ -232,11 +232,11 @@ export function ManagerEquipmentScreen(_: EquipmentProps) {
 export function ManagerLocationsScreen(_: LocationsProps) { const { user, accessToken } = useAuth(); return <DirectoryScreen title="מיקומי טכנאים" subtitle="מיקום אחרון נשמר רק בזמן יום עבודה פעיל." load={() => user && accessToken ? listCurrentTechnicianLocations(user.organization.id, accessToken) : Promise.resolve([])} itemKey={(entry) => entry.userId} render={(entry: CurrentTechnicianLocation) => <><Text style={styles.rowTitle}>{entry.displayName}</Text><Text style={styles.rowMeta}>{entry.workDayId ? `יום עבודה החל ב־${time(entry.startedAt)}` : "לא ביום עבודה פעיל"}</Text>{entry.location ? <><Text style={styles.rowMeta}>עודכן: {time(entry.location.recordedAt)} · דיוק: {Math.round(entry.location.accuracy ?? 0)} מ׳</Text><Button label="פתיחה במפה" variant="secondary" onPress={() => void Linking.openURL(`https://www.google.com/maps?q=${entry.location!.latitude},${entry.location!.longitude}`)} /></> : <Text style={styles.rowMeta}>אין מיקום זמין</Text>}</>} />; }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: colors.bg },
+  page: { flex: 1, backgroundColor: "#444444" },
   content: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl },
   header: { gap: spacing.sm, marginHorizontal: -spacing.md, marginTop: -spacing.md, marginBottom: spacing.sm, paddingBottom: spacing.md },
-  brandStrip: { height: 76, backgroundColor: colors.primary, flexDirection: "row-reverse", alignItems: "center", paddingHorizontal: spacing.md },
-  brandAccent: { position: "absolute", right: 0, top: 0, height: 76, width: 8, backgroundColor: "#444444" },
+  brandStrip: { height: 76, backgroundColor: "#444444", borderBottomWidth: 4, borderBottomColor: colors.primary, flexDirection: "row-reverse", alignItems: "center", paddingHorizontal: spacing.md },
+  brandAccent: { position: "absolute", right: 0, top: 0, height: 72, width: 7, backgroundColor: colors.primary },
   menuCard: { backgroundColor: colors.bgPanel, borderColor: colors.border, borderWidth: 1, borderRightWidth: 4, borderRightColor: colors.primary, borderRadius: radius.lg, padding: spacing.lg, minHeight: 96, justifyContent: "center", gap: spacing.xs },
   menuTitle: { color: colors.text, fontFamily: typography.bold, fontSize: 19, textAlign: "right", writingDirection: "rtl" },
   menuSubtitle: { color: colors.textMuted, fontFamily: typography.regular, fontSize: 14, textAlign: "right", writingDirection: "rtl" },
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   row: { backgroundColor: colors.bgPanel, borderColor: colors.border, borderWidth: 1, borderRightWidth: 3, borderRightColor: colors.borderStrong, borderRadius: radius.md, padding: spacing.md, gap: spacing.sm, marginTop: spacing.md },
   selectedRow: { borderColor: colors.primary, borderRightColor: colors.primary, backgroundColor: colors.primarySoft },
   rowTop: { flexDirection: "row-reverse", alignItems: "center", justifyContent: "space-between", gap: spacing.sm },
-  rowNumber: { color: "#9a6a00", fontFamily: typography.bold, fontSize: 13, textAlign: "right", writingDirection: "rtl" },
+  rowNumber: { color: colors.primary, fontFamily: typography.bold, fontSize: 13, textAlign: "right", writingDirection: "rtl" },
   rowTitle: { color: colors.text, fontFamily: typography.bold, fontSize: 17, textAlign: "right", writingDirection: "rtl" },
   rowMeta: { color: colors.textMuted, fontFamily: typography.regular, fontSize: 14, lineHeight: 20, textAlign: "right", writingDirection: "rtl" },
   detailTitle: { color: colors.text, fontFamily: typography.bold, fontSize: 21, textAlign: "right", writingDirection: "rtl" },
