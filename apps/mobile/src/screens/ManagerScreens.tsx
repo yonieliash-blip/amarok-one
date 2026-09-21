@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useAuth } from "../auth/AuthContext";
-import { createCustomer, createCustomerContact, createCustomerSite, createEquipment, listCurrentTechnicianLocations, listCustomerContacts, listCustomers, listCustomerSites, listEquipment, listEquipmentTypes, type CurrentTechnicianLocation } from "../api/manager";
+import { createCustomer, createCustomerContact, createCustomerSite, createEquipment, listCurrentTechnicianLocations, listCustomerContacts, listCustomers, listCustomerSites, listEquipment, listEquipmentTypes, updateCustomer, type CurrentTechnicianLocation } from "../api/manager";
 import { assignServiceCallTechnician, createManagerServiceCall, getServiceCall, getServiceCallLifecycle, listAssignableTechnicians, listMyServiceCalls } from "../api/service-calls";
 import { isApiRequestError } from "../api/client";
 import { BrandWordmark, Button, Card, ScreenSubtitle, ScreenTitle, StatusPill } from "../components/ui";
@@ -81,11 +81,11 @@ export function ManagerServiceCallsScreen({ navigation }: CallsProps) {
     ListHeaderComponent={<><ScreenSubtitle>כל קריאות השירות בארגון. לחיצה על קריאה מאפשרת הקצאת טכנאי וצפייה בדוחות.</ScreenSubtitle><Button label="פתיחת קריאת שירות חדשה" onPress={() => navigation.navigate("ManagerNewServiceCall")} />{error ? <Text style={styles.error}>{error}</Text> : null}</>}
     ListEmptyComponent={loading ? <ActivityIndicator color={colors.primary} style={styles.loader} /> : <Text style={styles.empty}>אין קריאות שירות להצגה.</Text>}
     renderItem={({ item }) => <Pressable style={styles.row} onPress={() => navigation.navigate("ManagerServiceCall", { serviceCallId: item.id, title: item.serviceCallNumber })}><View style={styles.rowTop}><Text style={styles.rowNumber}>{item.serviceCallNumber}</Text><StatusPill label={lifecycleLabel(item.lifecycleState)} tone={item.lifecycleState === "closed" ? "neutral" : "warning"} /></View><Text style={styles.rowTitle}>{item.title}</Text><Text style={styles.rowMeta}>{item.customer?.name ?? "ללא לקוח"} · {item.assignedUser?.displayName ?? "לא הוקצה"}</Text></Pressable>}
-  /></Page>;
-}
+type CallStartMode = "choose" | "existing" | "casual";
 
 export function ManagerNewServiceCallScreen({ navigation }: NewCallProps) {
   const { user, accessToken } = useAuth();
+  const [mode, setMode] = useState<CallStartMode>("choose");
   const [customers, setCustomers] = useState<Awaited<ReturnType<typeof listCustomers>>>([]);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [sites, setSites] = useState<CustomerSite[]>([]);
@@ -93,22 +93,97 @@ export function ManagerNewServiceCallScreen({ navigation }: NewCallProps) {
   const [number, setNumber] = useState("AM-");
   const [customerId, setCustomerId] = useState<string | null>(null); const [customerSiteId, setCustomerSiteId] = useState<string | null>(null); const [equipmentId, setEquipmentId] = useState<string | null>(null);
   const [priority, setPriority] = useState<ServiceCall["priority"]>("normal"); const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false); const [error, setError] = useState<string | null>(null);
-  useEffect(() => { if (!user || !accessToken) return; void Promise.all([listCustomers(user.organization.id, accessToken), listEquipment(user.organization.id, accessToken)]).then(([nextCustomers, nextEquipment]) => { setCustomers(nextCustomers); setEquipment(nextEquipment); }).catch((e: unknown) => setError(errorMessage(e, "לא ניתן לטעון לקוחות וציוד"))).finally(() => setLoading(false)); }, [user, accessToken]);
+  const [casualName, setCasualName] = useState(""); const [casualPhone, setCasualPhone] = useState("");
+
+  useEffect(() => {
+    if (!user || !accessToken) return;
+    void Promise.all([listCustomers(user.organization.id, accessToken, "active"), listEquipment(user.organization.id, accessToken)])
+      .then(([nextCustomers, nextEquipment]) => { setCustomers(nextCustomers); setEquipment(nextEquipment); })
+      .catch((e: unknown) => setError(errorMessage(e, "לא ניתן לטעון לקוחות וציוד")))
+      .finally(() => setLoading(false));
+  }, [user, accessToken]);
+
   // The selected customer changes the dependent site and equipment selections.
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { if (!user || !accessToken || !customerId) { setSites([]); return; } setCustomerSiteId(null); setEquipmentId(null); void listCustomerSites(user.organization.id, customerId, accessToken).then(setSites).catch((e: unknown) => setError(errorMessage(e, "לא ניתן לטעון אתרי לקוח"))); }, [user, accessToken, customerId]);
+  useEffect(() => {
+    if (!user || !accessToken || !customerId) { setSites([]); return; }
+    setCustomerSiteId(null); setEquipmentId(null);
+    void listCustomerSites(user.organization.id, customerId, accessToken)
+      .then(setSites)
+      .catch((e: unknown) => setError(errorMessage(e, "לא ניתן לטעון אתרי לקוח")));
+  }, [user, accessToken, customerId]);
+
   const customerEquipment = equipment.filter((item) => item.customerId === customerId && item.status !== "retired" && (!customerSiteId || item.customerSiteId === customerSiteId));
-  async function save(): Promise<void> { if (!user || !accessToken || !customerId || !equipmentId || title.trim().length < 2 || (sites.length > 0 && !customerSiteId)) { setError("יש למלא מספר קריאה, כותרת, לקוח, אתר וציוד."); return; } setSaving(true); setError(null); try { const created = await createManagerServiceCall(user.organization.id, accessToken, { serviceCallNumber: number.trim(), title: title.trim(), description: description.trim() || undefined, priority, customerId, customerSiteId: customerSiteId ?? undefined, equipmentId }); navigation.replace("ManagerServiceCall", { serviceCallId: created.id, title: created.serviceCallNumber }); } catch (e) { setError(errorMessage(e, "לא ניתן לפתוח את הקריאה")); } finally { setSaving(false); } }
+
+  async function beginCasualCall(): Promise<void> {
+    if (!user || !accessToken || casualName.trim().length < 2) { setError("יש למלא שם ללקוח המזדמן."); return; }
+    setSaving(true); setError(null);
+    try {
+      const prospect = await createCustomer(user.organization.id, accessToken, {
+        name: casualName.trim(), phone: casualPhone.trim() || undefined, status: "prospect",
+      });
+      setCustomers((current) => [...current, prospect]);
+      setCustomerId(prospect.id);
+      setMode("existing");
+    } catch (e) {
+      setError(errorMessage(e, "לא ניתן ליצור לקוח מזדמן"));
+    } finally { setSaving(false); }
+  }
+
+  async function save(): Promise<void> {
+    if (!user || !accessToken || !customerId || !equipmentId || title.trim().length < 2 || (sites.length > 0 && !customerSiteId)) {
+      setError("יש למלא מספר קריאה, כותרת, לקוח, אתר וציוד.");
+      return;
+    }
+    setSaving(true); setError(null);
+    try {
+      const created = await createManagerServiceCall(user.organization.id, accessToken, {
+        serviceCallNumber: number.trim(), title: title.trim(), description: description.trim() || undefined,
+        priority, customerId, customerSiteId: customerSiteId ?? undefined, equipmentId,
+      });
+      navigation.replace("ManagerServiceCall", { serviceCallId: created.id, title: created.serviceCallNumber });
+    } catch (e) {
+      setError(errorMessage(e, "לא ניתן לפתוח את הקריאה"));
+    } finally { setSaving(false); }
+  }
+
   if (loading) return <Page><ActivityIndicator color={colors.primary} style={styles.loader} /></Page>;
+
+  if (mode === "choose") return <ScrollView style={styles.page} contentContainerStyle={styles.callStartContent}>
+    <View style={styles.callStartChoices}>
+      <Pressable accessibilityRole="button" onPress={() => { setError(null); setMode("existing"); }} style={({ pressed }) => [styles.callStartChoice, pressed && styles.managerMenuButtonPressed]}>
+        <View style={styles.callStartChoiceContent}><Ionicons name="person-outline" size={30} color={colors.primary} /><Text style={styles.callStartChoiceLabel}>בחר לקוח</Text></View>
+      </Pressable>
+      <Pressable accessibilityRole="button" onPress={() => { setError(null); setMode("casual"); }} style={({ pressed }) => [styles.callStartChoice, pressed && styles.managerMenuButtonPressed]}>
+        <View style={styles.callStartChoiceContent}><Ionicons name="briefcase-outline" size={30} color={colors.primary} /><Text style={styles.callStartChoiceLabel}>לקוח מזדמן</Text></View>
+      </Pressable>
+    </View>
+  </ScrollView>;
+
+  if (mode === "casual") return <ScrollView style={styles.page} contentContainerStyle={styles.content}>
+    <ScreenSubtitle style={styles.centeredSubtitle}>פרטי אדם או עסק שעדיין אינם לקוח קבוע.</ScreenSubtitle>
+    <View style={styles.formCard}>
+      <Text style={styles.formTitle}>לקוח מזדמן</Text>
+      <Text style={styles.fieldLabel}>שם הלקוח / איש קשר</Text>
+      <TextInput value={casualName} onChangeText={setCasualName} style={styles.input} placeholder="לדוגמה: ישראל ישראלי" placeholderTextColor={colors.textSubtle} />
+      <Text style={styles.fieldLabel}>טלפון (אופציונלי)</Text>
+      <TextInput value={casualPhone} onChangeText={setCasualPhone} style={styles.input} keyboardType="phone-pad" />
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+      <Button label="המשך לפרטי הקריאה" loading={saving} onPress={() => void beginCasualCall()} />
+      <Button label="חזרה" variant="secondary" onPress={() => { setError(null); setMode("choose"); }} />
+    </View>
+  </ScrollView>;
+
   if (!customerId) return <FlatList style={styles.page} contentContainerStyle={styles.content} data={customers} keyExtractor={(customer) => customer.id}
-    ListHeaderComponent={<><ScreenTitle>בחירת לקוח</ScreenTitle><ScreenSubtitle>בחר לקוח כדי לעבור מיד לציוד ששייך אליו.</ScreenSubtitle>{error ? <Text style={styles.error}>{error}</Text> : null}</>}
+    ListHeaderComponent={<><ScreenSubtitle style={styles.centeredSubtitle}>בחר לקוח קיים לפתיחת קריאה.</ScreenSubtitle><Button label="חזרה" variant="secondary" onPress={() => setMode("choose")} />{error ? <Text style={styles.error}>{error}</Text> : null}</>}
     ListEmptyComponent={<Text style={styles.empty}>אין לקוחות פעילים להצגה.</Text>}
     renderItem={({ item: customer }) => <Pressable onPress={() => setCustomerId(customer.id)} style={styles.row}><Text style={styles.rowTitle}>{customer.name}</Text><Text style={styles.rowMeta}>{customer.customerNumber}</Text></Pressable>}
   />;
+
   const selectedCustomer = customers.find((customer) => customer.id === customerId);
   return <ScrollView style={styles.page} contentContainerStyle={styles.content}>
     <Button label="חזרה לבחירת לקוח" variant="secondary" onPress={() => { setCustomerId(null); setCustomerSiteId(null); setEquipmentId(null); }} />
-    <ScreenTitle>פתיחת קריאה</ScreenTitle><ScreenSubtitle>לקוח: {selectedCustomer?.name ?? "—"}</ScreenSubtitle>
+    <ScreenSubtitle style={styles.centeredSubtitle}>לקוח: {selectedCustomer?.name ?? "—"}</ScreenSubtitle>
     {sites.length > 0 ? <><Text style={styles.fieldLabel}>אתר הלקוח</Text><View style={styles.choiceList}>{sites.map((site) => <Pressable key={site.id} onPress={() => setCustomerSiteId(site.id)} style={[styles.choice, customerSiteId === site.id && styles.choiceSelected]}><Text style={styles.choiceText}>{site.name}</Text>{site.contactName ? <Text style={styles.rowMeta}>{site.contactName}</Text> : null}</Pressable>)}</View></> : null}
     <Text style={styles.fieldLabel}>ציוד של הלקוח</Text>
     {customerEquipment.length ? customerEquipment.map((item) => <Pressable key={item.id} onPress={() => setEquipmentId(item.id)} style={[styles.row, equipmentId === item.id && styles.selectedRow]}><Text style={styles.rowTitle}>{item.name}</Text><Text style={styles.rowMeta}>{item.internalNumber}</Text></Pressable>) : <Text style={styles.empty}>אין ציוד פעיל ללקוח שנבחר.</Text>}
@@ -118,6 +193,9 @@ export function ManagerNewServiceCallScreen({ navigation }: NewCallProps) {
     <Text style={styles.fieldLabel}>דחיפות</Text><View style={styles.priorityRow}>{(["low", "normal", "high", "urgent"] as const).map((value) => <Pressable key={value} onPress={() => setPriority(value)} style={[styles.choice, priority === value && styles.choiceSelected]}><Text style={styles.choiceText}>{({ low: "נמוכה", normal: "רגילה", high: "גבוהה", urgent: "דחופה" })[value]}</Text></Pressable>)}</View>
     {error ? <Text style={styles.error}>{error}</Text> : null}<Button label="פתיחת קריאה" loading={saving} onPress={() => void save()} />
   </ScrollView>;
+}
+
+ScrollView>;
 }
 
 export function ManagerServiceCallScreen({ route, navigation }: CallProps) {
@@ -320,6 +398,12 @@ const styles = StyleSheet.create({
   managerMenuButtonContent: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.xs, minHeight: 30 },
   managerMenuButtonLabel: { color: colors.primary, fontFamily: typography.bold, fontSize: 16, lineHeight: 22, textAlign: "center", writingDirection: "rtl" },
   managerExitButtonLabel: { color: colors.text },
+  callStartContent: { flexGrow: 1, padding: spacing.md, paddingTop: spacing.xl, paddingBottom: spacing.xl, justifyContent: "center" },
+  callStartChoices: { width: "100%", gap: spacing.md },
+  callStartChoice: { minHeight: 98, borderWidth: 1, borderColor: colors.primary, borderRadius: radius.lg, backgroundColor: colors.actionSurface, justifyContent: "center", paddingHorizontal: spacing.lg },
+  callStartChoiceContent: { flexDirection: "row-reverse", alignItems: "center", justifyContent: "center", gap: spacing.md },
+  callStartChoiceLabel: { color: colors.primary, fontFamily: typography.bold, fontSize: 18, lineHeight: 24, textAlign: "center", writingDirection: "rtl" },
+  centeredSubtitle: { textAlign: "center" },
   header: { gap: spacing.sm, marginHorizontal: -spacing.md, marginTop: -spacing.md, marginBottom: spacing.sm, paddingBottom: spacing.md },
   brandStrip: { height: 76, backgroundColor: "transparent", borderBottomWidth: 4, borderBottomColor: colors.primary, flexDirection: "row-reverse", alignItems: "center", paddingHorizontal: spacing.md },
   brandAccent: { position: "absolute", right: 0, top: 0, height: 72, width: 7, backgroundColor: colors.primary },
