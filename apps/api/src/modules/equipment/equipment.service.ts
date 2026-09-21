@@ -430,22 +430,23 @@ function buildCreateData(
   organizationId: string,
   input: CreateEquipmentInput,
   catalog: CatalogSelection,
-): Prisma.EquipmentCreateInput {
+): Prisma.EquipmentUncheckedCreateInput {
   return {
-    organization: { connect: { id: organizationId } },
-    equipmentType: { connect: { id: input.equipmentTypeId } },
-    ...(input.customerId ? { customer: { connect: { id: input.customerId } } } : {}),
-    ...(input.customerSiteId ? { customerSite: { connect: { id: input.customerSiteId } } } : {}),
-    ...(input.branchId ? { branch: { connect: { id: input.branchId } } } : {}),
+    // The tenant Prisma extension supplies the organization scope as well.
+    // Use scalar relation IDs here so that the extension does not mix the
+    // checked relation input with an injected organizationId field.
+    organizationId,
+    equipmentTypeId: input.equipmentTypeId,
+    customerId: input.customerId,
+    customerSiteId: input.customerSiteId,
+    branchId: input.branchId,
     name: input.name,
     internalNumber: input.internalNumber,
     serialNumber: input.serialNumber,
     manufacturer: catalog.manufacturer,
     model: catalog.model,
-    ...(catalog.manufacturerId
-      ? { manufacturerRef: { connect: { id: catalog.manufacturerId } } }
-      : {}),
-    ...(catalog.modelId ? { modelRef: { connect: { id: catalog.modelId } } } : {}),
+    manufacturerId: catalog.manufacturerId,
+    modelId: catalog.modelId,
     year: input.year,
     status: input.status ? fromEquipmentStatusDto(input.status) : undefined,
     engineHours:
