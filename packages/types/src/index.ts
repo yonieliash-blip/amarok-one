@@ -300,7 +300,7 @@ export interface ServiceCall {
   scheduledAt?: ISODateString;
   completedAt?: ISODateString;
   customerId: EntityId;
-  customer?: Pick<Customer, "id" | "name" | "customerNumber">;
+  customer?: Pick<Customer, "id" | "name" | "customerNumber" | "status">;
   customerSiteId?: EntityId;
   customerSite?: Pick<CustomerSite, "id" | "name" | "contactName" | "contactPhone">;
   equipmentId: EntityId;
