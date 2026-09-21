@@ -163,7 +163,7 @@ type EquipmentWithRelations = EquipmentModel & {
   equipmentType: { id: string; name: string; code: string };
   manufacturerRef: { id: string; name: string } | null;
   modelRef: { id: string; name: string } | null;
-  customer: { id: string; name: string; customerNumber: string } | null;
+  customer: { id: string; name: string; customerNumber: string; status: CustomerStatusModel } | null;
   customerSite: { id: string; name: string; contactName: string | null; contactPhone: string | null } | null;
   branch: { id: string; name: string; code: string } | null;
 };
@@ -252,6 +252,7 @@ export function toEquipmentDto(model: EquipmentWithRelations): Equipment {
           id: model.customer.id,
           name: model.customer.name,
           customerNumber: model.customer.customerNumber,
+          status: toCustomerStatusDto(model.customer.status),
         }
       : undefined,
     customerSiteId: model.customerSiteId ?? undefined,
