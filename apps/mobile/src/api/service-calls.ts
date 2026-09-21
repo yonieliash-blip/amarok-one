@@ -12,7 +12,7 @@ function base(organizationId: string): string {
 }
 
 export interface CreateManagerServiceCallInput {
-  serviceCallNumber: string;
+  serviceCallNumber?: string;
   title: string;
   description?: string;
   priority: ServiceCall["priority"];
