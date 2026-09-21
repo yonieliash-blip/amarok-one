@@ -79,7 +79,7 @@ export interface Equipment {
   equipmentTypeId: EntityId;
   equipmentType?: Pick<EquipmentType, "id" | "name" | "code">;
   customerId?: EntityId;
-  customer?: Pick<Customer, "id" | "name" | "customerNumber">;
+  customer?: Pick<Customer, "id" | "name" | "customerNumber" | "status">;
   customerSiteId?: EntityId;
   customerSite?: Pick<CustomerSite, "id" | "name" | "contactName" | "contactPhone">;
   branchId?: EntityId;
