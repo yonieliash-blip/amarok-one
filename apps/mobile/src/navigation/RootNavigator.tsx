@@ -66,7 +66,7 @@ export function RootNavigator({ onScreenChange }: { onScreenChange?: () => void 
             <>
               <Stack.Screen name="ManagerHome" component={ManagerHomeScreen} options={{ headerShown: false }} />
               <Stack.Screen name="ManagerServiceCalls" component={ManagerServiceCallsScreen} options={{ title: "קריאות שירות" }} />
-              <Stack.Screen name="ManagerNewServiceCall" component={ManagerNewServiceCallScreen} options={{ title: "פתיחת קריאה" }} />
+              <Stack.Screen name="ManagerNewServiceCall" component={ManagerNewServiceCallScreen} options={{ title: "פתח קריאת שירות" }} />
               <Stack.Screen name="ManagerServiceCall" component={ManagerServiceCallScreen} options={({ route }) => ({ title: route.params.title })} />
               <Stack.Screen name="ManagerCustomers" component={ManagerCustomersScreen} options={{ title: "לקוחות" }} />
               <Stack.Screen name="ManagerEquipment" component={ManagerEquipmentScreen} options={{ title: "ציוד" }} />
