@@ -81,6 +81,9 @@ export function ManagerServiceCallsScreen({ navigation }: CallsProps) {
     ListHeaderComponent={<><ScreenSubtitle>כל קריאות השירות בארגון. לחיצה על קריאה מאפשרת הקצאת טכנאי וצפייה בדוחות.</ScreenSubtitle><Button label="פתיחת קריאת שירות חדשה" onPress={() => navigation.navigate("ManagerNewServiceCall")} />{error ? <Text style={styles.error}>{error}</Text> : null}</>}
     ListEmptyComponent={loading ? <ActivityIndicator color={colors.primary} style={styles.loader} /> : <Text style={styles.empty}>אין קריאות שירות להצגה.</Text>}
     renderItem={({ item }) => <Pressable style={styles.row} onPress={() => navigation.navigate("ManagerServiceCall", { serviceCallId: item.id, title: item.serviceCallNumber })}><View style={styles.rowTop}><Text style={styles.rowNumber}>{item.serviceCallNumber}</Text><StatusPill label={lifecycleLabel(item.lifecycleState)} tone={item.lifecycleState === "closed" ? "neutral" : "warning"} /></View><Text style={styles.rowTitle}>{item.title}</Text><Text style={styles.rowMeta}>{item.customer?.name ?? "ללא לקוח"} · {item.assignedUser?.displayName ?? "לא הוקצה"}</Text></Pressable>}
+  /></Page>;
+}
+
 type CallStartMode = "choose" | "existing" | "casual";
 
 export function ManagerNewServiceCallScreen({ navigation }: NewCallProps) {
@@ -195,20 +198,27 @@ export function ManagerNewServiceCallScreen({ navigation }: NewCallProps) {
   </ScrollView>;
 }
 
-ScrollView>;
-}
-
 export function ManagerServiceCallScreen({ route, navigation }: CallProps) {
-  const { user, accessToken } = useAuth(); const [call, setCall] = useState<ServiceCall | null>(null); const [lifecycle, setLifecycle] = useState<ServiceCallLifecycleView | null>(null); const [technicians, setTechnicians] = useState<OrganizationMember[]>([]); const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null);
+  const { user, accessToken } = useAuth(); const [call, setCall] = useState<ServiceCall | null>(null); const [lifecycle, setLifecycle] = useState<ServiceCallLifecycleView | null>(null); const [technicians, setTechnicians] = useState<OrganizationMember[]>([]); const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false); const [converting, setConverting] = useState(false); const [error, setError] = useState<string | null>(null);
   const load = useCallback(async () => { if (!user || !accessToken) return; setError(null); try { const [nextCall, nextLifecycle, people] = await Promise.all([getServiceCall(user.organization.id, route.params.serviceCallId, accessToken), getServiceCallLifecycle(user.organization.id, route.params.serviceCallId, accessToken), listAssignableTechnicians(user.organization.id, accessToken)]); setCall(nextCall); setLifecycle(nextLifecycle); setTechnicians(people); } catch (e) { setError(errorMessage(e, "לא ניתן לטעון את הקריאה")); } finally { setLoading(false); } }, [user, accessToken, route.params.serviceCallId]);
   // The async request updates state only after the API response arrives.
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, [load]);
   async function assign(technician: OrganizationMember): Promise<void> { if (!user || !accessToken) return; setBusy(true); try { await assignServiceCallTechnician(user.organization.id, route.params.serviceCallId, technician.id, accessToken); await load(); } catch (e) { Alert.alert("לא ניתן להקצות", errorMessage(e, "נסה שוב")); } finally { setBusy(false); } }
+  async function convertProspect(): Promise<void> {
+    if (!user || !accessToken || !call?.customer || call.customer.status !== "prospect") return;
+    setConverting(true);
+    try {
+      await updateCustomer(user.organization.id, call.customer.id, accessToken, { status: "active" });
+      await load();
+    } catch (e) {
+      Alert.alert("לא ניתן להפוך ללקוח קיים", errorMessage(e, "נסה שוב"));
+    } finally { setConverting(false); }
+  }
   if (loading) return <Page><ActivityIndicator color={colors.primary} style={styles.loader} /></Page>;
   if (!call) return <Page><Text style={styles.error}>{error ?? "הקריאה לא נמצאה"}</Text></Page>;
   return <FlatList style={styles.page} contentContainerStyle={styles.content} data={lifecycle?.visits ?? []} keyExtractor={(visit) => visit.id}
-    ListHeaderComponent={<><Card><View style={styles.rowTop}><Text style={styles.rowNumber}>{call.serviceCallNumber}</Text><StatusPill label={lifecycleLabel(call.lifecycleState)} tone="warning" /></View><Text style={styles.detailTitle}>{call.title}</Text><Text style={styles.detailText}>לקוח: {call.customer?.name ?? "—"}</Text><Text style={styles.detailText}>ציוד: {call.equipment?.name ?? "—"}</Text><Text style={styles.detailText}>טכנאי: {call.assignedUser?.displayName ?? "לא הוקצה"}</Text>{call.description ? <Text style={styles.detailText}>{call.description}</Text> : null}</Card><Text style={styles.sectionTitle}>הקצאת טכנאי</Text><View style={styles.chips}>{technicians.map((person) => <Button key={person.id} label={person.displayName} variant="secondary" disabled={busy} onPress={() => void assign(person)} />)}</View><Text style={styles.sectionTitle}>ביקורים ודוחות</Text>{error ? <Text style={styles.error}>{error}</Text> : null}</>}
+    ListHeaderComponent={<><Card><View style={styles.rowTop}><Text style={styles.rowNumber}>{call.serviceCallNumber}</Text><StatusPill label={lifecycleLabel(call.lifecycleState)} tone="warning" /></View><Text style={styles.detailTitle}>{call.title}</Text><Text style={styles.detailText}>לקוח: {call.customer?.name ?? "—"}</Text><Text style={styles.detailText}>ציוד: {call.equipment?.name ?? "—"}</Text><Text style={styles.detailText}>טכנאי: {call.assignedUser?.displayName ?? "לא הוקצה"}</Text>{call.description ? <Text style={styles.detailText}>{call.description}</Text> : null}</Card>{call.customer?.status === "prospect" ? <Button label="הפוך ללקוח קיים" loading={converting} onPress={() => void convertProspect()} /> : null}<Text style={styles.sectionTitle}>הקצאת טכנאי</Text><View style={styles.chips}>{technicians.map((person) => <Button key={person.id} label={person.displayName} variant="secondary" disabled={busy} onPress={() => void assign(person)} />)}</View><Text style={styles.sectionTitle}>ביקורים ודוחות</Text>{error ? <Text style={styles.error}>{error}</Text> : null}</>}
     ListEmptyComponent={<Text style={styles.empty}>טרם נוצר ביקור לקריאה זו.</Text>}
     renderItem={({ item: visit }) => <Card><Text style={styles.rowTitle}>ביקור {visit.sequence} · {visit.technician?.displayName ?? "טרם הוקצה"}</Text><Text style={styles.rowMeta}>סטטוס: {visit.status} · עודכן: {time(visit.updatedAt)}</Text><Button label="פתיחת דוח עבודה" variant="secondary" onPress={() => navigation.navigate("WorkReport", { serviceCallId: call.id, visitId: visit.id, title: call.serviceCallNumber })} /></Card>}
   />;
