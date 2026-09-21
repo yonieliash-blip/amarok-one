@@ -154,7 +154,7 @@ export const equipmentInclude = {
   equipmentType: { select: { id: true, name: true, code: true } },
   manufacturerRef: { select: { id: true, name: true } },
   modelRef: { select: { id: true, name: true } },
-  customer: { select: { id: true, name: true, customerNumber: true } },
+  customer: { select: { id: true, name: true, customerNumber: true, status: true } },
   customerSite: { select: { id: true, name: true, contactName: true, contactPhone: true } },
   branch: { select: { id: true, name: true, code: true } },
 } satisfies Prisma.EquipmentInclude;
@@ -291,7 +291,7 @@ export const serviceCallInclude = {
 } satisfies Prisma.ServiceCallInclude;
 
 type ServiceCallWithRelations = ServiceCallModel & {
-  customer: { id: string; name: string; customerNumber: string };
+  customer: { id: string; name: string; customerNumber: string; status: CustomerStatusModel };
   customerSite: { id: string; name: string; contactName: string | null; contactPhone: string | null } | null;
   equipment: {
     id: string;
@@ -390,6 +390,7 @@ export function toServiceCallDto(model: ServiceCallWithRelations): ServiceCall {
       id: model.customer.id,
       name: model.customer.name,
       customerNumber: model.customer.customerNumber,
+      status: toCustomerStatusDto(model.customer.status),
     },
     customerSiteId: model.customerSiteId ?? undefined,
     customerSite: model.customerSite
