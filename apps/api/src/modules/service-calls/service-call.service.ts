@@ -52,6 +52,17 @@ const currentTaskStatusPriority: Record<string, number> = {
   PLANNED: 1,
 };
 
+async function nextServiceCallNumber(tx: Prisma.TransactionClient): Promise<string> {
+  const sequence = await tx.$queryRaw<Array<{ value: bigint }>>`
+    SELECT nextval('service_call_number_seq') AS value
+  `;
+  const next = sequence[0];
+  if (!next) {
+    throw new Error("Service call number sequence did not return a value");
+  }
+  return `SC-${String(next.value).padStart(4, "0")}`;
+}
+
 export function createServiceCallService(deps: ServiceCallServiceDeps) {
   const { workflow } = deps;
   const lifecycle = createServiceCallLifecycleService({
@@ -244,9 +255,17 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
     actorId?: string,
   ): Promise<ServiceCall> {
     await assertOrganizationExists(organizationId);
-    const equipment = await validateCustomerEquipmentLink(organizationId, input.customerId, input.equipmentId);
+    const equipment = await validateCustomerEquipmentLink(
+      organizationId,
+      input.customerId,
+      input.equipmentId,
+    );
     if (input.customerSiteId) {
-      await assertCustomerSiteInOrganization(organizationId, input.customerSiteId, input.customerId);
+      await assertCustomerSiteInOrganization(
+        organizationId,
+        input.customerSiteId,
+        input.customerId,
+      );
       if (equipment.customerSiteId && equipment.customerSiteId !== input.customerSiteId) {
         throw badRequest("Equipment must belong to the selected customer site", {
           field: "equipmentId",
@@ -268,10 +287,11 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
 
     try {
       const dto = await prisma.$transaction(async (tx) => {
+        const serviceCallNumber = input.serviceCallNumber ?? (await nextServiceCallNumber(tx));
         const serviceCall = await tx.serviceCall.create({
           data: {
             organizationId,
-            serviceCallNumber: input.serviceCallNumber,
+            serviceCallNumber,
             title: input.title,
             description: input.description,
             status: fromServiceCallStatusDto("open"),
@@ -342,11 +362,18 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
     const nextCustomerId = patchInput.customerId ?? existing.customerId;
     const nextEquipmentId = patchInput.equipmentId ?? existing.equipmentId;
 
-    const nextEquipment = nextCustomerId !== existing.customerId || nextEquipmentId !== existing.equipmentId || patchInput.customerSiteId !== undefined
-      ? await validateCustomerEquipmentLink(organizationId, nextCustomerId, nextEquipmentId)
-      : undefined;
+    const nextEquipment =
+      nextCustomerId !== existing.customerId ||
+      nextEquipmentId !== existing.equipmentId ||
+      patchInput.customerSiteId !== undefined
+        ? await validateCustomerEquipmentLink(organizationId, nextCustomerId, nextEquipmentId)
+        : undefined;
     if (patchInput.customerSiteId) {
-      await assertCustomerSiteInOrganization(organizationId, patchInput.customerSiteId, nextCustomerId);
+      await assertCustomerSiteInOrganization(
+        organizationId,
+        patchInput.customerSiteId,
+        nextCustomerId,
+      );
       const equipmentSiteId = nextEquipment?.customerSiteId;
       if (equipmentSiteId && equipmentSiteId !== patchInput.customerSiteId) {
         throw badRequest("Equipment must belong to the selected customer site", {
@@ -498,7 +525,12 @@ async function assertCustomerInOrganization(
 async function assertEquipmentInOrganization(
   organizationId: string,
   equipmentId: string,
-): Promise<{ id: string; customerId: string | null; customerSiteId: string | null; status: string }> {
+): Promise<{
+  id: string;
+  customerId: string | null;
+  customerSiteId: string | null;
+  status: string;
+}> {
   const equipment = await prisma.equipment.findFirst({
     where: { id: equipmentId, organizationId, ...activeOnly },
     select: { id: true, customerId: true, customerSiteId: true, status: true },
@@ -540,7 +572,12 @@ async function validateCustomerEquipmentLink(
   organizationId: string,
   customerId: string,
   equipmentId: string,
-): Promise<{ id: string; customerId: string | null; customerSiteId: string | null; status: string }> {
+): Promise<{
+  id: string;
+  customerId: string | null;
+  customerSiteId: string | null;
+  status: string;
+}> {
   await assertCustomerInOrganization(organizationId, customerId);
   const equipment = await assertEquipmentInOrganization(organizationId, equipmentId);
   if (equipment.status === "RETIRED") {
