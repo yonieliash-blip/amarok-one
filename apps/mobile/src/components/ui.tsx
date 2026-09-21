@@ -54,7 +54,10 @@ export function Button({
             {label}
           </Text>
           <Text
-            style={[styles.buttonArrow, variant === "danger" ? styles.labelDanger : styles.labelPrimary]}
+            style={[
+              styles.buttonArrow,
+              variant === "danger" ? styles.labelDanger : styles.labelPrimary,
+            ]}
           >
             ‹
           </Text>
@@ -129,7 +132,7 @@ const styles = StyleSheet.create({
   base: {
     minHeight: 60,
     borderRadius: radius.lg,
-    borderWidth: 3,
+    borderWidth: 1,
     paddingHorizontal: spacing.lg,
     alignItems: "center",
     justifyContent: "center",
