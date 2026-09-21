@@ -20,7 +20,7 @@ export const serviceCallIdParamSchema = organizationIdParamSchema.extend({
 const dateTimeSchema = z.string().datetime({ offset: true }).or(z.string().date());
 
 export const createServiceCallSchema = z.object({
-  serviceCallNumber: codeSchema,
+  serviceCallNumber: codeSchema.optional(),
   title: z.string().trim().min(2).max(256),
   description: z.string().trim().max(4000).optional(),
   status: serviceCallStatusSchema.optional(),
