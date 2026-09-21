@@ -281,7 +281,7 @@ export function toEquipmentDto(model: EquipmentWithRelations): Equipment {
 }
 
 export const serviceCallInclude = {
-  customer: { select: { id: true, name: true, customerNumber: true } },
+  customer: { select: { id: true, name: true, customerNumber: true, status: true } },
   customerSite: { select: { id: true, name: true, contactName: true, contactPhone: true } },
   equipment: {
     select: { id: true, name: true, internalNumber: true, manufacturer: true, model: true },
