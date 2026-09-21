@@ -20,7 +20,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.amarokone.mobile",
-      "buildNumber": "15",
+      "buildNumber": "16",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "הוספת תמונות ביקור השמורות במכשיר לצורך תיעוד העבודה.",
         "NSLocationWhenInUseUsageDescription": "AMAROK ONE מתעדת את מיקומך רק במהלך יום עבודה פעיל, לצורך נוכחות ונסיעות שטח.",
