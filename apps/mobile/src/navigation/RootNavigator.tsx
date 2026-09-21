@@ -18,7 +18,7 @@ import {
   ManagerServiceCallScreen,
   ManagerServiceCallsScreen,
 } from "../screens/ManagerScreens";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -49,12 +49,15 @@ export function RootNavigator({ onScreenChange }: { onScreenChange?: () => void 
     <NavigationContainer theme={navTheme} onStateChange={onScreenChange}>
       <Stack.Navigator
         screenOptions={{
-          headerStyle: { backgroundColor: "transparent" },
-          headerShadowVisible: false,
-          headerTintColor: colors.text,
-          headerTitleStyle: { fontFamily: typography.bold, fontSize: 18 },
-          headerTitleAlign: "center",
-          headerRight: () => <BrandWordmark style={styles.headerWordmark} />,
+          header: ({ options, back, navigation }) => (
+            <View style={styles.internalHeader}>
+              <View style={styles.internalHeaderTop}>
+                {back ? <Pressable accessibilityRole="button" accessibilityLabel="חזרה" onPress={() => navigation.goBack()} style={styles.backButton}><Text style={styles.backButtonText}>‹</Text></Pressable> : null}
+                <BrandWordmark style={styles.headerWordmark} />
+              </View>
+              <Text style={styles.internalHeaderTitle}>{options.title}</Text>
+            </View>
+          ),
           contentStyle: { backgroundColor: "transparent" },
         }}
       >
@@ -93,9 +96,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "transparent",
   },
-  headerWordmark: {
-    width: 108,
-    height: 32,
-    backgroundColor: "transparent",
-  },
+  internalHeader: { height: 124, paddingTop: 12, paddingHorizontal: 18, justifyContent: "center", gap: 4 },
+  internalHeaderTop: { height: 58, alignItems: "center", justifyContent: "center" },
+  headerWordmark: { width: 220, height: 52 },
+  internalHeaderTitle: { color: colors.text, fontFamily: typography.bold, fontSize: 23, textAlign: "center", writingDirection: "rtl" },
+  backButton: { position: "absolute", left: 0, width: 46, height: 46, borderRadius: 23, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(10, 10, 12, 0.82)", borderWidth: 1, borderColor: colors.border },
+  backButtonText: { color: colors.text, fontSize: 40, fontFamily: typography.regular, lineHeight: 42 },
 });
