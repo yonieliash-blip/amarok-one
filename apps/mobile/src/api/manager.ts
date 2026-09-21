@@ -3,9 +3,10 @@ import { apiRequest } from "./client";
 
 export interface CreateCustomerPayload {
   name: string;
-  registrationNumber: string;
+  registrationNumber?: string;
   phone?: string;
   city?: string;
+  status?: Customer["status"];
 }
 
 export interface CreateCustomerContactPayload {
@@ -42,8 +43,9 @@ interface CurrentTechnicianLocation {
   location: { recordedAt: string; latitude: number; longitude: number; accuracy: number | null } | null;
 }
 
-export async function listCustomers(organizationId: string, accessToken: string): Promise<Customer[]> {
-  const response = await apiRequest<Customer[]>(`/organizations/${organizationId}/customers?pageSize=100`, { accessToken });
+export async function listCustomers(organizationId: string, accessToken: string, status?: Customer["status"]): Promise<Customer[]> {
+  const query = status ? `?pageSize=100&status=${status}` : "?pageSize=100";
+  const response = await apiRequest<Customer[]>(`/organizations/${organizationId}/customers${query}`, { accessToken });
   return response.data ?? [];
 }
 
@@ -86,6 +88,18 @@ export async function createCustomer(
     method: "POST",
     accessToken,
     body: JSON.stringify(payload),
+  });
+  return response.data as Customer;
+}
+
+export async function updateCustomer(
+  organizationId: string,
+  customerId: string,
+  accessToken: string,
+  payload: Partial<CreateCustomerPayload>,
+): Promise<Customer> {
+  const response = await apiRequest<Customer>(`/organizations/${organizationId}/customers/${customerId}`, {
+    method: "PATCH", accessToken, body: JSON.stringify(payload),
   });
   return response.data as Customer;
 }
