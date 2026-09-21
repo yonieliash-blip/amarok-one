@@ -18,6 +18,16 @@ describe("service-call.schemas", () => {
     expect(result.success).toBe(true);
   });
 
+  it("allows the server to assign a service call number", () => {
+    const result = createServiceCallSchema.safeParse({
+      title: "תקלה במלגזה",
+      customerId: validCustomerId,
+      equipmentId: validEquipmentId,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
   it("rejects invalid service call numbers", () => {
     const result = createServiceCallSchema.safeParse({
       serviceCallNumber: "sc-001",
