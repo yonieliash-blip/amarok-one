@@ -32,6 +32,8 @@ model Organization {
   workReportParts       WorkReportPart[]
   workReports           WorkReport[]
   workReportMedia       WorkReportMedia[]
+  stockLocations        StockLocation[]
+  inventoryItems        InventoryItem[]
   serviceCalls          ServiceCall[]
   serviceCallVisits     ServiceCallVisit[]
   workflowEvents        WorkflowEvent[]
@@ -47,6 +49,44 @@ model Organization {
 
   @@index([deletedAt])
   @@map("organizations")
+}
+
+/// A physical parts location: the central warehouse or one of the service vehicles.
+model StockLocation {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  name           String
+  kind           String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  items        InventoryItem[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId, kind, deletedAt])
+  @@map("stock_locations")
+}
+
+/// Quantity of a named spare part held at one physical parts location.
+model InventoryItem {
+  id              String   @id @default(uuid()) @db.Uuid
+  organizationId  String   @db.Uuid
+  stockLocationId String   @db.Uuid
+  name            String
+  partNumber      String?
+  quantity        Decimal  @default(0) @db.Decimal(12, 3)
+  unit            String   @default("יח׳")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  organization  Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  stockLocation StockLocation @relation(fields: [stockLocationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, stockLocationId, deletedAt])
+  @@map("inventory_items")
 }
 
 /// Legal entity operating within an organization (tenant-scoped).

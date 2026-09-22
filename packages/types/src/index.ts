@@ -240,11 +240,64 @@ export interface ServiceCallVisit {
   updatedAt: ISODateString;
 }
 
-export interface WorkReportPartCategory { id: EntityId; organizationId: EntityId; name: string; parts: WorkReportPart[] }
-export interface WorkReportPart { id: EntityId; categoryId: EntityId; name: string; partNumber?: string; unit: string }
-export interface WorkReportPartItem { partId: EntityId; quantity: number; part: WorkReportPart }
-export interface WorkReportMedia { id: EntityId; mediaType: "image" | "video"; fileName: string; mimeType: string; sizeBytes: number; url: string; createdAt: ISODateString }
-export interface WorkReport { id: EntityId; organizationId: EntityId; serviceCallId: EntityId; visitId: EntityId; reportNumber: string; workDescription: string; customerRepresentative?: string; customerRepresentativeRole?: string; signatureStrokes?: number[][][]; signedAt?: ISODateString; technicianId: EntityId; lastEditedById?: EntityId; createdAt: ISODateString; updatedAt: ISODateString; parts: WorkReportPartItem[]; media: WorkReportMedia[] }
+export interface WorkReportPartCategory {
+  id: EntityId;
+  organizationId: EntityId;
+  name: string;
+  parts: WorkReportPart[];
+}
+export interface StockLocation {
+  id: EntityId;
+  name: string;
+  kind: "vehicle" | "warehouse";
+}
+export interface InventoryItem {
+  id: EntityId;
+  stockLocationId: EntityId;
+  name: string;
+  partNumber?: string;
+  quantity: number;
+  unit: string;
+}
+export interface WorkReportPart {
+  id: EntityId;
+  categoryId: EntityId;
+  name: string;
+  partNumber?: string;
+  unit: string;
+}
+export interface WorkReportPartItem {
+  partId: EntityId;
+  quantity: number;
+  part: WorkReportPart;
+}
+export interface WorkReportMedia {
+  id: EntityId;
+  mediaType: "image" | "video";
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  url: string;
+  createdAt: ISODateString;
+}
+export interface WorkReport {
+  id: EntityId;
+  organizationId: EntityId;
+  serviceCallId: EntityId;
+  visitId: EntityId;
+  reportNumber: string;
+  workDescription: string;
+  customerRepresentative?: string;
+  customerRepresentativeRole?: string;
+  signatureStrokes?: number[][][];
+  signedAt?: ISODateString;
+  technicianId: EntityId;
+  lastEditedById?: EntityId;
+  createdAt: ISODateString;
+  updatedAt: ISODateString;
+  parts: WorkReportPartItem[];
+  media: WorkReportMedia[];
+}
 
 /** Workflow timeline entry (immutable transition fact). */
 export interface ServiceCallTimelineEvent {

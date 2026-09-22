@@ -5,6 +5,7 @@ import type {
   CustomerSite,
   Equipment,
   EquipmentType,
+  InventoryItem,
   OrganizationMember,
   ServiceCall,
   ServiceCallLifecycleView,
@@ -40,6 +41,13 @@ import {
   type CurrentTechnicianLocation,
 } from "../api/manager";
 import {
+  createInventoryItem,
+  createStockLocation,
+  listInventoryItems,
+  listStockLocations,
+  updateInventoryItem,
+} from "../api/inventory";
+import {
   assignServiceCallTechnician,
   createManagerServiceCall,
   getServiceCall,
@@ -66,6 +74,8 @@ type CallProps = NativeStackScreenProps<RootStackParamList, "ManagerServiceCall"
 type CustomersProps = NativeStackScreenProps<RootStackParamList, "ManagerCustomers">;
 type EquipmentProps = NativeStackScreenProps<RootStackParamList, "ManagerEquipment">;
 type LocationsProps = NativeStackScreenProps<RootStackParamList, "ManagerLocations">;
+type PartsProps = NativeStackScreenProps<RootStackParamList, "ManagerParts">;
+type InventoryProps = NativeStackScreenProps<RootStackParamList, "ManagerInventory">;
 
 function errorMessage(error: unknown, fallback: string): string {
   return isApiRequestError(error) ? error.message : fallback;
@@ -137,6 +147,11 @@ export function ManagerHomeScreen({ navigation }: HomeProps) {
           icon="list-outline"
           onPress={() => navigation.navigate("ManagerServiceCalls")}
         />
+        <ManagerMenuButton
+          label="חלפים"
+          icon="cube-outline"
+          onPress={() => navigation.navigate("ManagerParts")}
+        />
       </View>
     </ScrollView>
   );
@@ -148,6 +163,7 @@ type ManagerMenuIcon =
   | "construct-outline"
   | "location-outline"
   | "list-outline"
+  | "cube-outline"
   | "log-out-outline";
 
 function ManagerMenuButton({
@@ -180,6 +196,217 @@ function ManagerMenuButton({
         </Text>
       </View>
     </Pressable>
+  );
+}
+
+export function ManagerPartsScreen({ navigation }: PartsProps) {
+  return (
+    <Page>
+      <ScrollView contentContainerStyle={styles.content}>
+        <ScreenSubtitle>ניהול מלאי החלפים לפי מיקום.</ScreenSubtitle>
+        <Button
+          label="חלפים בניידות"
+          onPress={() => navigation.navigate("ManagerInventory", { kind: "vehicle" })}
+        />
+        <Button
+          label="מחסן חלפים"
+          variant="secondary"
+          onPress={() => navigation.navigate("ManagerInventory", { kind: "warehouse" })}
+        />
+      </ScrollView>
+    </Page>
+  );
+}
+
+export function ManagerInventoryScreen({ route }: InventoryProps) {
+  const { user, accessToken } = useAuth();
+  const kind = route.params.kind;
+  const [locations, setLocations] = useState<
+    { id: string; name: string; kind: "vehicle" | "warehouse" }[]
+  >([]);
+  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
+  const [items, setItems] = useState<InventoryItem[]>([]);
+  const [locationName, setLocationName] = useState(kind === "warehouse" ? "מחסן מרכזי" : "");
+  const [partName, setPartName] = useState("");
+  const [partNumber, setPartNumber] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const loadLocations = useCallback(async () => {
+    if (!user || !accessToken) return;
+    const next = await listStockLocations(user.organization.id, accessToken, kind);
+    setLocations(next);
+    setSelectedLocationId((current) =>
+      current && next.some((location) => location.id === current) ? current : (next[0]?.id ?? null),
+    );
+  }, [accessToken, kind, user]);
+
+  useEffect(() => {
+    void loadLocations().catch((e) => setError(errorMessage(e, "לא ניתן לטעון מלאי")));
+  }, [loadLocations]);
+  useEffect(() => {
+    if (!user || !accessToken || !selectedLocationId) {
+      setItems([]);
+      return;
+    }
+    void listInventoryItems(user.organization.id, selectedLocationId, accessToken)
+      .then(setItems)
+      .catch((e) => setError(errorMessage(e, "לא ניתן לטעון מלאי")));
+  }, [accessToken, selectedLocationId, user]);
+
+  async function addLocation() {
+    if (!user || !accessToken || !locationName.trim()) return setError("יש להזין שם מיקום.");
+    setBusy(true);
+    setError(null);
+    try {
+      const next = await createStockLocation(user.organization.id, accessToken, {
+        name: locationName.trim(),
+        kind,
+      });
+      setLocationName(kind === "warehouse" ? "מחסן מרכזי" : "");
+      await loadLocations();
+      setSelectedLocationId(next.id);
+    } catch (e) {
+      setError(errorMessage(e, "לא ניתן לשמור את המיקום"));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function addItem() {
+    if (!user || !accessToken || !selectedLocationId) return setError("יש לבחור מיקום מלאי.");
+    if (
+      !partName.trim() ||
+      !quantity.trim() ||
+      Number.isNaN(Number(quantity)) ||
+      Number(quantity) < 0
+    )
+      return setError("יש להזין שם חלף וכמות תקינה.");
+    setBusy(true);
+    setError(null);
+    try {
+      const item = await createInventoryItem(
+        user.organization.id,
+        selectedLocationId,
+        accessToken,
+        {
+          name: partName.trim(),
+          partNumber: partNumber.trim() || undefined,
+          quantity: Number(quantity),
+          unit: "יח׳",
+        },
+      );
+      setItems((current) => [...current, item].sort((a, b) => a.name.localeCompare(b.name, "he")));
+      setPartName("");
+      setPartNumber("");
+      setQuantity("");
+    } catch (e) {
+      setError(errorMessage(e, "לא ניתן לשמור חלף"));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function changeQuantity(item: InventoryItem, delta: number) {
+    if (!user || !accessToken) return;
+    const nextQuantity = Math.max(0, item.quantity + delta);
+    try {
+      const next = await updateInventoryItem(user.organization.id, item.id, accessToken, {
+        quantity: nextQuantity,
+      });
+      setItems((current) =>
+        current.map((currentItem) => (currentItem.id === item.id ? next : currentItem)),
+      );
+    } catch (e) {
+      setError(errorMessage(e, "לא ניתן לעדכן כמות"));
+    }
+  }
+  const locationLabel = kind === "vehicle" ? "ניידת חדשה" : "מחסן";
+  return (
+    <Page>
+      <ScrollView contentContainerStyle={styles.content}>
+        <ScreenSubtitle>
+          {kind === "vehicle" ? "מלאי חלפים בכל ניידת שירות." : "מלאי החלפים במחסן המרכזי."}
+        </ScreenSubtitle>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        <Card>
+          <Text style={styles.label}>{locationLabel}</Text>
+          <TextInput
+            value={locationName}
+            onChangeText={setLocationName}
+            placeholder={kind === "vehicle" ? "לדוגמה: ניידת 1" : "מחסן מרכזי"}
+            placeholderTextColor={colors.textMuted}
+            style={styles.input}
+          />
+          <Button
+            label={kind === "vehicle" ? "הוספת ניידת" : "יצירת מחסן"}
+            loading={busy}
+            onPress={() => void addLocation()}
+          />
+          {locations.map((location) => (
+            <Pressable
+              key={location.id}
+              onPress={() => setSelectedLocationId(location.id)}
+              style={[
+                styles.inventoryLocation,
+                selectedLocationId === location.id && styles.inventoryLocationSelected,
+              ]}
+            >
+              <Text style={styles.partName}>{location.name}</Text>
+            </Pressable>
+          ))}
+        </Card>
+        {selectedLocationId ? (
+          <Card>
+            <Text style={styles.label}>הוספת חלף למלאי</Text>
+            <TextInput
+              value={partName}
+              onChangeText={setPartName}
+              placeholder="שם החלף"
+              placeholderTextColor={colors.textMuted}
+              style={styles.input}
+            />
+            <TextInput
+              value={partNumber}
+              onChangeText={setPartNumber}
+              placeholder="מק״ט (לא חובה)"
+              placeholderTextColor={colors.textMuted}
+              style={styles.input}
+            />
+            <TextInput
+              value={quantity}
+              onChangeText={setQuantity}
+              keyboardType="decimal-pad"
+              placeholder="כמות"
+              placeholderTextColor={colors.textMuted}
+              style={styles.input}
+            />
+            <Button label="הוספת חלף" loading={busy} onPress={() => void addItem()} />
+            <Text style={styles.label}>מלאי קיים</Text>
+            {items.length ? (
+              items.map((item) => (
+                <View key={item.id} style={styles.inventoryItem}>
+                  <View>
+                    <Text style={styles.partName}>{item.name}</Text>
+                    {item.partNumber ? <Text style={styles.muted}>{item.partNumber}</Text> : null}
+                  </View>
+                  <View style={styles.counter}>
+                    <Pressable onPress={() => void changeQuantity(item, -1)}>
+                      <Text style={styles.counterButton}>−</Text>
+                    </Pressable>
+                    <Text style={styles.quantity}>{item.quantity}</Text>
+                    <Pressable onPress={() => void changeQuantity(item, 1)}>
+                      <Text style={styles.counterButton}>＋</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.empty}>אין חלפים במיקום הזה עדיין.</Text>
+            )}
+          </Card>
+        ) : null}
+      </ScrollView>
+    </Page>
   );
 }
 
@@ -1654,4 +1881,43 @@ const styles = StyleSheet.create({
     writingDirection: "rtl",
   },
   footerBlock: { gap: spacing.sm, paddingTop: spacing.md },
+  label: {
+    color: colors.text,
+    fontFamily: typography.bold,
+    fontSize: 17,
+    textAlign: "right",
+    writingDirection: "rtl",
+  },
+  inventoryLocation: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginTop: spacing.sm,
+  },
+  inventoryLocationSelected: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
+  inventoryItem: {
+    flexDirection: "row-reverse",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    paddingVertical: spacing.md,
+  },
+  partName: {
+    color: colors.text,
+    fontFamily: typography.regular,
+    fontSize: 16,
+    textAlign: "right",
+    writingDirection: "rtl",
+  },
+  muted: {
+    color: colors.textMuted,
+    fontFamily: typography.regular,
+    textAlign: "right",
+    writingDirection: "rtl",
+  },
+  counter: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  counterButton: { color: colors.primary, fontSize: 25, fontFamily: typography.bold },
+  quantity: { color: colors.text, fontFamily: typography.bold, minWidth: 24, textAlign: "center" },
 });

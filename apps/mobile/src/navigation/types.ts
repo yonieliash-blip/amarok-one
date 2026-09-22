@@ -11,4 +11,6 @@ export type RootStackParamList = {
   ManagerCustomers: undefined;
   ManagerEquipment: undefined;
   ManagerLocations: undefined;
+  ManagerParts: undefined;
+  ManagerInventory: { kind: "vehicle" | "warehouse" };
 };

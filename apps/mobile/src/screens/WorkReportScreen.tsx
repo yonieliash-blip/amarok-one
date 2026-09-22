@@ -46,6 +46,7 @@ export function WorkReportScreen({ route }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [partsPickerOpen, setPartsPickerOpen] = useState(false);
+  const [signatureModalOpen, setSignatureModalOpen] = useState(false);
   const activeStroke = useRef<number | null>(null);
   useEffect(() => {
     if (!user || !accessToken) return;
@@ -85,6 +86,9 @@ export function WorkReportScreen({ route }: Props) {
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponderCapture: () => true,
+      onMoveShouldSetPanResponderCapture: () => true,
+      onPanResponderTerminationRequest: () => false,
       onPanResponderGrant: (event) => {
         const point = signaturePoint(event);
         setSignature((current) => {
@@ -267,20 +271,15 @@ export function WorkReportScreen({ route }: Props) {
           placeholder="תפקיד / הערה (לא חובה)"
           placeholderTextColor={colors.textMuted}
         />
-        <Text style={styles.hint}>חתום באצבע בתוך המסגרת. החתימה אופציונלית.</Text>
-        <View style={styles.signature} {...signatureResponder.panHandlers}>
-          {signature.flatMap((stroke, strokeIndex) =>
-            stroke
-              .slice(1)
-              .map((point, pointIndex) => (
-                <View
-                  key={`${strokeIndex}-${pointIndex}`}
-                  style={[styles.signatureLine, signatureLine(stroke[pointIndex]!, point)]}
-                />
-              )),
-          )}
-        </View>
-        <Button label="ניקוי חתימה" variant="secondary" onPress={() => setSignature([])} />
+        <Text style={styles.hint}>החתימה תיפתח בחלון קבוע, ללא גלילת המסך בזמן החתימה.</Text>
+        <Button
+          label={signature.length ? "עריכת חתימה" : "חתימת לקוח"}
+          variant="secondary"
+          onPress={() => setSignatureModalOpen(true)}
+        />
+        {signature.length ? (
+          <Text style={styles.signatureSaved}>החתימה מוכנה לשמירה בדוח.</Text>
+        ) : null}
       </Card>
       <Button
         label={`שמירת דוח ${report.reportNumber}`}
@@ -330,6 +329,33 @@ export function WorkReportScreen({ route }: Props) {
             <Button label="סיום בחירה" onPress={() => setPartsPickerOpen(false)} />
           </Pressable>
         </Pressable>
+      </Modal>
+      <Modal
+        visible={signatureModalOpen}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={() => setSignatureModalOpen(false)}
+      >
+        <View style={styles.signatureModal}>
+          <Text style={styles.signatureModalTitle}>חתימת לקוח</Text>
+          <Text style={styles.hint}>חתום בתוך המסגרת. המסך נשאר קבוע בזמן החתימה.</Text>
+          <View style={styles.signatureCanvas} {...signatureResponder.panHandlers}>
+            {signature.flatMap((stroke, strokeIndex) =>
+              stroke
+                .slice(1)
+                .map((point, pointIndex) => (
+                  <View
+                    key={`${strokeIndex}-${pointIndex}`}
+                    style={[styles.signatureLine, signatureLine(stroke[pointIndex]!, point)]}
+                  />
+                )),
+            )}
+          </View>
+          <View style={styles.signatureActions}>
+            <Button label="ניקוי" variant="secondary" onPress={() => setSignature([])} />
+            <Button label="אישור חתימה" onPress={() => setSignatureModalOpen(false)} />
+          </View>
+        </View>
       </Modal>
     </ScrollView>
   );
@@ -395,8 +421,9 @@ const styles = StyleSheet.create({
   quantity: { color: colors.text, fontWeight: "800", minWidth: 18, textAlign: "center" },
   media: { marginTop: 10 },
   thumbnail: { width: 90, height: 70, borderRadius: 8, marginTop: 4, alignSelf: "flex-end" },
-  signature: {
-    height: 170,
+  signatureCanvas: {
+    flex: 1,
+    minHeight: 360,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 10,
@@ -410,6 +437,27 @@ const styles = StyleSheet.create({
     backgroundColor: colors.text,
     position: "absolute",
     transformOrigin: "left center",
+  },
+  signatureModal: {
+    flex: 1,
+    padding: spacing.lg,
+    paddingTop: spacing.xl * 2,
+    backgroundColor: colors.bg,
+    gap: spacing.md,
+  },
+  signatureModalTitle: {
+    color: colors.text,
+    fontSize: 24,
+    fontWeight: "800",
+    textAlign: "center",
+    writingDirection: "rtl",
+  },
+  signatureActions: { gap: spacing.sm },
+  signatureSaved: {
+    color: colors.primary,
+    fontWeight: "700",
+    textAlign: "right",
+    writingDirection: "rtl",
   },
   modalBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.62)" },
   partsModal: {
