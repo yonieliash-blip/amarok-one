@@ -791,10 +791,7 @@ export function ManagerPartsScreen({ navigation }: PartsProps) {
   }, [load]);
 
   const selectedCategory = catalog.find((category) => category.id === categoryId);
-  const subcategories = useMemo(
-    () => selectedCategory?.subcategories ?? [],
-    [selectedCategory],
-  );
+  const subcategories = useMemo(() => selectedCategory?.subcategories ?? [], [selectedCategory]);
 
   useEffect(() => {
     if (subcategoryId && subcategories.some((item) => item.id === subcategoryId)) return;
