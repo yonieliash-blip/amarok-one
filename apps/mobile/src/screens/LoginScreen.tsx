@@ -108,8 +108,14 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.lg,
   },
-  brandBlock: { alignItems: "center", marginBottom: spacing.xl },
-  wordmark: { width: "76%", height: 122 },
+  brandBlock: {
+    alignItems: "center",
+    marginBottom: spacing.xl,
+  },
+  wordmark: {
+    width: "76%",
+    height: 122,
+  },
   formCard: {
     gap: spacing.md,
     padding: spacing.lg,
@@ -119,7 +125,13 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   field: { gap: spacing.xs },
-  label: { color: colors.text, fontFamily: "Alef-Bold", fontSize: 16, textAlign: "right", writingDirection: "rtl" },
+  label: {
+    color: colors.text,
+    fontFamily: "Alef-Bold",
+    fontSize: 16,
+    textAlign: "right",
+    writingDirection: "rtl",
+  },
   input: {
     borderWidth: 1,
     borderColor: colors.border,

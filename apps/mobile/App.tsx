@@ -23,7 +23,6 @@ export default function App(): JSX.Element {
     return () => clearTimeout(timer);
   }, []);
 
-
   if (!fontsLoaded) return <></>;
   if (showIntro) return <StartupSplash />;
 
