@@ -156,6 +156,7 @@ function SignatureCanvas({
       {allStrokes.flatMap((stroke, strokeIndex) =>
         stroke.slice(1).map((point, pointIndex) => {
           const previous = stroke[pointIndex];
+          if (!previous) return null;
           const deltaX = point.x - previous.x;
           const deltaY = point.y - previous.y;
           const length = Math.max(Math.sqrt(deltaX ** 2 + deltaY ** 2), 5);
