@@ -32,17 +32,14 @@ export function ServiceCallWorkReportPanel({
   const [customerName, setCustomerName] = useState("");
   const [signatureData, setSignatureData] = useState<string | null>(null);
   const [selectedParts, setSelectedParts] = useState<Record<string, number>>({});
-
-  useEffect(() => {
-    if (!visits.find((visit) => visit.id === selectedVisitId) && visits[0]) {
-      setSelectedVisitId(visits[0].id);
-    }
-  }, [selectedVisitId, visits]);
+  const activeVisitId = visits.some((visit) => visit.id === selectedVisitId)
+    ? selectedVisitId
+    : (visits[0]?.id ?? "");
 
   useEffect(() => {
     let cancelled = false;
     async function load(): Promise<void> {
-      if (!selectedVisitId) {
+      if (!activeVisitId) {
         setLoading(false);
         setEditor(null);
         return;
@@ -54,7 +51,7 @@ export function ServiceCallWorkReportPanel({
         const nextEditor = await getServiceCallWorkReportRequest(
           organizationId,
           serviceCallId,
-          selectedVisitId,
+          activeVisitId,
           accessToken,
         );
         if (cancelled) return;
@@ -78,7 +75,7 @@ export function ServiceCallWorkReportPanel({
     return () => {
       cancelled = true;
     };
-  }, [accessToken, organizationId, selectedVisitId, serviceCallId]);
+  }, [accessToken, activeVisitId, organizationId, serviceCallId]);
 
   const selectedPartRows = useMemo(
     () =>
@@ -90,14 +87,14 @@ export function ServiceCallWorkReportPanel({
   );
 
   async function handleSave(): Promise<void> {
-    if (!selectedVisitId) return;
+    if (!activeVisitId) return;
     setSaving(true);
     setError(null);
     try {
       const saved = await saveServiceCallWorkReportRequest(
         organizationId,
         serviceCallId,
-        selectedVisitId,
+        activeVisitId,
         accessToken,
         {
           workPerformed: workPerformed.trim() || null,
@@ -130,7 +127,7 @@ export function ServiceCallWorkReportPanel({
         </div>
         {visits.length > 1 ? (
           <select
-            value={selectedVisitId}
+            value={activeVisitId}
             onChange={(event) => setSelectedVisitId(event.target.value)}
           >
             {visits.map((visit) => (
