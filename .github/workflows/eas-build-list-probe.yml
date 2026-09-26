@@ -27,6 +27,8 @@ jobs:
         run: |
           corepack enable
           corepack prepare pnpm@10.12.4 --activate
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
       - name: List recent iOS EAS builds
         working-directory: apps/mobile
         run: pnpm dlx eas-cli@24 build:list --platform ios --limit 20 --json --non-interactive
