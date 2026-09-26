@@ -35,7 +35,9 @@ export function StartupSplash() {
   return (
     <View style={styles.page}>
       <StatusBar style="dark" backgroundColor={colors.primary} />
-      <Animated.View style={[styles.logoFrame, { opacity, transform: [{ translateY }, { scale }] }]}>
+      <Animated.View
+        style={[styles.logoFrame, { opacity, transform: [{ translateY }, { scale }] }]}
+      >
         <Image source={brand.wordmark} resizeMode="contain" style={styles.logo} />
         <View pointerEvents="none" style={styles.wordmarkTopCrop}>
           <Image source={brand.wordmark} resizeMode="contain" style={styles.wordmarkTop} />
