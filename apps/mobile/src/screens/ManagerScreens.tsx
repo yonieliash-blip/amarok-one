@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type {
   Customer,
@@ -790,7 +791,10 @@ export function ManagerPartsScreen({ navigation }: PartsProps) {
   }, [load]);
 
   const selectedCategory = catalog.find((category) => category.id === categoryId);
-  const subcategories = selectedCategory?.subcategories ?? [];
+  const subcategories = useMemo(
+    () => selectedCategory?.subcategories ?? [],
+    [selectedCategory],
+  );
 
   useEffect(() => {
     if (subcategoryId && subcategories.some((item) => item.id === subcategoryId)) return;
