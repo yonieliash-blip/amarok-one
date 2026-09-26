@@ -5,14 +5,24 @@ import { ErrorState } from "../../components/ErrorState";
 import { LoadingState } from "../../components/LoadingState";
 import { useAuth } from "../../auth/useAuth";
 import { getAuthErrorMessage } from "../../lib/auth-errors";
-import { listTechniciansRequest, type TechnicianSummary } from "../../lib/technicians-api";
+import { getInventoryOverviewRequest } from "../../lib/inventory-api";
+import {
+  assignTechnicianServiceVanRequest,
+  listTechniciansRequest,
+  type TechnicianSummary,
+} from "../../lib/technicians-api";
 import { useTranslation } from "../../i18n/useTranslation";
 
 export function TechniciansListPage() {
   const { user, accessToken } = useAuth();
   const { t } = useTranslation();
   const [technicians, setTechnicians] = useState<TechnicianSummary[]>([]);
+  const [vanOptions, setVanOptions] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedVanByTechnician, setSelectedVanByTechnician] = useState<Record<string, string>>(
+    {},
+  );
   const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
 
@@ -23,8 +33,17 @@ export function TechniciansListPage() {
       setLoading(true);
       setError(null);
       try {
-        const rows = await listTechniciansRequest(user.organization.id, accessToken);
-        if (!cancelled) setTechnicians(rows);
+        const [rows, overview] = await Promise.all([
+          listTechniciansRequest(user.organization.id, accessToken),
+          getInventoryOverviewRequest(user.organization.id, accessToken),
+        ]);
+        if (!cancelled) {
+          setTechnicians(rows);
+          setVanOptions(overview.vans.map((van) => ({ id: van.id, name: van.name })));
+          setSelectedVanByTechnician(
+            Object.fromEntries(rows.map((row) => [row.id, row.assignedVan?.id ?? ""])),
+          );
+        }
       } catch (cause) {
         if (!cancelled) setError(getAuthErrorMessage(cause));
       } finally {
@@ -64,6 +83,7 @@ export function TechniciansListPage() {
                 <th>{t("technicians", "name")}</th>
                 <th>{t("technicians", "email")}</th>
                 <th>{t("technicians", "status")}</th>
+                <th>ניידת שירות</th>
               </tr>
             </thead>
             <tbody>
@@ -79,6 +99,53 @@ export function TechniciansListPage() {
                         ? t("technicians", "active")
                         : t("technicians", "inactive")}
                     </Badge>
+                  </td>
+                  <td>
+                    <div className="inventory-assign">
+                      <select
+                        value={selectedVanByTechnician[technician.id] ?? ""}
+                        onChange={(event) =>
+                          setSelectedVanByTechnician((current) => ({
+                            ...current,
+                            [technician.id]: event.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">ללא ניידת</option>
+                        {vanOptions.map((van) => (
+                          <option key={van.id} value={van.id}>
+                            {van.name}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        className="customers-table__link inventory-assign__button"
+                        disabled={savingId === technician.id}
+                        onClick={() =>
+                          void (async () => {
+                            if (!user || !accessToken) return;
+                            setSavingId(technician.id);
+                            setError(null);
+                            try {
+                              await assignTechnicianServiceVanRequest(
+                                user.organization.id,
+                                technician.id,
+                                accessToken,
+                                selectedVanByTechnician[technician.id] || null,
+                              );
+                              setRetryKey((key) => key + 1);
+                            } catch (cause) {
+                              setError(getAuthErrorMessage(cause));
+                            } finally {
+                              setSavingId(null);
+                            }
+                          })()
+                        }
+                      >
+                        {savingId === technician.id ? "שומר..." : "שמירה"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

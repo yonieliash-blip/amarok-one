@@ -10,8 +10,10 @@ import { equipmentRoutes } from "./modules/equipment/equipment.routes.js";
 import { customerRoutes } from "./modules/customers/customer.routes.js";
 import { organizationRoutes } from "./modules/organizations/organization.routes.js";
 import { createAccessRoutes } from "./modules/access/access.routes.js";
+import { inventoryRoutes } from "./modules/inventory/inventory.routes.js";
 import type { AccessService } from "./modules/access/access.service.js";
 import type { ServiceCallService } from "./modules/service-calls/service-call.service.js";
+import { partsRoutes } from "./modules/parts/parts.routes.js";
 import { technicianRoutes } from "./modules/technicians/technician.routes.js";
 import { attendanceRoutes } from "./modules/attendance/attendance.routes.js";
 
@@ -31,6 +33,8 @@ export function createApiRoutes(
     .route("/organizations/:organizationId/equipment", equipmentRoutes)
     .route("/organizations/:organizationId/technicians", technicianRoutes)
     .route("/organizations/:organizationId/attendance", attendanceRoutes)
+    .route("/organizations/:organizationId/inventory", inventoryRoutes)
+    .route("/organizations/:organizationId/parts", partsRoutes)
     .route(
       "/organizations/:organizationId/service-calls",
       createServiceCallRoutes(serviceCallService),

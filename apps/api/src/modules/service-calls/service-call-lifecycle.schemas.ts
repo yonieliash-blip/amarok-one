@@ -43,6 +43,20 @@ export const finishVisitSchema = z.object({
     ),
 });
 
+export const saveWorkReportSchema = z.object({
+  workPerformed: z.string().trim().max(4000).nullable().optional(),
+  customerName: z.string().trim().max(160).nullable().optional(),
+  customerSignatureData: z.string().min(1).max(200000).nullable().optional(),
+  parts: z
+    .array(
+      z.object({
+        inventoryItemId: z.string().uuid(),
+        quantity: z.number().int().positive(),
+      }),
+    )
+    .max(100),
+});
+
 export const closeServiceCallSchema = z.object({
   reason: z.string().max(500).optional(),
 });
@@ -56,3 +70,4 @@ export const visitIdParamSchema = z.object({
 export type AssignTechnicianInput = z.infer<typeof assignTechnicianSchema>;
 export type TransitionLifecycleInput = z.infer<typeof transitionLifecycleSchema>;
 export type FinishVisitInput = z.infer<typeof finishVisitSchema>;
+export type SaveWorkReportInput = z.infer<typeof saveWorkReportSchema>;

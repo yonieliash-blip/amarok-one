@@ -25,8 +25,14 @@ model Organization {
   customerContacts      CustomerContact[]
   equipmentTypes        EquipmentType[]
   equipment             Equipment[]
+  partCategories        PartCategory[]
+  partSubcategories     PartSubcategory[]
+  catalogParts          CatalogPart[]
+  inventoryLocations    InventoryLocation[]
+  inventoryItems        InventoryItem[]
   serviceCalls          ServiceCall[]
   serviceCallVisits     ServiceCallVisit[]
+  serviceCallWorkReports ServiceCallWorkReport[]
   workflowEvents        WorkflowEvent[]
   userRoles             UserRole[]
   organizationMembers   OrganizationMember[]
@@ -107,6 +113,8 @@ model User {
   auditLogs                 AuditLog[]             @relation("AuditActor")
   assignedServiceCalls      ServiceCall[]          @relation("AssignedTechnician")
   serviceCallVisits         ServiceCallVisit[]     @relation("VisitTechnician")
+  assignedInventoryLocations InventoryLocation[]   @relation("AssignedInventoryLocationUser")
+  serviceCallWorkReports    ServiceCallWorkReport[] @relation("WorkReportTechnician")
   workDays                  WorkDay[]
   approvedWorkDays          WorkDay[]              @relation("WorkDayApprover")
   lockedAttendancePeriods   AttendancePeriodLock[] @relation("AttendancePeriodLocker")
@@ -565,6 +573,11 @@ enum ServiceCallVisitStatus {
   COMPLETED
 }
 
+enum InventoryLocationType {
+  SERVICE_VAN
+  CENTRAL_WAREHOUSE
+}
+
 /// Tenant-scoped field service work order.
 model ServiceCall {
   id                String                    @id @default(uuid()) @db.Uuid
@@ -596,6 +609,7 @@ model ServiceCall {
   branch       Branch?            @relation(fields: [branchId], references: [id], onDelete: SetNull)
   assignedUser User?              @relation("AssignedTechnician", fields: [assignedUserId], references: [id], onDelete: SetNull)
   visits       ServiceCallVisit[]
+  workReports  ServiceCallWorkReport[]
 
   @@unique([organizationId, serviceCallNumber])
   @@index([organizationId])
@@ -630,6 +644,7 @@ model ServiceCallVisit {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   serviceCall  ServiceCall  @relation(fields: [serviceCallId], references: [id], onDelete: Restrict)
   technician   User         @relation("VisitTechnician", fields: [technicianId], references: [id], onDelete: Restrict)
+  workReport   ServiceCallWorkReport?
 
   @@unique([serviceCallId, sequence])
   @@index([organizationId])
@@ -637,6 +652,155 @@ model ServiceCallVisit {
   @@index([organizationId, technicianId])
   @@index([organizationId, deletedAt])
   @@map("service_call_visits")
+}
+
+model PartCategory {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @db.Uuid
+  name           String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization  Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  subcategories PartSubcategory[]
+  catalogParts  CatalogPart[]
+
+  @@index([organizationId])
+  @@index([organizationId, deletedAt])
+  @@map("part_categories")
+}
+
+model PartSubcategory {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @db.Uuid
+  categoryId     String    @db.Uuid
+  name           String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  category     PartCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  catalogParts CatalogPart[]
+
+  @@index([organizationId])
+  @@index([categoryId])
+  @@index([organizationId, deletedAt])
+  @@map("part_subcategories")
+}
+
+model CatalogPart {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @db.Uuid
+  categoryId     String    @db.Uuid
+  subcategoryId  String    @db.Uuid
+  name           String
+  partNumber     String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization   Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  category       PartCategory            @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  subcategory    PartSubcategory         @relation(fields: [subcategoryId], references: [id], onDelete: Restrict)
+  inventoryItems InventoryItem[]
+  workReportParts ServiceCallWorkReportPart[]
+
+  @@index([organizationId])
+  @@index([categoryId])
+  @@index([subcategoryId])
+  @@index([organizationId, deletedAt])
+  @@map("catalog_parts")
+}
+
+model InventoryLocation {
+  id             String               @id @default(uuid()) @db.Uuid
+  organizationId String               @db.Uuid
+  name           String
+  type           InventoryLocationType
+  assignedUserId String?              @db.Uuid
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  assignedUser User?           @relation("AssignedInventoryLocationUser", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  items        InventoryItem[]
+
+  @@index([organizationId])
+  @@index([organizationId, type])
+  @@index([assignedUserId])
+  @@index([organizationId, deletedAt])
+  @@map("inventory_locations")
+}
+
+model InventoryItem {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @db.Uuid
+  locationId     String    @db.Uuid
+  partId         String    @db.Uuid
+  quantity       Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  location       InventoryLocation @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  part           CatalogPart       @relation(fields: [partId], references: [id], onDelete: Restrict)
+  workReportParts ServiceCallWorkReportPart[]
+
+  @@index([organizationId])
+  @@index([locationId])
+  @@index([partId])
+  @@index([organizationId, deletedAt])
+  @@map("inventory_items")
+}
+
+model ServiceCallWorkReport {
+  id                    String    @id @default(uuid()) @db.Uuid
+  organizationId        String    @db.Uuid
+  serviceCallId         String    @db.Uuid
+  visitId               String    @unique @db.Uuid
+  technicianId          String    @db.Uuid
+  workPerformed         String?
+  customerName          String?
+  customerSignatureData String?
+  signedAt              DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  deletedAt             DateTime?
+
+  organization Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  serviceCall  ServiceCall             @relation(fields: [serviceCallId], references: [id], onDelete: Restrict)
+  visit        ServiceCallVisit        @relation(fields: [visitId], references: [id], onDelete: Restrict)
+  technician   User                    @relation("WorkReportTechnician", fields: [technicianId], references: [id], onDelete: Restrict)
+  parts        ServiceCallWorkReportPart[]
+
+  @@index([organizationId])
+  @@index([serviceCallId])
+  @@index([technicianId])
+  @@index([organizationId, deletedAt])
+  @@map("service_call_work_reports")
+}
+
+model ServiceCallWorkReportPart {
+  id              String   @id @default(uuid()) @db.Uuid
+  workReportId    String   @db.Uuid
+  inventoryItemId String   @db.Uuid
+  catalogPartId   String   @db.Uuid
+  quantity        Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  workReport    ServiceCallWorkReport @relation(fields: [workReportId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem         @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  catalogPart   CatalogPart           @relation(fields: [catalogPartId], references: [id], onDelete: Restrict)
+
+  @@index([workReportId])
+  @@index([inventoryItemId])
+  @@index([catalogPartId])
+  @@map("service_call_work_report_parts")
 }
 
 /// Append-only workflow event stream (service-call aggregate).

@@ -10,6 +10,8 @@ import type {
   ServiceCallLifecycleView,
   ServiceCallPriority,
   ServiceCallStatus,
+  ServiceCallWorkReport,
+  WorkReportEditorData,
 } from "@amarok-one/types";
 import {
   canAssignServiceCalls,
@@ -247,6 +249,42 @@ export async function finishServiceCallVisitRequest(
     accessToken,
     payload,
   );
+}
+
+export async function getServiceCallWorkReportRequest(
+  organizationId: string,
+  serviceCallId: string,
+  visitId: string,
+  accessToken: string,
+): Promise<WorkReportEditorData> {
+  const response = await apiRequest<WorkReportEditorData>(
+    `${serviceCallsBase(organizationId)}/${serviceCallId}/visits/${visitId}/work-report`,
+    { accessToken },
+  );
+  return response.data;
+}
+
+export async function saveServiceCallWorkReportRequest(
+  organizationId: string,
+  serviceCallId: string,
+  visitId: string,
+  accessToken: string,
+  payload: {
+    workPerformed?: string | null;
+    customerName?: string | null;
+    customerSignatureData?: string | null;
+    parts: Array<{ inventoryItemId: string; quantity: number }>;
+  },
+): Promise<ServiceCallWorkReport> {
+  const response = await apiRequest<ServiceCallWorkReport>(
+    `${serviceCallsBase(organizationId)}/${serviceCallId}/visits/${visitId}/work-report`,
+    {
+      method: "PUT",
+      accessToken,
+      body: JSON.stringify(payload),
+    },
+  );
+  return response.data;
 }
 
 export async function createServiceCallRequest(

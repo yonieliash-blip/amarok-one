@@ -330,3 +330,118 @@ export interface User {
   role: UserRole;
   createdAt: ISODateString;
 }
+
+export type InventoryLocationType = "service_van" | "central_warehouse";
+
+export interface PartCategory {
+  id: EntityId;
+  organizationId: EntityId;
+  name: string;
+  createdAt: ISODateString;
+  updatedAt: ISODateString;
+}
+
+export interface PartSubcategory {
+  id: EntityId;
+  organizationId: EntityId;
+  categoryId: EntityId;
+  name: string;
+  category?: Pick<PartCategory, "id" | "name">;
+  createdAt: ISODateString;
+  updatedAt: ISODateString;
+}
+
+export interface PartCatalogSubcategoryGroup extends PartSubcategory {
+  parts: CatalogPart[];
+}
+
+export interface PartCatalogCategoryGroup extends PartCategory {
+  subcategories: PartCatalogSubcategoryGroup[];
+}
+
+export interface CatalogPart {
+  id: EntityId;
+  organizationId: EntityId;
+  categoryId: EntityId;
+  subcategoryId: EntityId;
+  name: string;
+  partNumber?: string;
+  category?: Pick<PartCategory, "id" | "name">;
+  subcategory?: Pick<PartSubcategory, "id" | "name">;
+  createdAt: ISODateString;
+  updatedAt: ISODateString;
+}
+
+export interface InventoryLocationSummary {
+  id: EntityId;
+  organizationId: EntityId;
+  name: string;
+  type: InventoryLocationType;
+  assignedUserId?: EntityId;
+  assignedUserName?: string;
+  createdAt: ISODateString;
+  updatedAt: ISODateString;
+}
+
+export interface InventoryItem {
+  id: EntityId;
+  organizationId: EntityId;
+  locationId: EntityId;
+  quantity: number;
+  partId: EntityId;
+  part: CatalogPart;
+  location?: InventoryLocationSummary;
+  createdAt: ISODateString;
+  updatedAt: ISODateString;
+}
+
+export interface InventoryLocationDetail extends InventoryLocationSummary {
+  items: InventoryItem[];
+}
+
+export interface InventoryOverview {
+  vans: InventoryLocationDetail[];
+  warehouses: InventoryLocationDetail[];
+}
+
+export interface WorkReportPartUsage {
+  id: EntityId;
+  inventoryItemId: EntityId;
+  catalogPartId: EntityId;
+  quantity: number;
+  inventoryItem?: InventoryItem;
+  catalogPart?: CatalogPart;
+}
+
+export interface ServiceCallWorkReport {
+  id: EntityId;
+  organizationId: EntityId;
+  serviceCallId: EntityId;
+  visitId: EntityId;
+  technicianId: EntityId;
+  workPerformed?: string;
+  customerName?: string;
+  customerSignatureData?: string;
+  signedAt?: ISODateString;
+  parts: WorkReportPartUsage[];
+  createdAt: ISODateString;
+  updatedAt: ISODateString;
+}
+
+export interface WorkReportInventoryOption {
+  inventoryItemId: EntityId;
+  availableQuantity: number;
+  inventoryItem: InventoryItem;
+}
+
+export interface WorkReportPartGroup {
+  category: Pick<PartCategory, "id" | "name">;
+  subcategory: Pick<PartSubcategory, "id" | "name">;
+  items: WorkReportInventoryOption[];
+}
+
+export interface WorkReportEditorData {
+  assignedVan: InventoryLocationSummary;
+  report?: ServiceCallWorkReport;
+  partGroups: WorkReportPartGroup[];
+}

@@ -13,6 +13,7 @@ import { ServiceCallLifecycleBadge } from "../../components/ServiceCallLifecycle
 import { ServiceCallLifecyclePanel } from "../../components/ServiceCallLifecyclePanel";
 import { ServiceCallTechnicianWorkflowPanel } from "../../components/ServiceCallTechnicianWorkflowPanel";
 import { ServiceCallPriorityBadge } from "../../components/ServiceCallPriorityBadge";
+import { ServiceCallWorkReportPanel } from "../../components/ServiceCallWorkReportPanel";
 import { ServiceCallVisitTimeline } from "../../components/ServiceCallVisitTimeline";
 import { EmptyState } from "../../components/EmptyState";
 import { ErrorState } from "../../components/ErrorState";
@@ -235,6 +236,16 @@ export function ServiceCallDetailPage() {
           accessToken={accessToken}
           lifecycle={lifecycle}
           onUpdated={reloadDetail}
+        />
+      ) : null}
+
+      {lifecycleStatus === "ready" && lifecycle ? (
+        <ServiceCallWorkReportPanel
+          organizationId={user.organization.id}
+          serviceCallId={serviceCall.id}
+          accessToken={accessToken}
+          lifecycle={lifecycle}
+          canEdit={canWrite || canUpdateAssignedVisit}
         />
       ) : null}
 

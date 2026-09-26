@@ -298,8 +298,7 @@ export function HomeScreen({ navigation }: Props) {
         ) : (
           <>
             <Text style={styles.cardBody}>
-              יש להתחיל יום עבודה לפני פתיחת קריאות שירות. שעת ההתחלה והמיקום, אם אושר,
-              יישמרו.
+              יש להתחיל יום עבודה לפני פתיחת קריאות שירות. שעת ההתחלה והמיקום, אם אושר, יישמרו.
             </Text>
             <Button
               label="התחלת יום עבודה"
@@ -342,7 +341,10 @@ export function HomeScreen({ navigation }: Props) {
               >
                 <View style={styles.rowTop}>
                   <Text style={styles.rowNumber}>{item.serviceCallNumber}</Text>
-                  <StatusPill label={priorityLabel(item.priority)} tone={priorityTone(item.priority)} />
+                  <StatusPill
+                    label={priorityLabel(item.priority)}
+                    tone={priorityTone(item.priority)}
+                  />
                 </View>
                 <Text style={styles.rowTitle}>{item.title}</Text>
                 {item.customer ? <Text style={styles.rowMeta}>{item.customer.name}</Text> : null}
