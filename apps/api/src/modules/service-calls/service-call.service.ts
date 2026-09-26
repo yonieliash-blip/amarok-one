@@ -57,6 +57,17 @@ const currentTaskStatusPriority: Record<string, number> = {
   PLANNED: 1,
 };
 
+async function nextServiceCallNumber(tx: Prisma.TransactionClient): Promise<string> {
+  const sequence = await tx.$queryRaw<Array<{ value: bigint }>>`
+    SELECT nextval('service_call_number_seq') AS value
+  `;
+  const next = sequence[0];
+  if (!next) {
+    throw new Error("Service call number sequence did not return a value");
+  }
+  return `SC-${String(next.value).padStart(4, "0")}`;
+}
+
 function toInventoryLocationDto(row: {
   id: string;
   organizationId: string;
@@ -412,10 +423,11 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
 
     try {
       const dto = await prisma.$transaction(async (tx) => {
+        const serviceCallNumber = input.serviceCallNumber ?? (await nextServiceCallNumber(tx));
         const serviceCall = await tx.serviceCall.create({
           data: {
             organizationId,
-            serviceCallNumber: input.serviceCallNumber,
+            serviceCallNumber,
             title: input.title,
             description: input.description,
             status: fromServiceCallStatusDto("open"),
