@@ -16,7 +16,6 @@ export async function listManagerCustomers(
   return response.data ?? [];
 }
 
-
 export async function getManagerCustomer(
   organizationId: string,
   customerId: string,
@@ -109,7 +108,6 @@ export async function listManagerEquipmentTypes(
   });
   return response.data ?? [];
 }
-
 
 export async function getManagerEquipment(
   organizationId: string,
