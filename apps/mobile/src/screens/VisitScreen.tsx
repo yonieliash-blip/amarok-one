@@ -184,26 +184,20 @@ function SignatureCanvas({
 }
 
 function SignatureModal({
-  visible,
   initialValue,
   onCancel,
   onSave,
 }: {
-  visible: boolean;
   initialValue?: string | null;
   onCancel: () => void;
   onSave: (value: string | null) => void;
 }) {
-  const [draftStrokes, setDraftStrokes] = useState<SignatureStroke[]>([]);
-
-  useEffect(() => {
-    if (visible) {
-      setDraftStrokes(parseSignatureData(initialValue));
-    }
-  }, [initialValue, visible]);
+  const [draftStrokes, setDraftStrokes] = useState<SignatureStroke[]>(() =>
+    parseSignatureData(initialValue),
+  );
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen">
+    <Modal visible animationType="slide" presentationStyle="fullScreen">
       <View style={styles.signatureModal}>
         <View style={styles.signatureModalHeader}>
           <View>
@@ -492,15 +486,16 @@ export function VisitScreen({ route, navigation }: Props) {
 
   return (
     <>
-      <SignatureModal
-        visible={signatureModalVisible}
-        initialValue={signatureData}
-        onCancel={() => setSignatureModalVisible(false)}
-        onSave={(value) => {
-          setSignatureData(value);
-          setSignatureModalVisible(false);
-        }}
-      />
+      {signatureModalVisible ? (
+        <SignatureModal
+          initialValue={signatureData}
+          onCancel={() => setSignatureModalVisible(false)}
+          onSave={(value) => {
+            setSignatureData(value);
+            setSignatureModalVisible(false);
+          }}
+        />
+      ) : null}
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <Eyebrow>קריאת שירות · ביקור שטח</Eyebrow>
