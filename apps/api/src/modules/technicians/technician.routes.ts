@@ -26,24 +26,24 @@ export const technicianRoutes = new Hono()
       const { organizationId } = context.req.valid("param");
       return context.json(createApiResponse(await listTechnicians(organizationId)));
     },
-    )
+  )
   .patch(
     "/:technicianId/assigned-van",
     requirePermission("technicians:write"),
     zValidator("param", technicianIdParamSchema),
     zValidator("json", assignServiceVanSchema),
     async (context) => {
-    const { organizationId, technicianId } = context.req.valid("param");
-    const body = context.req.valid("json");
-    return context.json(
-      createApiResponse(
-        await assignTechnicianServiceVan(
-          organizationId,
-          technicianId,
-          body.inventoryLocationId,
-          getAuth(context).user.sub,
+      const { organizationId, technicianId } = context.req.valid("param");
+      const body = context.req.valid("json");
+      return context.json(
+        createApiResponse(
+          await assignTechnicianServiceVan(
+            organizationId,
+            technicianId,
+            body.inventoryLocationId,
+            getAuth(context).user.sub,
+          ),
         ),
-      ),
-    );
+      );
     },
   );

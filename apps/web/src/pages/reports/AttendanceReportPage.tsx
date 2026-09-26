@@ -240,91 +240,91 @@ export function AttendanceReportPage() {
               {report.employees.map((employee) => {
                 const routeDay = latestDayWithRoute(employee.days);
                 return (
-                <tr key={employee.userId}>
-                  <td>
-                    <details>
-                      <summary>
-                        <strong>{employee.displayName}</strong>
-                        <br />
-                        <small>{employee.email}</small>
-                      </summary>
-                      <ul>
-                        {employee.days.map((day) => (
-                          <li key={day.id}>
-                            {formatDateTime(day.startedAt)} —{" "}
-                            {day.endedAt
-                              ? formatDateTime(day.endedAt)
-                              : t("attendanceReport", "active")}
-                            ; {t("attendanceReport", "net")}: {hours(day.netMinutes)}; GPS:{" "}
-                            {day.locationCaptured
-                              ? t("attendanceReport", "yes")
-                              : t("attendanceReport", "no")}
-                            {day.locationSampleCount > 0 ? ` (${day.locationSampleCount})` : ""}
-                            {day.locationSampleCount > 0 ? (
-                              <>
-                                {" "}
-                                <button
-                                  type="button"
-                                  disabled={saving}
-                                  onClick={() => void viewRoute(employee.displayName, day)}
-                                >
-                                  {t("attendanceReport", "viewRoute")}
-                                </button>
-                              </>
-                            ) : null}
-                            .{" "}
-                            {day.reviewStatus === "APPROVED"
-                              ? t("attendanceReport", "approved")
-                              : t("attendanceReport", "pending")}
-                            {day.status === "COMPLETED" ? (
-                              <span>
-                                {" "}
-                                <button
-                                  type="button"
-                                  disabled={saving || report.locked}
-                                  onClick={() => void correct(day)}
-                                >
-                                  {t("attendanceReport", "correct")}
-                                </button>
-                                {day.reviewStatus !== "APPROVED" ? (
-                                  <>
-                                    {" "}
-                                    <button
-                                      type="button"
-                                      disabled={saving || report.locked}
-                                      onClick={() => void approve(day)}
-                                    >
-                                      {t("attendanceReport", "approve")}
-                                    </button>
-                                  </>
-                                ) : null}
-                              </span>
-                            ) : null}
-                          </li>
-                        ))}
-                      </ul>
-                    </details>
-                  </td>
-                  <td>{employee.workDays}</td>
-                  <td>{hours(employee.grossMinutes)}</td>
-                  <td>{hours(employee.breakMinutes)}</td>
-                  <td>
-                    <strong>{hours(employee.netMinutes)}</strong>
-                  </td>
-                  <td>
-                    {routeDay ? (
-                      <button
-                        type="button"
-                        disabled={saving}
-                        onClick={() => void viewRoute(employee.displayName, routeDay)}
-                      >
-                        {t("attendanceReport", "viewLatestRoute")}
-                      </button>
-                    ) : (
-                      <span>{t("attendanceReport", "noRoute")}</span>
-                    )}
-                  </td>
-                </tr>
+                  <tr key={employee.userId}>
+                    <td>
+                      <details>
+                        <summary>
+                          <strong>{employee.displayName}</strong>
+                          <br />
+                          <small>{employee.email}</small>
+                        </summary>
+                        <ul>
+                          {employee.days.map((day) => (
+                            <li key={day.id}>
+                              {formatDateTime(day.startedAt)} —{" "}
+                              {day.endedAt
+                                ? formatDateTime(day.endedAt)
+                                : t("attendanceReport", "active")}
+                              ; {t("attendanceReport", "net")}: {hours(day.netMinutes)}; GPS:{" "}
+                              {day.locationCaptured
+                                ? t("attendanceReport", "yes")
+                                : t("attendanceReport", "no")}
+                              {day.locationSampleCount > 0 ? ` (${day.locationSampleCount})` : ""}
+                              {day.locationSampleCount > 0 ? (
+                                <>
+                                  {" "}
+                                  <button
+                                    type="button"
+                                    disabled={saving}
+                                    onClick={() => void viewRoute(employee.displayName, day)}
+                                  >
+                                    {t("attendanceReport", "viewRoute")}
+                                  </button>
+                                </>
+                              ) : null}
+                              .{" "}
+                              {day.reviewStatus === "APPROVED"
+                                ? t("attendanceReport", "approved")
+                                : t("attendanceReport", "pending")}
+                              {day.status === "COMPLETED" ? (
+                                <span>
+                                  {" "}
+                                  <button
+                                    type="button"
+                                    disabled={saving || report.locked}
+                                    onClick={() => void correct(day)}
+                                  >
+                                    {t("attendanceReport", "correct")}
+                                  </button>
+                                  {day.reviewStatus !== "APPROVED" ? (
+                                    <>
+                                      {" "}
+                                      <button
+                                        type="button"
+                                        disabled={saving || report.locked}
+                                        onClick={() => void approve(day)}
+                                      >
+                                        {t("attendanceReport", "approve")}
+                                      </button>
+                                    </>
+                                  ) : null}
+                                </span>
+                              ) : null}
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    </td>
+                    <td>{employee.workDays}</td>
+                    <td>{hours(employee.grossMinutes)}</td>
+                    <td>{hours(employee.breakMinutes)}</td>
+                    <td>
+                      <strong>{hours(employee.netMinutes)}</strong>
+                    </td>
+                    <td>
+                      {routeDay ? (
+                        <button
+                          type="button"
+                          disabled={saving}
+                          onClick={() => void viewRoute(employee.displayName, routeDay)}
+                        >
+                          {t("attendanceReport", "viewLatestRoute")}
+                        </button>
+                      ) : (
+                        <span>{t("attendanceReport", "noRoute")}</span>
+                      )}
+                    </td>
+                  </tr>
                 );
               })}
             </tbody>

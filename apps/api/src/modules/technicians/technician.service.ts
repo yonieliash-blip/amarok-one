@@ -31,7 +31,9 @@ export async function listTechnicians(organizationId: string) {
     },
   });
 
-  const vanByUserId = new Map(vans.filter((van) => van.assignedUserId).map((van) => [van.assignedUserId!, van]));
+  const vanByUserId = new Map(
+    vans.filter((van) => van.assignedUserId).map((van) => [van.assignedUserId!, van]),
+  );
 
   return members.map((member) => ({
     id: member.id,

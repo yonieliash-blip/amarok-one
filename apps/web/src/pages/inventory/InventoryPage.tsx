@@ -10,7 +10,11 @@ import {
   getInventoryOverviewRequest,
 } from "../../lib/inventory-api";
 import { listPartsCatalogRequest } from "../../lib/parts-api";
-import type { InventoryLocationDetail, InventoryOverview, PartCatalogCategoryGroup } from "@amarok-one/types";
+import type {
+  InventoryLocationDetail,
+  InventoryOverview,
+  PartCatalogCategoryGroup,
+} from "@amarok-one/types";
 
 const EMPTY_OVERVIEW: InventoryOverview = { vans: [], warehouses: [] };
 
@@ -43,7 +47,9 @@ function InventorySection({
           <div key={location.id} className="inventory-location">
             <div className="inventory-location__header">
               <strong>{location.name}</strong>
-              {location.assignedUserName ? <span>משויך אל: {location.assignedUserName}</span> : null}
+              {location.assignedUserName ? (
+                <span>משויך אל: {location.assignedUserName}</span>
+              ) : null}
             </div>
             {location.items.length === 0 ? (
               <p className="customers-table__muted">אין מלאי במיקום זה.</p>
@@ -88,7 +94,9 @@ export function InventoryPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [locationName, setLocationName] = useState("");
-  const [locationType, setLocationType] = useState<"service_van" | "central_warehouse">("service_van");
+  const [locationType, setLocationType] = useState<"service_van" | "central_warehouse">(
+    "service_van",
+  );
   const [stockLocationId, setStockLocationId] = useState("");
   const [stockPartId, setStockPartId] = useState("");
   const [stockQuantity, setStockQuantity] = useState("1");
@@ -208,7 +216,10 @@ export function InventoryPage() {
         <div className="customer-form__grid">
           <label className="customer-form__field">
             <span>מיקום</span>
-            <select value={stockLocationId} onChange={(event) => setStockLocationId(event.target.value)}>
+            <select
+              value={stockLocationId}
+              onChange={(event) => setStockLocationId(event.target.value)}
+            >
               {allLocations.map((location) => (
                 <option key={location.id} value={location.id}>
                   {location.name}

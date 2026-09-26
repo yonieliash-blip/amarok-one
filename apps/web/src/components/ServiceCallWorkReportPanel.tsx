@@ -63,7 +63,9 @@ export function ServiceCallWorkReportPanel({
         setCustomerName(nextEditor.report?.customerName ?? "");
         setSignatureData(nextEditor.report?.customerSignatureData ?? null);
         setSelectedParts(
-          Object.fromEntries(nextEditor.report?.parts.map((part) => [part.inventoryItemId, part.quantity]) ?? []),
+          Object.fromEntries(
+            nextEditor.report?.parts.map((part) => [part.inventoryItemId, part.quantity]) ?? [],
+          ),
         );
       } catch (cause) {
         if (!cancelled) setError(getApiErrorMessage(cause, "לא ניתן לטעון את דוח העבודה."));
@@ -127,7 +129,10 @@ export function ServiceCallWorkReportPanel({
           <p className="customers-page__subtitle">עריכת חלקים וחתימת לקוח עבור הביקור שנבחר.</p>
         </div>
         {visits.length > 1 ? (
-          <select value={selectedVisitId} onChange={(event) => setSelectedVisitId(event.target.value)}>
+          <select
+            value={selectedVisitId}
+            onChange={(event) => setSelectedVisitId(event.target.value)}
+          >
             {visits.map((visit) => (
               <option key={visit.id} value={visit.id}>
                 ביקור #{visit.sequence}
@@ -170,7 +175,10 @@ export function ServiceCallWorkReportPanel({
 
           <div className="inventory-report-groups">
             {editor.partGroups.map((group) => (
-              <div key={`${group.category.id}:${group.subcategory.id}`} className="customer-detail-card">
+              <div
+                key={`${group.category.id}:${group.subcategory.id}`}
+                className="customer-detail-card"
+              >
                 <h3>
                   {group.category.name} / {group.subcategory.name}
                 </h3>

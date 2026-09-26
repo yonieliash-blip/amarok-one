@@ -14,7 +14,9 @@ export async function listPartsCatalogRequest(
   organizationId: string,
   accessToken: string,
 ): Promise<PartCatalogCategoryGroup[]> {
-  const response = await apiRequest<PartCatalogCategoryGroup[]>(base(organizationId), { accessToken });
+  const response = await apiRequest<PartCatalogCategoryGroup[]>(base(organizationId), {
+    accessToken,
+  });
   return response.data ?? [];
 }
 

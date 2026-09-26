@@ -12,11 +12,15 @@ import { prisma } from "../../lib/prisma.js";
 import { assertOrganizationExists } from "../organizations/organization.service.js";
 import type { AddInventoryItemInput, CreateInventoryLocationInput } from "./inventory.schemas.js";
 
-function toLocationTypeDto(value: "SERVICE_VAN" | "CENTRAL_WAREHOUSE"): "service_van" | "central_warehouse" {
+function toLocationTypeDto(
+  value: "SERVICE_VAN" | "CENTRAL_WAREHOUSE",
+): "service_van" | "central_warehouse" {
   return value === "SERVICE_VAN" ? "service_van" : "central_warehouse";
 }
 
-function fromLocationTypeDto(value: "service_van" | "central_warehouse"): "SERVICE_VAN" | "CENTRAL_WAREHOUSE" {
+function fromLocationTypeDto(
+  value: "service_van" | "central_warehouse",
+): "SERVICE_VAN" | "CENTRAL_WAREHOUSE" {
   return value === "service_van" ? "SERVICE_VAN" : "CENTRAL_WAREHOUSE";
 }
 

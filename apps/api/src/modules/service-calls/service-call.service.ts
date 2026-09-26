@@ -754,10 +754,14 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
       throw badRequest("לא משויכת לטכנאי ניידת שירות.");
     }
 
-    const aggregatedParts = [...input.parts.reduce((map, entry) => {
-      map.set(entry.inventoryItemId, (map.get(entry.inventoryItemId) ?? 0) + entry.quantity);
-      return map;
-    }, new Map<string, number>()).entries()].map(([inventoryItemId, quantity]) => ({
+    const aggregatedParts = [
+      ...input.parts
+        .reduce((map, entry) => {
+          map.set(entry.inventoryItemId, (map.get(entry.inventoryItemId) ?? 0) + entry.quantity);
+          return map;
+        }, new Map<string, number>())
+        .entries(),
+    ].map(([inventoryItemId, quantity]) => ({
       inventoryItemId,
       quantity,
     }));
@@ -788,29 +792,28 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
         });
       }
 
-      const report =
-        existing
-          ? await tx.serviceCallWorkReport.update({
-              where: { id: existing.id, organizationId },
-              data: {
-                workPerformed: input.workPerformed ?? null,
-                customerName: input.customerName ?? null,
-                customerSignatureData: input.customerSignatureData ?? null,
-                signedAt: input.customerSignatureData ? new Date() : null,
-              },
-            })
-          : await tx.serviceCallWorkReport.create({
-              data: {
-                organizationId,
-                serviceCallId,
-                visitId,
-                technicianId: visit.technicianId,
-                workPerformed: input.workPerformed ?? null,
-                customerName: input.customerName ?? null,
-                customerSignatureData: input.customerSignatureData ?? null,
-                signedAt: input.customerSignatureData ? new Date() : null,
-              },
-            });
+      const report = existing
+        ? await tx.serviceCallWorkReport.update({
+            where: { id: existing.id, organizationId },
+            data: {
+              workPerformed: input.workPerformed ?? null,
+              customerName: input.customerName ?? null,
+              customerSignatureData: input.customerSignatureData ?? null,
+              signedAt: input.customerSignatureData ? new Date() : null,
+            },
+          })
+        : await tx.serviceCallWorkReport.create({
+            data: {
+              organizationId,
+              serviceCallId,
+              visitId,
+              technicianId: visit.technicianId,
+              workPerformed: input.workPerformed ?? null,
+              customerName: input.customerName ?? null,
+              customerSignatureData: input.customerSignatureData ?? null,
+              signedAt: input.customerSignatureData ? new Date() : null,
+            },
+          });
 
       if (aggregatedParts.length > 0) {
         const inventoryRows = await tx.inventoryItem.findMany({

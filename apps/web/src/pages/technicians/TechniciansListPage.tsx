@@ -18,7 +18,9 @@ export function TechniciansListPage() {
   const { t } = useTranslation();
   const [technicians, setTechnicians] = useState<TechnicianSummary[]>([]);
   const [vanOptions, setVanOptions] = useState<Array<{ id: string; name: string }>>([]);
-  const [selectedVanByTechnician, setSelectedVanByTechnician] = useState<Record<string, string>>({});
+  const [selectedVanByTechnician, setSelectedVanByTechnician] = useState<Record<string, string>>(
+    {},
+  );
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

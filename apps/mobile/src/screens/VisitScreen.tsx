@@ -80,17 +80,19 @@ function parseSignatureData(value?: string | null): SignatureStroke[] {
   try {
     const parsed = JSON.parse(value) as unknown;
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(Array.isArray).map((stroke) =>
-      stroke
-        .filter(
-          (point): point is SignaturePoint =>
-            Boolean(point) &&
-            typeof point === "object" &&
-            typeof (point as SignaturePoint).x === "number" &&
-            typeof (point as SignaturePoint).y === "number",
-        )
-        .map((point) => ({ x: point.x, y: point.y })),
-    );
+    return parsed
+      .filter(Array.isArray)
+      .map((stroke) =>
+        stroke
+          .filter(
+            (point): point is SignaturePoint =>
+              Boolean(point) &&
+              typeof point === "object" &&
+              typeof (point as SignaturePoint).x === "number" &&
+              typeof (point as SignaturePoint).y === "number",
+          )
+          .map((point) => ({ x: point.x, y: point.y })),
+      );
   } catch {
     return [];
   }
@@ -246,9 +248,9 @@ export function VisitScreen({ route, navigation }: Props) {
   const [customerNameDraft, setCustomerNameDraft] = useState("");
   const [signatureData, setSignatureData] = useState<string | null>(null);
   const [selectedParts, setSelectedParts] = useState<Record<string, string>>({});
-  const [reportEditor, setReportEditor] = useState<Awaited<ReturnType<typeof getWorkReportEditor>> | null>(
-    null,
-  );
+  const [reportEditor, setReportEditor] = useState<Awaited<
+    ReturnType<typeof getWorkReportEditor>
+  > | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [reportBusy, setReportBusy] = useState(false);
@@ -396,17 +398,23 @@ export function VisitScreen({ route, navigation }: Props) {
     setReportBusy(true);
     setError(null);
     try {
-      const saved = await saveWorkReport(user.organization.id, serviceCallId, visit.id, accessToken, {
-        workPerformed: workPerformedDraft.trim() || null,
-        customerName: customerNameDraft.trim() || null,
-        customerSignatureData: signatureData,
-        parts: Object.entries(selectedParts)
-          .map(([inventoryItemId, quantity]) => ({
-            inventoryItemId,
-            quantity: Number(quantity),
-          }))
-          .filter((part) => part.quantity > 0),
-      });
+      const saved = await saveWorkReport(
+        user.organization.id,
+        serviceCallId,
+        visit.id,
+        accessToken,
+        {
+          workPerformed: workPerformedDraft.trim() || null,
+          customerName: customerNameDraft.trim() || null,
+          customerSignatureData: signatureData,
+          parts: Object.entries(selectedParts)
+            .map(([inventoryItemId, quantity]) => ({
+              inventoryItemId,
+              quantity: Number(quantity),
+            }))
+            .filter((part) => part.quantity > 0),
+        },
+      );
       setReportEditor((current) =>
         current
           ? {
@@ -518,7 +526,10 @@ export function VisitScreen({ route, navigation }: Props) {
                   <Text style={styles.cardLabel}>ביקור נוכחי</Text>
                   <Text style={styles.cardTitle}>{visitStatusLabel(visit.status)}</Text>
                 </View>
-                <StatusPill label={`ביקור ${visit.sequence}`} tone={visitStatusTone(visit.status)} />
+                <StatusPill
+                  label={`ביקור ${visit.sequence}`}
+                  tone={visitStatusTone(visit.status)}
+                />
               </View>
               <Text style={styles.cardHint}>
                 {canDrive
@@ -535,7 +546,12 @@ export function VisitScreen({ route, navigation }: Props) {
                   loading={busy}
                   onPress={() =>
                     void runWorkflow(() =>
-                      startVisitDriving(user!.organization.id, serviceCallId, visit.id, accessToken!),
+                      startVisitDriving(
+                        user!.organization.id,
+                        serviceCallId,
+                        visit.id,
+                        accessToken!,
+                      ),
                     )
                   }
                 />
@@ -546,7 +562,12 @@ export function VisitScreen({ route, navigation }: Props) {
                   loading={busy}
                   onPress={() =>
                     void runWorkflow(() =>
-                      startVisitWorking(user!.organization.id, serviceCallId, visit.id, accessToken!),
+                      startVisitWorking(
+                        user!.organization.id,
+                        serviceCallId,
+                        visit.id,
+                        accessToken!,
+                      ),
                     )
                   }
                 />
@@ -637,10 +658,7 @@ export function VisitScreen({ route, navigation }: Props) {
           </View>
 
           {reportEditor?.partGroups.map((group) => (
-            <View
-              key={`${group.category.id}:${group.subcategory.id}`}
-              style={styles.partsGroup}
-            >
+            <View key={`${group.category.id}:${group.subcategory.id}`} style={styles.partsGroup}>
               <Text style={styles.partsGroupTitle}>
                 {group.category.name} / {group.subcategory.name}
               </Text>
