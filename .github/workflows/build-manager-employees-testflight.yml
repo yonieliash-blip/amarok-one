@@ -1,0 +1,48 @@
+name: Build manager employees TestFlight
+
+on:
+  push:
+    branches:
+      - integration/restore-manager-mobile
+    paths:
+      - .github/workflows/build-manager-employees-testflight.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: manager-employees-testflight
+  cancel-in-progress: false
+
+jobs:
+  build-and-submit:
+    name: Build manager employees iOS
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      EXPO_PUBLIC_API_URL: https://staging-api.amarok-ce.com
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable pinned pnpm version
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.12.4 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify staging release configuration
+        run: pnpm --filter @amarok-one/mobile release:check:ios:staging
+
+      - name: Build and submit to TestFlight
+        working-directory: apps/mobile
+        run: pnpm dlx eas-cli@24 build --platform ios --profile production --non-interactive --auto-submit --wait
