@@ -258,6 +258,7 @@ export function VisitScreen({ route, navigation }: Props) {
       ? (selectTechnicianActiveVisit(lifecycle.visits, user.id) ??
         lifecycle.visits.find((v) => v.technicianId === user.id))
       : undefined;
+  const visitId = visit?.id;
 
   useEffect(() => {
     let cancelled = false;
@@ -309,7 +310,7 @@ export function VisitScreen({ route, navigation }: Props) {
     let cancelled = false;
 
     async function loadWorkReport(): Promise<void> {
-      if (!user || !accessToken || !visit) {
+      if (!user || !accessToken || !visitId) {
         setReportEditor(null);
         return;
       }
@@ -318,7 +319,7 @@ export function VisitScreen({ route, navigation }: Props) {
         const editor = await getWorkReportEditor(
           user.organization.id,
           serviceCallId,
-          visit.id,
+          visitId,
           accessToken,
         );
         if (cancelled) return;
@@ -342,7 +343,7 @@ export function VisitScreen({ route, navigation }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [user, accessToken, serviceCallId, visit?.id]);
+  }, [user, accessToken, serviceCallId, visitId]);
 
   useEffect(() => {
     navigation.setOptions({ title });
