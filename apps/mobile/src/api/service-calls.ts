@@ -13,7 +13,6 @@ function base(organizationId: string): string {
   return `/organizations/${organizationId}/service-calls`;
 }
 
-
 export interface CreateManagerServiceCallInput {
   title: string;
   description?: string;

@@ -181,7 +181,10 @@ export function ManagerHomeScreen({ navigation }: HomeProps) {
             label="קריאות שירות"
             onPress={() => navigation.navigate("ManagerServiceCalls")}
           />
-          <ManagerMenuButton label="לקוחות" onPress={() => navigation.navigate("ManagerCustomers")} />
+          <ManagerMenuButton
+            label="לקוחות"
+            onPress={() => navigation.navigate("ManagerCustomers")}
+          />
           <ManagerMenuButton label="ציוד" onPress={() => navigation.navigate("ManagerEquipment")} />
           <ManagerMenuButton label="חלפים" onPress={() => navigation.navigate("ManagerParts")} />
           <ManagerMenuButton
@@ -292,7 +295,11 @@ export function ManagerCustomersScreen(_: CustomersProps) {
           </View>
         }
         ListEmptyComponent={
-          loading ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.empty}>אין לקוחות.</Text>
+          loading ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : (
+            <Text style={styles.empty}>אין לקוחות.</Text>
+          )
         }
         renderItem={({ item }) => (
           <View style={styles.row}>
@@ -400,7 +407,11 @@ export function ManagerEquipmentScreen(_: EquipmentProps) {
               />
               <Field value={manufacturer} onChangeText={setManufacturer} placeholder="יצרן" />
               <Field value={model} onChangeText={setModel} placeholder="דגם" />
-              <Field value={serialNumber} onChangeText={setSerialNumber} placeholder="מספר סידורי" />
+              <Field
+                value={serialNumber}
+                onChangeText={setSerialNumber}
+                placeholder="מספר סידורי"
+              />
               <Text style={styles.fieldLabel}>לקוח</Text>
               <View style={styles.choices}>
                 {customers.map((customer) => (
@@ -430,7 +441,11 @@ export function ManagerEquipmentScreen(_: EquipmentProps) {
           </View>
         }
         ListEmptyComponent={
-          loading ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.empty}>אין ציוד.</Text>
+          loading ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : (
+            <Text style={styles.empty}>אין ציוד.</Text>
+          )
         }
         renderItem={({ item }) => (
           <View style={styles.row}>
@@ -486,7 +501,11 @@ export function ManagerServiceCallsScreen({ navigation }: CallsProps) {
           </View>
         }
         ListEmptyComponent={
-          loading ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.empty}>אין קריאות.</Text>
+          loading ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : (
+            <Text style={styles.empty}>אין קריאות.</Text>
+          )
         }
         renderItem={({ item }) => (
           <Pressable
@@ -638,7 +657,9 @@ export function ManagerServiceCallScreen({ route }: CallProps) {
   const { user, accessToken } = useAuth();
   const [call, setCall] = useState<ServiceCall | null>(null);
   const [lifecycle, setLifecycle] = useState<ServiceCallLifecycleView | null>(null);
-  const [technicians, setTechnicians] = useState<Awaited<ReturnType<typeof listAssignableTechnicians>>>([]);
+  const [technicians, setTechnicians] = useState<
+    Awaited<ReturnType<typeof listAssignableTechnicians>>
+  >([]);
   const [loading, setLoading] = useState(true);
   const [assigning, setAssigning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -836,7 +857,11 @@ export function ManagerPartsScreen({ navigation }: PartsProps) {
 
         <Card>
           <Text style={styles.fieldLabel}>קטגוריה חדשה</Text>
-          <Field value={categoryName} onChangeText={setCategoryName} placeholder="לדוגמה: חלקי מיזוג" />
+          <Field
+            value={categoryName}
+            onChangeText={setCategoryName}
+            placeholder="לדוגמה: חלקי מיזוג"
+          />
           <Button label="הוספת קטגוריה" loading={busy} onPress={() => void addCategory()} />
         </Card>
 
@@ -862,11 +887,7 @@ export function ManagerPartsScreen({ navigation }: PartsProps) {
             onChangeText={setSubcategoryName}
             placeholder="לדוגמה: מדחסים"
           />
-          <Button
-            label="הוספת תת-קטגוריה"
-            loading={busy}
-            onPress={() => void addSubcategory()}
-          />
+          <Button label="הוספת תת-קטגוריה" loading={busy} onPress={() => void addSubcategory()} />
         </Card>
 
         <Text style={styles.fieldLabel}>תת-קטגוריה</Text>
@@ -1078,7 +1099,9 @@ export function ManagerInventoryScreen({ route }: InventoryProps) {
                 <Text style={styles.rowMeta}>
                   {item.part.category?.name ?? ""} / {item.part.subcategory?.name ?? ""}
                 </Text>
-                {item.part.partNumber ? <Text style={styles.rowMeta}>{item.part.partNumber}</Text> : null}
+                {item.part.partNumber ? (
+                  <Text style={styles.rowMeta}>{item.part.partNumber}</Text>
+                ) : null}
               </View>
               <Text style={styles.quantity}>{item.quantity}</Text>
             </View>
@@ -1121,12 +1144,7 @@ export function ManagerTechniciansScreen(_: TechniciansProps) {
     if (!user || !accessToken) return;
     setBusyId(technicianId);
     try {
-      await assignManagerTechnicianVan(
-        user.organization.id,
-        technicianId,
-        accessToken,
-        vanId,
-      );
+      await assignManagerTechnicianVan(user.organization.id, technicianId, accessToken, vanId);
       await load();
     } catch (cause) {
       setError(message(cause, "לא ניתן לשייך ניידת"));
@@ -1254,5 +1272,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   flexOne: { flex: 1 },
-  quantity: { color: colors.primary, fontSize: 22, fontWeight: "800", minWidth: 44, textAlign: "center" },
+  quantity: {
+    color: colors.primary,
+    fontSize: 22,
+    fontWeight: "800",
+    minWidth: 44,
+    textAlign: "center",
+  },
 });

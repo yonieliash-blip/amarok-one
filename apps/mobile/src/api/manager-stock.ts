@@ -45,10 +45,11 @@ export async function createManagerPartSubcategory(
   accessToken: string,
   input: { categoryId: string; name: string },
 ): Promise<PartSubcategory> {
-  const response = await apiRequest<PartSubcategory>(
-    `${partsBase(organizationId)}/subcategories`,
-    { method: "POST", accessToken, body: JSON.stringify(input) },
-  );
+  const response = await apiRequest<PartSubcategory>(`${partsBase(organizationId)}/subcategories`, {
+    method: "POST",
+    accessToken,
+    body: JSON.stringify(input),
+  });
   return response.data;
 }
 
@@ -57,10 +58,11 @@ export async function createManagerCatalogPart(
   accessToken: string,
   input: { categoryId: string; subcategoryId: string; name: string; partNumber?: string },
 ): Promise<CatalogPart> {
-  const response = await apiRequest<CatalogPart>(
-    `${partsBase(organizationId)}/catalog-parts`,
-    { method: "POST", accessToken, body: JSON.stringify(input) },
-  );
+  const response = await apiRequest<CatalogPart>(`${partsBase(organizationId)}/catalog-parts`, {
+    method: "POST",
+    accessToken,
+    body: JSON.stringify(input),
+  });
   return response.data;
 }
 

@@ -1,9 +1,4 @@
-import type {
-  Customer,
-  CustomerContact,
-  Equipment,
-  EquipmentType,
-} from "@amarok-one/types";
+import type { Customer, CustomerContact, Equipment, EquipmentType } from "@amarok-one/types";
 import { apiRequest } from "./client";
 
 function orgBase(organizationId: string): string {
@@ -73,10 +68,9 @@ export async function listManagerEquipmentTypes(
   organizationId: string,
   accessToken: string,
 ): Promise<EquipmentType[]> {
-  const response = await apiRequest<EquipmentType[]>(
-    `${orgBase(organizationId)}/equipment/types`,
-    { accessToken },
-  );
+  const response = await apiRequest<EquipmentType[]>(`${orgBase(organizationId)}/equipment/types`, {
+    accessToken,
+  });
   return response.data ?? [];
 }
 
