@@ -7,6 +7,17 @@ import { LoginScreen } from "../screens/LoginScreen";
 import { HomeScreen } from "../screens/HomeScreen";
 import { CurrentTaskScreen } from "../screens/CurrentTaskScreen";
 import { VisitScreen } from "../screens/VisitScreen";
+import {
+  ManagerCustomersScreen,
+  ManagerEquipmentScreen,
+  ManagerHomeScreen,
+  ManagerInventoryScreen,
+  ManagerNewServiceCallScreen,
+  ManagerPartsScreen,
+  ManagerServiceCallScreen,
+  ManagerServiceCallsScreen,
+  ManagerTechniciansScreen,
+} from "../screens/ManagerScreens";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -24,7 +35,7 @@ const navTheme = {
 };
 
 export function RootNavigator() {
-  const { status } = useAuth();
+  const { status, isManager } = useAuth();
 
   if (status === "loading") {
     return (
@@ -46,15 +57,67 @@ export function RootNavigator() {
         }}
       >
         {status === "authenticated" ? (
-          <>
-            <Stack.Screen name="Home" component={HomeScreen} options={{ title: "יום עבודה" }} />
-            <Stack.Screen
-              name="CurrentTask"
-              component={CurrentTaskScreen}
-              options={{ title: "משימה נוכחית" }}
-            />
-            <Stack.Screen name="Visit" component={VisitScreen} options={{ title: "ביקור" }} />
-          </>
+          isManager ? (
+            <>
+              <Stack.Screen
+                name="ManagerHome"
+                component={ManagerHomeScreen}
+                options={{ title: "ניהול" }}
+              />
+              <Stack.Screen
+                name="ManagerServiceCalls"
+                component={ManagerServiceCallsScreen}
+                options={{ title: "קריאות שירות" }}
+              />
+              <Stack.Screen
+                name="ManagerNewServiceCall"
+                component={ManagerNewServiceCallScreen}
+                options={{ title: "פתח קריאה" }}
+              />
+              <Stack.Screen
+                name="ManagerServiceCall"
+                component={ManagerServiceCallScreen}
+                options={({ route }) => ({ title: route.params.title })}
+              />
+              <Stack.Screen
+                name="ManagerCustomers"
+                component={ManagerCustomersScreen}
+                options={{ title: "לקוחות" }}
+              />
+              <Stack.Screen
+                name="ManagerEquipment"
+                component={ManagerEquipmentScreen}
+                options={{ title: "ציוד" }}
+              />
+              <Stack.Screen
+                name="ManagerParts"
+                component={ManagerPartsScreen}
+                options={{ title: "חלפים" }}
+              />
+              <Stack.Screen
+                name="ManagerInventory"
+                component={ManagerInventoryScreen}
+                options={({ route }) => ({
+                  title: route.params.kind === "service_van" ? "חלפים בניידות" : "מחסן חלפים",
+                })}
+              />
+              <Stack.Screen
+                name="ManagerTechnicians"
+                component={ManagerTechniciansScreen}
+                options={{ title: "עובדים וניידות" }}
+              />
+            </>
+          ) : (
+            <>
+              <Stack.Screen name="Home" component={HomeScreen} options={{ title: "יום עבודה" }} />
+              <Stack.Screen
+                name="CurrentTask"
+                component={CurrentTaskScreen}
+                options={{ title: "משימה נוכחית" }}
+              />
+              <Stack.Screen name="Visit" component={VisitScreen} options={{ title: "ביקור" }} />
+            </>
+          )
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
         )}
