@@ -1386,9 +1386,7 @@ export function ManagerTechniciansScreen(_: TechniciansProps) {
     <Page>
       <ScrollView contentContainerStyle={styles.content}>
         <ScreenTitle>עובדים וניידות</ScreenTitle>
-        <ScreenSubtitle>
-          יצירת משתמשים, טכנאים, עובדי ניהול משרד ושיוך ניידות שירות.
-        </ScreenSubtitle>
+        <ScreenSubtitle>יצירת משתמשים, טכנאים, עובדי ניהול משרד ושיוך ניידות שירות.</ScreenSubtitle>
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <Card>
@@ -1436,11 +1434,7 @@ export function ManagerTechniciansScreen(_: TechniciansProps) {
         <Card>
           <Text style={styles.sectionTitle}>ניידת שירות חדשה</Text>
           <Field value={newVanName} onChangeText={setNewVanName} placeholder="לדוגמה: ניידת 1" />
-          <Button
-            label="הוספת ניידת"
-            loading={creatingVan}
-            onPress={() => void createVan()}
-          />
+          <Button label="הוספת ניידת" loading={creatingVan} onPress={() => void createVan()} />
         </Card>
 
         <Text style={styles.sectionTitle}>ניידות קיימות</Text>
