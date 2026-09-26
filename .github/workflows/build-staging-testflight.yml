@@ -1,4 +1,4 @@
-# Triggered for iOS build number 3; subsequent runs are manual.
+# Retriggered after PR #24 staging deployment on 2026-09-26.
 name: Build staging TestFlight
 
 on:
