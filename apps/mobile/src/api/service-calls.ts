@@ -3,6 +3,8 @@ import type {
   ServiceCallLifecycleState,
   ServiceCallLifecycleView,
   TechnicianCurrentTask,
+  ServiceCallWorkReport,
+  WorkReportEditorData,
 } from "@amarok-one/types";
 import { apiRequest } from "./client";
 
@@ -117,6 +119,42 @@ export async function finishVisit(
       body: JSON.stringify({
         nextLifecycleState: nextLifecycleForFinishOutcome(outcome),
       }),
+    },
+  );
+  return response.data;
+}
+
+export async function getWorkReportEditor(
+  organizationId: string,
+  serviceCallId: string,
+  visitId: string,
+  accessToken: string,
+): Promise<WorkReportEditorData> {
+  const response = await apiRequest<WorkReportEditorData>(
+    `${base(organizationId)}/${serviceCallId}/visits/${visitId}/work-report`,
+    { accessToken },
+  );
+  return response.data;
+}
+
+export async function saveWorkReport(
+  organizationId: string,
+  serviceCallId: string,
+  visitId: string,
+  accessToken: string,
+  payload: {
+    workPerformed?: string | null;
+    customerName?: string | null;
+    customerSignatureData?: string | null;
+    parts: Array<{ inventoryItemId: string; quantity: number }>;
+  },
+): Promise<ServiceCallWorkReport> {
+  const response = await apiRequest<ServiceCallWorkReport>(
+    `${base(organizationId)}/${serviceCallId}/visits/${visitId}/work-report`,
+    {
+      method: "PUT",
+      accessToken,
+      body: JSON.stringify(payload),
     },
   );
   return response.data;

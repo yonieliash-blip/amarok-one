@@ -21,6 +21,7 @@ import {
   assignTechnicianSchema,
   closeServiceCallSchema,
   finishVisitSchema,
+  saveWorkReportSchema,
   transitionLifecycleSchema,
   visitIdParamSchema,
 } from "./service-call-lifecycle.schemas.js";
@@ -301,6 +302,54 @@ export function createServiceCallRoutes(serviceCallService: ServiceCallService):
           actorId(context),
         );
         return context.json(createApiResponse(view));
+      },
+    )
+    .get(
+      "/:serviceCallId/visits/:visitId/work-report",
+      requireAnyPermission("service_calls:read", "my_service_calls:read"),
+      zValidator("param", visitIdParamSchema),
+      async (context) => {
+        const { organizationId, serviceCallId, visitId } = context.req.valid("param");
+        if (assignedOnly(context)) {
+          await serviceCallService.assertAssignedServiceCallAccess(
+            organizationId,
+            serviceCallId,
+            actorId(context),
+          );
+        }
+        const report = await serviceCallService.getWorkReportEditor(
+          organizationId,
+          serviceCallId,
+          visitId,
+        );
+        return context.json(createApiResponse(report));
+      },
+    )
+    .put(
+      "/:serviceCallId/visits/:visitId/work-report",
+      requireAnyPermission("service_calls:write", "my_service_calls:write"),
+      zValidator("param", visitIdParamSchema),
+      zValidator("json", saveWorkReportSchema),
+      async (context) => {
+        const { organizationId, serviceCallId, visitId } = context.req.valid("param");
+        if (assignedOnly(context)) {
+          await serviceCallService.assertAssignedServiceCallAccess(
+            organizationId,
+            serviceCallId,
+            actorId(context),
+          );
+        } else {
+          requireControlCenterWrite(context);
+        }
+        const body = context.req.valid("json");
+        const report = await serviceCallService.saveWorkReport(
+          organizationId,
+          serviceCallId,
+          visitId,
+          body,
+          actorId(context),
+        );
+        return context.json(createApiResponse(report));
       },
     );
 }

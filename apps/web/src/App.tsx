@@ -22,6 +22,8 @@ import { ServiceCallsListPage } from "./pages/service-calls/ServiceCallsListPage
 import { EquipmentDetailPage } from "./pages/equipment/EquipmentDetailPage";
 import { EquipmentFormPage } from "./pages/equipment/EquipmentFormPage";
 import { EquipmentListPage } from "./pages/equipment/EquipmentListPage";
+import { InventoryPage } from "./pages/inventory/InventoryPage";
+import { PartsCatalogPage } from "./pages/parts/PartsCatalogPage";
 import { CustomerDetailPage } from "./pages/customers/CustomerDetailPage";
 import { CustomerFormPage } from "./pages/customers/CustomerFormPage";
 import { CustomersListPage } from "./pages/customers/CustomersListPage";
@@ -73,12 +75,12 @@ export function App() {
                 />
                 <Route path="technicians" element={<TechniciansListPage />} />
                 <Route path="calendar" element={<ModulePlaceholderPage titleKey="calendar" />} />
-                <Route path="inventory" element={<ModulePlaceholderPage titleKey="inventory" />} />
+                <Route path="inventory" element={<InventoryPage />} />
                 <Route
                   path="purchase-orders"
                   element={<ModulePlaceholderPage titleKey="purchaseOrders" />}
                 />
-                <Route path="parts" element={<ModulePlaceholderPage titleKey="parts" />} />
+                <Route path="parts" element={<PartsCatalogPage />} />
                 <Route
                   path="accounting"
                   element={<ModulePlaceholderPage titleKey="accounting" />}

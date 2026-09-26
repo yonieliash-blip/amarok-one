@@ -1,10 +1,14 @@
 import type {
   ApiMeta,
+  InventoryLocationSummary,
+  InventoryItem,
   OrganizationMember,
+  ServiceCallWorkReport,
   ServiceCall,
   ServiceCallPriority,
   ServiceCallStatus,
   TechnicianCurrentTask,
+  WorkReportEditorData,
 } from "@amarok-one/types";
 import { Prisma } from "@prisma/client";
 import { writeAuditLog } from "../../lib/audit.js";
@@ -38,6 +42,7 @@ import {
   toVisitDto,
   type ServiceCallLifecycleServiceDeps,
 } from "./service-call-lifecycle.service.js";
+import type { SaveWorkReportInput } from "./service-call-lifecycle.schemas.js";
 
 export interface ServiceCallServiceDeps extends ServiceCallLifecycleServiceDeps {
   workflow: ServiceCallWorkflowPort;
@@ -51,6 +56,154 @@ const currentTaskStatusPriority: Record<string, number> = {
   ASSIGNED: 2,
   PLANNED: 1,
 };
+
+function toInventoryLocationDto(row: {
+  id: string;
+  organizationId: string;
+  name: string;
+  type: "SERVICE_VAN" | "CENTRAL_WAREHOUSE";
+  assignedUserId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  assignedUser?: { displayName: string } | null;
+}): InventoryLocationSummary {
+  return {
+    id: row.id,
+    organizationId: row.organizationId,
+    name: row.name,
+    type: row.type === "SERVICE_VAN" ? "service_van" : "central_warehouse",
+    assignedUserId: row.assignedUserId ?? undefined,
+    assignedUserName: row.assignedUser?.displayName ?? undefined,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+function toInventoryItemDto(row: {
+  id: string;
+  organizationId: string;
+  locationId: string;
+  quantity: number;
+  createdAt: Date;
+  updatedAt: Date;
+  part: {
+    id: string;
+    organizationId: string;
+    categoryId: string;
+    subcategoryId: string;
+    name: string;
+    partNumber: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    category: { id: string; name: string };
+    subcategory: { id: string; name: string };
+  };
+  location?: {
+    id: string;
+    organizationId: string;
+    name: string;
+    type: "SERVICE_VAN" | "CENTRAL_WAREHOUSE";
+    assignedUserId: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    assignedUser?: { displayName: string } | null;
+  };
+}): InventoryItem {
+  return {
+    id: row.id,
+    organizationId: row.organizationId,
+    locationId: row.locationId,
+    quantity: row.quantity,
+    partId: row.part.id,
+    part: {
+      id: row.part.id,
+      organizationId: row.part.organizationId,
+      categoryId: row.part.categoryId,
+      subcategoryId: row.part.subcategoryId,
+      name: row.part.name,
+      partNumber: row.part.partNumber ?? undefined,
+      category: row.part.category,
+      subcategory: row.part.subcategory,
+      createdAt: row.part.createdAt.toISOString(),
+      updatedAt: row.part.updatedAt.toISOString(),
+    },
+    location: row.location ? toInventoryLocationDto(row.location) : undefined,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+function toWorkReportDto(row: {
+  id: string;
+  organizationId: string;
+  serviceCallId: string;
+  visitId: string;
+  technicianId: string;
+  workPerformed: string | null;
+  customerName: string | null;
+  customerSignatureData: string | null;
+  signedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  parts: Array<{
+    id: string;
+    inventoryItemId: string;
+    catalogPartId: string;
+    quantity: number;
+    inventoryItem: {
+      id: string;
+      organizationId: string;
+      locationId: string;
+      quantity: number;
+      createdAt: Date;
+      updatedAt: Date;
+      part: {
+        id: string;
+        organizationId: string;
+        categoryId: string;
+        subcategoryId: string;
+        name: string;
+        partNumber: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        category: { id: string; name: string };
+        subcategory: { id: string; name: string };
+      };
+      location: {
+        id: string;
+        organizationId: string;
+        name: string;
+        type: "SERVICE_VAN" | "CENTRAL_WAREHOUSE";
+        assignedUserId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        assignedUser?: { displayName: string } | null;
+      };
+    };
+  }>;
+}): ServiceCallWorkReport {
+  return {
+    id: row.id,
+    organizationId: row.organizationId,
+    serviceCallId: row.serviceCallId,
+    visitId: row.visitId,
+    technicianId: row.technicianId,
+    workPerformed: row.workPerformed ?? undefined,
+    customerName: row.customerName ?? undefined,
+    customerSignatureData: row.customerSignatureData ?? undefined,
+    signedAt: row.signedAt?.toISOString(),
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    parts: row.parts.map((part) => ({
+      id: part.id,
+      inventoryItemId: part.inventoryItemId,
+      catalogPartId: part.catalogPartId,
+      quantity: part.quantity,
+      inventoryItem: toInventoryItemDto(part.inventoryItem),
+      catalogPart: toInventoryItemDto(part.inventoryItem).part,
+    })),
+  };
+}
 
 export function createServiceCallService(deps: ServiceCallServiceDeps) {
   const { workflow } = deps;
@@ -427,6 +580,332 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
     });
   }
 
+  async function getWorkReportEditor(
+    organizationId: string,
+    serviceCallId: string,
+    visitId: string,
+  ): Promise<WorkReportEditorData> {
+    const visit = await prisma.serviceCallVisit.findFirst({
+      where: {
+        id: visitId,
+        serviceCallId,
+        organizationId,
+        deletedAt: null,
+        serviceCall: { deletedAt: null },
+      },
+      select: {
+        id: true,
+        technicianId: true,
+      },
+    });
+
+    if (!visit) {
+      throw notFound("ServiceCallVisit", visitId);
+    }
+
+    const assignedVan = await prisma.inventoryLocation.findFirst({
+      where: {
+        organizationId,
+        type: "SERVICE_VAN",
+        assignedUserId: visit.technicianId,
+        deletedAt: null,
+      },
+      include: {
+        assignedUser: { select: { displayName: true } },
+      },
+    });
+
+    if (!assignedVan) {
+      throw badRequest("לא משויכת לטכנאי ניידת שירות.");
+    }
+
+    const report = await prisma.serviceCallWorkReport.findFirst({
+      where: {
+        organizationId,
+        serviceCallId,
+        visitId,
+        deletedAt: null,
+      },
+      include: {
+        parts: {
+          include: {
+            inventoryItem: {
+              include: {
+                location: {
+                  include: {
+                    assignedUser: { select: { displayName: true } },
+                  },
+                },
+                part: {
+                  include: {
+                    category: { select: { id: true, name: true } },
+                    subcategory: { select: { id: true, name: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const inventoryItems = await prisma.inventoryItem.findMany({
+      where: {
+        organizationId,
+        locationId: assignedVan.id,
+        deletedAt: null,
+      },
+      include: {
+        location: {
+          include: {
+            assignedUser: { select: { displayName: true } },
+          },
+        },
+        part: {
+          include: {
+            category: { select: { id: true, name: true } },
+            subcategory: { select: { id: true, name: true } },
+          },
+        },
+      },
+      orderBy: [
+        { part: { category: { name: "asc" } } },
+        { part: { subcategory: { name: "asc" } } },
+        { part: { name: "asc" } },
+      ],
+    });
+
+    const visibleItems = new Map<string, (typeof inventoryItems)[number]>();
+    for (const item of inventoryItems) {
+      if (item.quantity > 0) {
+        visibleItems.set(item.id, item);
+      }
+    }
+    for (const part of report?.parts ?? []) {
+      visibleItems.set(part.inventoryItem.id, part.inventoryItem);
+    }
+
+    const groups = new Map<string, WorkReportEditorData["partGroups"][number]>();
+    for (const item of visibleItems.values()) {
+      const key = `${item.part.categoryId}:${item.part.subcategoryId}`;
+      const existingGroup = groups.get(key);
+      const option = {
+        inventoryItemId: item.id,
+        availableQuantity: item.quantity,
+        inventoryItem: toInventoryItemDto(item),
+      };
+      if (existingGroup) {
+        existingGroup.items.push(option);
+        continue;
+      }
+
+      groups.set(key, {
+        category: item.part.category,
+        subcategory: item.part.subcategory,
+        items: [option],
+      });
+    }
+
+    return {
+      assignedVan: toInventoryLocationDto(assignedVan),
+      report: report ? toWorkReportDto(report) : undefined,
+      partGroups: [...groups.values()],
+    };
+  }
+
+  async function saveWorkReport(
+    organizationId: string,
+    serviceCallId: string,
+    visitId: string,
+    input: SaveWorkReportInput,
+    actorId?: string,
+  ): Promise<ServiceCallWorkReport> {
+    const visit = await prisma.serviceCallVisit.findFirst({
+      where: {
+        id: visitId,
+        serviceCallId,
+        organizationId,
+        deletedAt: null,
+        serviceCall: { deletedAt: null },
+      },
+      select: {
+        id: true,
+        technicianId: true,
+      },
+    });
+
+    if (!visit) {
+      throw notFound("ServiceCallVisit", visitId);
+    }
+
+    const assignedVan = await prisma.inventoryLocation.findFirst({
+      where: {
+        organizationId,
+        type: "SERVICE_VAN",
+        assignedUserId: visit.technicianId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!assignedVan) {
+      throw badRequest("לא משויכת לטכנאי ניידת שירות.");
+    }
+
+    const aggregatedParts = [...input.parts.reduce((map, entry) => {
+      map.set(entry.inventoryItemId, (map.get(entry.inventoryItemId) ?? 0) + entry.quantity);
+      return map;
+    }, new Map<string, number>()).entries()].map(([inventoryItemId, quantity]) => ({
+      inventoryItemId,
+      quantity,
+    }));
+
+    const saved = await prisma.$transaction(async (tx) => {
+      const existing = await tx.serviceCallWorkReport.findFirst({
+        where: {
+          organizationId,
+          serviceCallId,
+          visitId,
+          deletedAt: null,
+        },
+        include: {
+          parts: true,
+        },
+      });
+
+      if (existing) {
+        for (const previousPart of existing.parts) {
+          await tx.inventoryItem.update({
+            where: { id: previousPart.inventoryItemId, organizationId },
+            data: { quantity: { increment: previousPart.quantity } },
+          });
+        }
+
+        await tx.serviceCallWorkReportPart.deleteMany({
+          where: { workReportId: existing.id },
+        });
+      }
+
+      const report =
+        existing
+          ? await tx.serviceCallWorkReport.update({
+              where: { id: existing.id, organizationId },
+              data: {
+                workPerformed: input.workPerformed ?? null,
+                customerName: input.customerName ?? null,
+                customerSignatureData: input.customerSignatureData ?? null,
+                signedAt: input.customerSignatureData ? new Date() : null,
+              },
+            })
+          : await tx.serviceCallWorkReport.create({
+              data: {
+                organizationId,
+                serviceCallId,
+                visitId,
+                technicianId: visit.technicianId,
+                workPerformed: input.workPerformed ?? null,
+                customerName: input.customerName ?? null,
+                customerSignatureData: input.customerSignatureData ?? null,
+                signedAt: input.customerSignatureData ? new Date() : null,
+              },
+            });
+
+      if (aggregatedParts.length > 0) {
+        const inventoryRows = await tx.inventoryItem.findMany({
+          where: {
+            organizationId,
+            deletedAt: null,
+            locationId: assignedVan.id,
+            id: { in: aggregatedParts.map((part) => part.inventoryItemId) },
+          },
+          select: {
+            id: true,
+            partId: true,
+          },
+        });
+
+        if (inventoryRows.length !== aggregatedParts.length) {
+          throw badRequest("ניתן לבחור חלקים רק מהמלאי של הניידת המשויכת.");
+        }
+
+        const partIdByInventoryId = new Map(inventoryRows.map((row) => [row.id, row.partId]));
+
+        for (const part of aggregatedParts) {
+          const updated = await tx.inventoryItem.updateMany({
+            where: {
+              id: part.inventoryItemId,
+              organizationId,
+              locationId: assignedVan.id,
+              deletedAt: null,
+              quantity: { gte: part.quantity },
+            },
+            data: {
+              quantity: { decrement: part.quantity },
+            },
+          });
+
+          if (updated.count !== 1) {
+            throw badRequest("אין מספיק מלאי בניידת עבור אחד או יותר מהחלקים שנבחרו.");
+          }
+
+          await tx.serviceCallWorkReportPart.create({
+            data: {
+              workReportId: report.id,
+              inventoryItemId: part.inventoryItemId,
+              catalogPartId: partIdByInventoryId.get(part.inventoryItemId)!,
+              quantity: part.quantity,
+            },
+          });
+        }
+      }
+
+      return tx.serviceCallWorkReport.findFirstOrThrow({
+        where: {
+          id: report.id,
+          organizationId,
+        },
+        include: {
+          parts: {
+            include: {
+              inventoryItem: {
+                include: {
+                  location: {
+                    include: {
+                      assignedUser: { select: { displayName: true } },
+                    },
+                  },
+                  part: {
+                    include: {
+                      category: { select: { id: true, name: true } },
+                      subcategory: { select: { id: true, name: true } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+    });
+
+    await writeAuditLog({
+      organizationId,
+      actorId,
+      action: "service_call.work_report.saved",
+      entityType: "ServiceCallWorkReport",
+      entityId: saved.id,
+      metadata: {
+        serviceCallId,
+        visitId,
+        partCount: aggregatedParts.length,
+      },
+    });
+
+    return toWorkReportDto(saved);
+  }
+
   return {
     assertAssignedServiceCallAccess,
     listAssignableUsers,
@@ -444,6 +923,8 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
     startVisitDriving: lifecycle.startVisitDriving,
     startVisitWorking: lifecycle.startVisitWorking,
     finishVisit: lifecycle.finishVisit,
+    getWorkReportEditor,
+    saveWorkReport,
   };
 }
 
