@@ -10,7 +10,7 @@ import {
   type ImageStyle,
   type StyleProp,
 } from "react-native";
-import { colors, radius, spacing } from "../theme";
+import { colors, radius, spacing, typography } from "../theme";
 import { brand } from "../config/brand";
 
 interface ButtonProps extends PressableProps {
@@ -45,16 +45,23 @@ export function Button({
       {...props}
     >
       {loading ? (
-        <ActivityIndicator color={variant === "primary" ? colors.primaryOn : colors.text} />
+        <ActivityIndicator color={variant === "danger" ? colors.error : colors.primary} />
       ) : (
-        <Text
-          style={[
-            styles.label,
-            variant === "primary" ? styles.labelPrimary : styles.labelSecondary,
-          ]}
-        >
-          {label}
-        </Text>
+        <View style={styles.buttonContent}>
+          <Text
+            style={[styles.label, variant === "danger" ? styles.labelDanger : styles.labelPrimary]}
+          >
+            {label}
+          </Text>
+          <Text
+            style={[
+              styles.buttonArrow,
+              variant === "danger" ? styles.labelDanger : styles.labelPrimary,
+            ]}
+          >
+            ‹
+          </Text>
+        </View>
       )}
     </Pressable>
   );
@@ -74,6 +81,12 @@ export function Eyebrow(props: TextProps) {
 
 export function BrandMark({ style }: { style?: StyleProp<ImageStyle> }) {
   return <Image source={brand.logo} style={[styles.brandMark, style]} resizeMode="contain" />;
+}
+
+export function BrandWordmark({ style }: { style?: StyleProp<ImageStyle> }) {
+  return (
+    <Image source={brand.wordmark} style={[styles.brandWordmark, style]} resizeMode="contain" />
+  );
 }
 
 export function Card({
@@ -117,22 +130,24 @@ export function StatusPill({
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: 52,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
+    minHeight: 60,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    paddingHorizontal: spacing.lg,
     alignItems: "center",
     justifyContent: "center",
   },
   primary: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.actionSurface,
+    borderColor: colors.primary,
   },
   secondary: {
-    backgroundColor: colors.bgElevated,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.actionSurface,
+    borderColor: colors.primary,
   },
   danger: {
-    backgroundColor: colors.error,
+    backgroundColor: colors.actionSurface,
+    borderColor: colors.error,
   },
   pressed: {
     opacity: 0.82,
@@ -142,26 +157,45 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   label: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 15,
+    lineHeight: 24,
+    fontFamily: typography.bold,
+    textAlign: "center",
+  },
+  buttonContent: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.sm,
+    minHeight: 28,
+  },
+  buttonArrow: {
+    fontFamily: typography.regular,
+    fontSize: 24,
+    lineHeight: 28,
   },
   labelPrimary: {
-    color: colors.primaryOn,
+    color: colors.primary,
   },
-  labelSecondary: {
-    color: colors.text,
+  labelDanger: {
+    color: colors.error,
   },
   title: {
     fontSize: 28,
-    fontWeight: "800",
+    fontFamily: typography.bold,
     letterSpacing: -0.5,
     color: colors.text,
     marginBottom: spacing.sm,
+    textAlign: "right",
+    writingDirection: "rtl",
   },
   subtitle: {
     fontSize: 15,
+    fontFamily: typography.regular,
     color: colors.textMuted,
     lineHeight: 22,
+    textAlign: "right",
+    writingDirection: "rtl",
   },
   card: {
     backgroundColor: colors.bgPanel,
@@ -178,14 +212,20 @@ const styles = StyleSheet.create({
   eyebrow: {
     color: colors.primary,
     fontSize: 11,
-    fontWeight: "800",
+    fontFamily: typography.bold,
     letterSpacing: 1.6,
     textTransform: "uppercase",
+    textAlign: "right",
+    writingDirection: "rtl",
   },
   brandMark: {
     width: 82,
     height: 82,
     borderRadius: radius.lg,
+  },
+  brandWordmark: {
+    width: 172,
+    height: 48,
   },
   pill: {
     minHeight: 30,
@@ -206,5 +246,11 @@ const styles = StyleSheet.create({
   pillDotSuccess: { backgroundColor: colors.success },
   pillDotWarning: { backgroundColor: colors.warning },
   pillDotDanger: { backgroundColor: colors.error },
-  pillLabel: { color: colors.text, fontSize: 12, fontWeight: "700" },
+  pillLabel: {
+    color: colors.text,
+    fontFamily: typography.bold,
+    fontSize: 12,
+    textAlign: "right",
+    writingDirection: "rtl",
+  },
 });

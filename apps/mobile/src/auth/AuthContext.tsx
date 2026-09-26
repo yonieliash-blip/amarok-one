@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import type { AuthSession, AuthUser } from "@amarok-one/types";
-import { isAssignedServiceCallsOnly } from "@amarok-one/permissions";
+import { isAssignedServiceCallsOnly, PERMISSIONS } from "@amarok-one/permissions";
 import { loginRequest, logoutRequest, refreshSessionRequest } from "../api/auth";
 import { clearSessionStorage, persistSession, readRefreshToken } from "./session-storage";
 
@@ -21,12 +21,17 @@ interface AuthContextValue {
   login: (email: string, password: string, organizationSlug?: string) => Promise<void>;
   logout: () => Promise<void>;
   isTechnician: boolean;
+  isManager: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 function permissionSlugs(user: AuthUser | null): string[] {
   return user?.permissions.map((permission) => permission.slug) ?? [];
+}
+
+function canUseManagerMobile(user: AuthUser | null): boolean {
+  return permissionSlugs(user).includes(PERMISSIONS.SERVICE_CALLS_READ);
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -71,8 +76,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string, organizationSlug?: string) => {
     const session = await loginRequest({ email, password, organizationSlug });
-    if (!isAssignedServiceCallsOnly(permissionSlugs(session.user))) {
-      throw new Error("האפליקציה מיועדת לטכנאי שטח בלבד.");
+    if (
+      !isAssignedServiceCallsOnly(permissionSlugs(session.user)) &&
+      !canUseManagerMobile(session.user)
+    ) {
+      throw new Error("למשתמש זה אין הרשאה לאפליקציית השטח או הניהול.");
     }
     await persistSession(session);
     setUser(session.user);
@@ -104,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       isTechnician: isAssignedServiceCallsOnly(permissionSlugs(user)),
+      isManager: canUseManagerMobile(user),
     }),
     [status, user, accessToken, login, logout],
   );

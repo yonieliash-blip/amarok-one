@@ -12,7 +12,7 @@ export const createCustomerSchema = z.object({
   name: z.string().trim().min(2).max(256),
   legalName: z.string().trim().min(2).max(256).optional(),
   registrationNumber: z.string().trim().min(2).max(64).optional(),
-  customerNumber: codeSchema,
+  customerNumber: codeSchema.optional(),
   email: z.string().trim().email().max(256).optional(),
   phone: z.string().trim().min(3).max(32).optional(),
   address: z.string().trim().min(2).max(256).optional(),
