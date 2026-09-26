@@ -1,7 +1,8 @@
-import { NavigationContainer, DarkTheme } from "@react-navigation/native";
+import { DarkTheme, NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuth } from "../auth/AuthContext";
-import { colors } from "../theme";
+import { colors, typography } from "../theme";
+import { BrandWordmark } from "../components/ui";
 import type { RootStackParamList } from "./types";
 import { LoginScreen } from "../screens/LoginScreen";
 import { HomeScreen } from "../screens/HomeScreen";
@@ -18,7 +19,7 @@ import {
   ManagerServiceCallsScreen,
   ManagerTechniciansScreen,
 } from "../screens/ManagerScreens";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -49,11 +50,25 @@ export function RootNavigator() {
     <NavigationContainer theme={navTheme}>
       <Stack.Navigator
         screenOptions={{
-          headerStyle: { backgroundColor: colors.bg },
-          headerShadowVisible: false,
-          headerTintColor: colors.text,
-          headerTitleStyle: { fontWeight: "800" },
-          contentStyle: { backgroundColor: colors.bg },
+          header: ({ options, back, navigation }) => (
+            <View style={styles.internalHeader}>
+              <View style={styles.internalHeaderTop}>
+                {back ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="חזרה"
+                    onPress={() => navigation.goBack()}
+                    style={styles.backButton}
+                  >
+                    <Text style={styles.backButtonText}>‹</Text>
+                  </Pressable>
+                ) : null}
+                <BrandWordmark style={styles.headerWordmark} />
+              </View>
+              <Text style={styles.internalHeaderTitle}>{options.title}</Text>
+            </View>
+          ),
+          contentStyle: { backgroundColor: "transparent" },
         }}
       >
         {status === "authenticated" ? (
@@ -62,7 +77,7 @@ export function RootNavigator() {
               <Stack.Screen
                 name="ManagerHome"
                 component={ManagerHomeScreen}
-                options={{ title: "ניהול" }}
+                options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="ManagerServiceCalls"
@@ -72,7 +87,7 @@ export function RootNavigator() {
               <Stack.Screen
                 name="ManagerNewServiceCall"
                 component={ManagerNewServiceCallScreen}
-                options={{ title: "פתח קריאה" }}
+                options={{ title: "פתח קריאת שירות" }}
               />
               <Stack.Screen
                 name="ManagerServiceCall"
@@ -131,6 +146,47 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.bg,
+    backgroundColor: "transparent",
+  },
+  internalHeader: {
+    height: 188,
+    paddingTop: 72,
+    paddingHorizontal: 18,
+    justifyContent: "center",
+    gap: 6,
+  },
+  internalHeaderTop: {
+    height: 62,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerWordmark: {
+    width: 240,
+    height: 58,
+  },
+  internalHeaderTitle: {
+    color: colors.text,
+    fontFamily: typography.bold,
+    fontSize: 23,
+    textAlign: "center",
+    writingDirection: "rtl",
+  },
+  backButton: {
+    position: "absolute",
+    left: 0,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(10, 10, 12, 0.82)",
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  backButtonText: {
+    color: colors.text,
+    fontSize: 40,
+    fontFamily: typography.regular,
+    lineHeight: 42,
   },
 });
