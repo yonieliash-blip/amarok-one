@@ -133,6 +133,8 @@ export async function updateManagerEquipment(
     manufacturer: string | null;
     model: string | null;
     serialNumber: string | null;
+    equipmentTypeId: string;
+    customerId: string | null;
   }>,
 ): Promise<Equipment> {
   const response = await apiRequest<Equipment>(
