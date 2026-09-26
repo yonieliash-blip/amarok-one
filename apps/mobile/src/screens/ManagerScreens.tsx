@@ -30,6 +30,8 @@ import {
   listManagerCustomers,
   listManagerEquipment,
   listManagerEquipmentTypes,
+  updateManagerCustomer,
+  updateManagerEquipment,
 } from "../api/manager";
 import {
   addManagerInventoryItem,
@@ -51,6 +53,12 @@ import {
   listAssignableTechnicians,
   listMyServiceCalls,
 } from "../api/service-calls";
+import {
+  createManagerMember,
+  listManagerMembers,
+  type ManagerEmployeeRoleSlug,
+  type ManagerMemberSummary,
+} from "../api/manager-users";
 import { isApiRequestError } from "../api/client";
 import {
   BrandWordmark,
@@ -247,6 +255,7 @@ export function ManagerHomeScreen({ navigation }: HomeProps) {
 export function ManagerCustomersScreen(_: CustomersProps) {
   const { user, accessToken } = useAuth();
   const [items, setItems] = useState<Customer[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -256,6 +265,16 @@ export function ManagerCustomersScreen(_: CustomersProps) {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
+
+  const clearForm = useCallback(() => {
+    setEditingId(null);
+    setName("");
+    setRegistrationNumber("");
+    setContactName("");
+    setPhone("");
+    setAddress("");
+    setCity("");
+  }, []);
 
   const load = useCallback(async () => {
     if (!user || !accessToken) return;
@@ -273,40 +292,59 @@ export function ManagerCustomersScreen(_: CustomersProps) {
     void load();
   }, [load]);
 
+  function openCustomer(customer: Customer): void {
+    setEditingId(customer.id);
+    setName(customer.name);
+    setRegistrationNumber(customer.registrationNumber ?? "");
+    setContactName("");
+    setPhone(customer.phone ?? "");
+    setAddress(customer.address ?? "");
+    setCity(customer.city ?? "");
+    setError(null);
+  }
+
   async function save(): Promise<void> {
     if (!user || !accessToken) return;
     if (name.trim().length < 2) {
       setError("יש להזין שם לקוח.");
       return;
     }
+
     setSaving(true);
     setError(null);
     try {
-      const customer = await createManagerCustomer(user.organization.id, accessToken, {
-        name: name.trim(),
-        registrationNumber: registrationNumber.trim() || undefined,
-        phone: phone.trim() || undefined,
-        address: address.trim() || undefined,
-        city: city.trim() || undefined,
-        status: "active",
-      });
-      if (contactName.trim()) {
-        await createManagerCustomerContact(user.organization.id, customer.id, accessToken, {
-          name: contactName.trim(),
-          phone: phone.trim() || undefined,
-          isPrimary: true,
+      if (editingId) {
+        await updateManagerCustomer(user.organization.id, editingId, accessToken, {
+          name: name.trim(),
+          registrationNumber: registrationNumber.trim() || null,
+          phone: phone.trim() || null,
+          address: address.trim() || null,
+          city: city.trim() || null,
         });
+        Alert.alert("נשמר", "פרטי הלקוח עודכנו.");
+      } else {
+        const customer = await createManagerCustomer(user.organization.id, accessToken, {
+          name: name.trim(),
+          registrationNumber: registrationNumber.trim() || undefined,
+          phone: phone.trim() || undefined,
+          address: address.trim() || undefined,
+          city: city.trim() || undefined,
+          status: "active",
+        });
+        if (contactName.trim()) {
+          await createManagerCustomerContact(user.organization.id, customer.id, accessToken, {
+            name: contactName.trim(),
+            phone: phone.trim() || undefined,
+            isPrimary: true,
+          });
+        }
+        Alert.alert("נשמר", `הלקוח ${customer.name} נוסף כמספר ${customer.customerNumber}.`);
       }
-      setName("");
-      setRegistrationNumber("");
-      setContactName("");
-      setPhone("");
-      setAddress("");
-      setCity("");
+
+      clearForm();
       await load();
-      Alert.alert("נשמר", `הלקוח ${customer.name} נוסף כמספר ${customer.customerNumber}.`);
     } catch (cause) {
-      setError(message(cause, "לא ניתן להוסיף לקוח"));
+      setError(message(cause, editingId ? "לא ניתן לעדכן לקוח" : "לא ניתן להוסיף לקוח"));
     } finally {
       setSaving(false);
     }
@@ -322,7 +360,9 @@ export function ManagerCustomersScreen(_: CustomersProps) {
         ListHeaderComponent={
           <View style={styles.sectionGap}>
             <ScreenTitle>לקוחות</ScreenTitle>
-            <ScreenSubtitle>מספר הלקוח נוצר אוטומטית.</ScreenSubtitle>
+            <ScreenSubtitle>
+              {editingId ? "עריכת לקוח קיים." : "מספר הלקוח נוצר אוטומטית."}
+            </ScreenSubtitle>
             <Card>
               <Field value={name} onChangeText={setName} placeholder="שם לקוח" />
               <Field
@@ -330,14 +370,23 @@ export function ManagerCustomersScreen(_: CustomersProps) {
                 onChangeText={setRegistrationNumber}
                 placeholder="ח.פ. / מספר חברה"
               />
-              <Field value={contactName} onChangeText={setContactName} placeholder="איש קשר" />
+              {!editingId ? (
+                <Field value={contactName} onChangeText={setContactName} placeholder="איש קשר" />
+              ) : null}
               <Field value={phone} onChangeText={setPhone} placeholder="טלפון" />
               <Field value={address} onChangeText={setAddress} placeholder="כתובת" />
               <Field value={city} onChangeText={setCity} placeholder="עיר" />
               {error ? <Text style={styles.error}>{error}</Text> : null}
-              <Button label="הוספת לקוח" loading={saving} onPress={() => void save()} />
+              <Button
+                label={editingId ? "שמירת שינויים" : "הוספת לקוח"}
+                loading={saving}
+                onPress={() => void save()}
+              />
+              {editingId ? (
+                <Button label="ביטול עריכה" variant="secondary" onPress={clearForm} />
+              ) : null}
             </Card>
-            <Text style={styles.sectionTitle}>לקוחות קיימים</Text>
+            <Text style={styles.sectionTitle}>לקוחות קיימים · לחץ לפתיחה</Text>
           </View>
         }
         ListEmptyComponent={
@@ -348,13 +397,16 @@ export function ManagerCustomersScreen(_: CustomersProps) {
           )
         }
         renderItem={({ item }) => (
-          <View style={styles.row}>
+          <Pressable
+            style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+            onPress={() => openCustomer(item)}
+          >
             <Text style={styles.rowTitle}>{item.name}</Text>
             <Text style={styles.rowMeta}>{item.customerNumber}</Text>
             <Text style={styles.rowMeta}>
               {item.registrationNumber ?? "ללא ח.פ."} · {item.phone ?? "ללא טלפון"}
             </Text>
-          </View>
+          </Pressable>
         )}
       />
     </Page>
@@ -366,6 +418,7 @@ export function ManagerEquipmentScreen(_: EquipmentProps) {
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [types, setTypes] = useState<Awaited<ReturnType<typeof listManagerEquipmentTypes>>>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -376,6 +429,15 @@ export function ManagerEquipmentScreen(_: EquipmentProps) {
   const [serialNumber, setSerialNumber] = useState("");
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [equipmentTypeId, setEquipmentTypeId] = useState<string | null>(null);
+
+  const clearForm = useCallback(() => {
+    setEditingId(null);
+    setName("");
+    setInternalNumber("");
+    setManufacturer("");
+    setModel("");
+    setSerialNumber("");
+  }, []);
 
   const load = useCallback(async () => {
     if (!user || !accessToken) return;
@@ -402,33 +464,56 @@ export function ManagerEquipmentScreen(_: EquipmentProps) {
     void load();
   }, [load]);
 
+  function openEquipment(item: Equipment): void {
+    setEditingId(item.id);
+    setName(item.name);
+    setInternalNumber(item.internalNumber);
+    setManufacturer(item.manufacturer ?? "");
+    setModel(item.model ?? "");
+    setSerialNumber(item.serialNumber ?? "");
+    setCustomerId(item.customerId ?? null);
+    setEquipmentTypeId(item.equipmentTypeId);
+    setError(null);
+  }
+
   async function save(): Promise<void> {
     if (!user || !accessToken) return;
     if (!name.trim() || !internalNumber.trim() || !equipmentTypeId) {
       setError("יש למלא שם ציוד, מספר פנימי וסוג ציוד.");
       return;
     }
+
     setSaving(true);
     setError(null);
     try {
-      await createManagerEquipment(user.organization.id, accessToken, {
-        name: name.trim(),
-        internalNumber: internalNumber.trim().toUpperCase(),
-        equipmentTypeId,
-        customerId: customerId ?? undefined,
-        manufacturer: manufacturer.trim() || undefined,
-        model: model.trim() || undefined,
-        serialNumber: serialNumber.trim() || undefined,
-      });
-      setName("");
-      setInternalNumber("");
-      setManufacturer("");
-      setModel("");
-      setSerialNumber("");
+      if (editingId) {
+        await updateManagerEquipment(user.organization.id, editingId, accessToken, {
+          name: name.trim(),
+          internalNumber: internalNumber.trim().toUpperCase(),
+          equipmentTypeId,
+          customerId,
+          manufacturer: manufacturer.trim() || null,
+          model: model.trim() || null,
+          serialNumber: serialNumber.trim() || null,
+        });
+        Alert.alert("נשמר", "פרטי הציוד עודכנו.");
+      } else {
+        await createManagerEquipment(user.organization.id, accessToken, {
+          name: name.trim(),
+          internalNumber: internalNumber.trim().toUpperCase(),
+          equipmentTypeId,
+          customerId: customerId ?? undefined,
+          manufacturer: manufacturer.trim() || undefined,
+          model: model.trim() || undefined,
+          serialNumber: serialNumber.trim() || undefined,
+        });
+        Alert.alert("נשמר", "הציוד נוסף בהצלחה.");
+      }
+
+      clearForm();
       await load();
-      Alert.alert("נשמר", "הציוד נוסף בהצלחה.");
     } catch (cause) {
-      setError(message(cause, "לא ניתן להוסיף ציוד"));
+      setError(message(cause, editingId ? "לא ניתן לעדכן ציוד" : "לא ניתן להוסיף ציוד"));
     } finally {
       setSaving(false);
     }
@@ -444,6 +529,7 @@ export function ManagerEquipmentScreen(_: EquipmentProps) {
         ListHeaderComponent={
           <View style={styles.sectionGap}>
             <ScreenTitle>ציוד</ScreenTitle>
+            <ScreenSubtitle>{editingId ? "עריכת ציוד קיים." : "הוספת ציוד חדש."}</ScreenSubtitle>
             <Card>
               <Field value={name} onChangeText={setName} placeholder="שם / תיאור כלי" />
               <Field
@@ -460,6 +546,11 @@ export function ManagerEquipmentScreen(_: EquipmentProps) {
               />
               <Text style={styles.fieldLabel}>לקוח</Text>
               <View style={styles.choices}>
+                <Choice
+                  label="ללא לקוח"
+                  selected={!customerId}
+                  onPress={() => setCustomerId(null)}
+                />
                 {customers.map((customer) => (
                   <Choice
                     key={customer.id}
@@ -481,9 +572,16 @@ export function ManagerEquipmentScreen(_: EquipmentProps) {
                 ))}
               </View>
               {error ? <Text style={styles.error}>{error}</Text> : null}
-              <Button label="הוספת ציוד" loading={saving} onPress={() => void save()} />
+              <Button
+                label={editingId ? "שמירת שינויים" : "הוספת ציוד"}
+                loading={saving}
+                onPress={() => void save()}
+              />
+              {editingId ? (
+                <Button label="ביטול עריכה" variant="secondary" onPress={clearForm} />
+              ) : null}
             </Card>
-            <Text style={styles.sectionTitle}>ציוד קיים</Text>
+            <Text style={styles.sectionTitle}>ציוד קיים · לחץ לפתיחה</Text>
           </View>
         }
         ListEmptyComponent={
@@ -494,13 +592,16 @@ export function ManagerEquipmentScreen(_: EquipmentProps) {
           )
         }
         renderItem={({ item }) => (
-          <View style={styles.row}>
+          <Pressable
+            style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+            onPress={() => openEquipment(item)}
+          >
             <Text style={styles.rowTitle}>{item.name}</Text>
             <Text style={styles.rowMeta}>
               {item.internalNumber} · {item.manufacturer ?? ""} {item.model ?? ""}
             </Text>
             <Text style={styles.rowMeta}>{item.customer?.name ?? "ללא לקוח"}</Text>
-          </View>
+          </Pressable>
         )}
       />
     </Page>
@@ -1162,23 +1263,33 @@ export function ManagerInventoryScreen({ route }: InventoryProps) {
 
 export function ManagerTechniciansScreen(_: TechniciansProps) {
   const { user, accessToken } = useAuth();
+  const [members, setMembers] = useState<ManagerMemberSummary[]>([]);
   const [technicians, setTechnicians] = useState<ManagerTechnicianSummary[]>([]);
   const [vans, setVans] = useState<InventoryLocationDetail[]>([]);
+  const [displayName, setDisplayName] = useState("");
+  const [email, setEmail] = useState("");
+  const [temporaryPassword, setTemporaryPassword] = useState("");
+  const [roleSlug, setRoleSlug] = useState<ManagerEmployeeRoleSlug>("technician");
+  const [newVanName, setNewVanName] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [creatingEmployee, setCreatingEmployee] = useState(false);
+  const [creatingVan, setCreatingVan] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!user || !accessToken) return;
     try {
-      const [people, overview] = await Promise.all([
+      const [allMembers, people, overview] = await Promise.all([
+        listManagerMembers(user.organization.id, accessToken),
         listManagerTechnicians(user.organization.id, accessToken),
         getManagerInventoryOverview(user.organization.id, accessToken),
       ]);
+      setMembers(allMembers);
       setTechnicians(people);
       setVans(overview.vans);
       setError(null);
     } catch (cause) {
-      setError(message(cause, "לא ניתן לטעון טכנאים וניידות"));
+      setError(message(cause, "לא ניתן לטעון עובדים וניידות"));
     }
   }, [accessToken, user]);
 
@@ -1186,9 +1297,74 @@ export function ManagerTechniciansScreen(_: TechniciansProps) {
     void load();
   }, [load]);
 
+  async function createEmployee(): Promise<void> {
+    if (!user || !accessToken) return;
+    if (displayName.trim().length < 2) {
+      setError("יש להזין שם עובד.");
+      return;
+    }
+    if (!email.includes("@")) {
+      setError("יש להזין כתובת דוא״ל תקינה.");
+      return;
+    }
+    if (temporaryPassword.length < 8) {
+      setError("הסיסמה הראשונית חייבת להכיל לפחות 8 תווים.");
+      return;
+    }
+
+    setCreatingEmployee(true);
+    setError(null);
+    try {
+      await createManagerMember(user.organization.id, accessToken, {
+        displayName: displayName.trim(),
+        email: email.trim().toLowerCase(),
+        password: temporaryPassword,
+        roleSlug,
+      });
+      setDisplayName("");
+      setEmail("");
+      setTemporaryPassword("");
+      setRoleSlug("technician");
+      await load();
+      Alert.alert(
+        "העובד נוצר",
+        roleSlug === "technician"
+          ? "הטכנאי נוצר וניתן כעת לשייך לו ניידת."
+          : "עובד/ת ניהול המשרד נוצר/ה ויכול/ה להתחבר למערכת.",
+      );
+    } catch (cause) {
+      setError(message(cause, "לא ניתן ליצור עובד"));
+    } finally {
+      setCreatingEmployee(false);
+    }
+  }
+
+  async function createVan(): Promise<void> {
+    if (!user || !accessToken || newVanName.trim().length < 2) {
+      setError("יש להזין שם לניידת.");
+      return;
+    }
+    setCreatingVan(true);
+    setError(null);
+    try {
+      await createManagerInventoryLocation(user.organization.id, accessToken, {
+        name: newVanName.trim(),
+        type: "service_van",
+      });
+      setNewVanName("");
+      await load();
+      Alert.alert("נשמר", "הניידת נוספה.");
+    } catch (cause) {
+      setError(message(cause, "לא ניתן ליצור ניידת"));
+    } finally {
+      setCreatingVan(false);
+    }
+  }
+
   async function assign(technicianId: string, vanId: string | null): Promise<void> {
     if (!user || !accessToken) return;
     setBusyId(technicianId);
+    setError(null);
     try {
       await assignManagerTechnicianVan(user.organization.id, technicianId, accessToken, vanId);
       await load();
@@ -1199,36 +1375,117 @@ export function ManagerTechniciansScreen(_: TechniciansProps) {
     }
   }
 
+  function roleLabel(member: ManagerMemberSummary): string {
+    if (member.isOrganizationOwner) return "מנהל / בעלים";
+    if (member.primaryRole.slug === "technician") return "טכנאי";
+    if (member.primaryRole.slug === "service-coordinator") return "ניהול משרד";
+    return member.primaryRole.name;
+  }
+
   return (
     <Page>
       <ScrollView contentContainerStyle={styles.content}>
         <ScreenTitle>עובדים וניידות</ScreenTitle>
-        <ScreenSubtitle>לכל טכנאי ניתן לשייך ניידת שירות פעילה אחת.</ScreenSubtitle>
+        <ScreenSubtitle>
+          יצירת משתמשים, טכנאים, עובדי ניהול משרד ושיוך ניידות שירות.
+        </ScreenSubtitle>
         {error ? <Text style={styles.error}>{error}</Text> : null}
-        {technicians.map((technician) => (
-          <Card key={technician.id}>
-            <Text style={styles.rowTitle}>{technician.displayName}</Text>
-            <Text style={styles.rowMeta}>
-              ניידת נוכחית: {technician.assignedVan?.name ?? "לא משויכת"}
-            </Text>
-            <View style={styles.choices}>
-              <Choice
-                label="ללא ניידת"
-                selected={!technician.assignedVan}
-                onPress={() => void assign(technician.id, null)}
-              />
-              {vans.map((van) => (
-                <Choice
-                  key={van.id}
-                  label={van.name}
-                  selected={technician.assignedVan?.id === van.id}
-                  onPress={() => void assign(technician.id, van.id)}
-                />
-              ))}
-            </View>
-            {busyId === technician.id ? <ActivityIndicator color={colors.primary} /> : null}
-          </Card>
+
+        <Card>
+          <Text style={styles.sectionTitle}>הוספת עובד</Text>
+          <Field value={displayName} onChangeText={setDisplayName} placeholder="שם מלא" />
+          <Field value={email} onChangeText={setEmail} placeholder="דוא״ל להתחברות" />
+          <TextInput
+            value={temporaryPassword}
+            onChangeText={setTemporaryPassword}
+            secureTextEntry
+            autoCapitalize="none"
+            placeholder="סיסמה ראשונית"
+            placeholderTextColor={colors.textSubtle}
+            style={styles.input}
+          />
+          <Text style={styles.fieldLabel}>סוג עובד</Text>
+          <View style={styles.choices}>
+            <Choice
+              label="טכנאי"
+              selected={roleSlug === "technician"}
+              onPress={() => setRoleSlug("technician")}
+            />
+            <Choice
+              label="פקיד/ת ניהול משרד"
+              selected={roleSlug === "service-coordinator"}
+              onPress={() => setRoleSlug("service-coordinator")}
+            />
+          </View>
+          <Button
+            label="יצירת עובד"
+            loading={creatingEmployee}
+            onPress={() => void createEmployee()}
+          />
+        </Card>
+
+        <Text style={styles.sectionTitle}>עובדים קיימים</Text>
+        {members.map((member) => (
+          <View key={member.id} style={styles.row}>
+            <Text style={styles.rowTitle}>{member.displayName}</Text>
+            <Text style={styles.rowMeta}>{member.email}</Text>
+            <Text style={styles.rowMeta}>{roleLabel(member)}</Text>
+          </View>
         ))}
+
+        <Card>
+          <Text style={styles.sectionTitle}>ניידת שירות חדשה</Text>
+          <Field value={newVanName} onChangeText={setNewVanName} placeholder="לדוגמה: ניידת 1" />
+          <Button
+            label="הוספת ניידת"
+            loading={creatingVan}
+            onPress={() => void createVan()}
+          />
+        </Card>
+
+        <Text style={styles.sectionTitle}>ניידות קיימות</Text>
+        {vans.length ? (
+          vans.map((van) => (
+            <View key={van.id} style={styles.row}>
+              <Text style={styles.rowTitle}>{van.name}</Text>
+              <Text style={styles.rowMeta}>
+                {van.assignedUserName ? `משויכת ל־${van.assignedUserName}` : "לא משויכת"}
+              </Text>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.empty}>עדיין לא הוגדרו ניידות.</Text>
+        )}
+
+        <Text style={styles.sectionTitle}>שיוך ניידת לטכנאי</Text>
+        {technicians.length ? (
+          technicians.map((technician) => (
+            <Card key={technician.id}>
+              <Text style={styles.rowTitle}>{technician.displayName}</Text>
+              <Text style={styles.rowMeta}>
+                ניידת נוכחית: {technician.assignedVan?.name ?? "לא משויכת"}
+              </Text>
+              <View style={styles.choices}>
+                <Choice
+                  label="ללא ניידת"
+                  selected={!technician.assignedVan}
+                  onPress={() => void assign(technician.id, null)}
+                />
+                {vans.map((van) => (
+                  <Choice
+                    key={van.id}
+                    label={van.name}
+                    selected={technician.assignedVan?.id === van.id}
+                    onPress={() => void assign(technician.id, van.id)}
+                  />
+                ))}
+              </View>
+              {busyId === technician.id ? <ActivityIndicator color={colors.primary} /> : null}
+            </Card>
+          ))
+        ) : (
+          <Text style={styles.empty}>אין עדיין טכנאים. צור טכנאי חדש למעלה.</Text>
+        )}
       </ScrollView>
     </Page>
   );
