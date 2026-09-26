@@ -1,4 +1,4 @@
-# Retriggered after PR #24 staging deployment on 2026-09-26.
+# Retriggered for iOS build 4 after duplicate build-number rejection.
 name: Build staging TestFlight
 
 on:
