@@ -83,8 +83,8 @@ export function ServiceCallWorkReportPanel({
     () =>
       editor?.partGroups
         .flatMap((group) => group.items)
-        .filter((item) => selectedParts[item.inventoryItemId] > 0)
-        .map((item) => ({ item, quantity: selectedParts[item.inventoryItemId] })) ?? [],
+        .filter((item) => (selectedParts[item.inventoryItemId] ?? 0) > 0)
+        .map((item) => ({ item, quantity: selectedParts[item.inventoryItemId] ?? 0 })) ?? [],
     [editor, selectedParts],
   );
 
