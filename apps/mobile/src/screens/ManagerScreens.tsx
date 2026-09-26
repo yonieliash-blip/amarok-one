@@ -8,6 +8,7 @@ import type {
   ServiceCall,
   ServiceCallLifecycleView,
 } from "@amarok-one/types";
+import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -51,9 +52,16 @@ import {
   listMyServiceCalls,
 } from "../api/service-calls";
 import { isApiRequestError } from "../api/client";
-import { Button, Card, ScreenSubtitle, ScreenTitle, StatusPill } from "../components/ui";
+import {
+  BrandWordmark,
+  Button,
+  Card,
+  ScreenSubtitle,
+  ScreenTitle,
+  StatusPill,
+} from "../components/ui";
 import type { RootStackParamList } from "../navigation/types";
-import { colors, radius, spacing } from "../theme";
+import { colors, radius, spacing, typography } from "../theme";
 
 type HomeProps = NativeStackScreenProps<RootStackParamList, "ManagerHome">;
 type CallsProps = NativeStackScreenProps<RootStackParamList, "ManagerServiceCalls">;
@@ -132,18 +140,31 @@ function Choice({
   );
 }
 
+type ManagerMenuIcon =
+  | "document-text-outline"
+  | "person-add-outline"
+  | "construct-outline"
+  | "list-outline"
+  | "people-outline"
+  | "cube-outline"
+  | "car-outline"
+  | "log-out-outline";
+
 function ManagerMenuButton({
   label,
+  icon,
   onPress,
   danger = false,
 }: {
   label: string;
+  icon: ManagerMenuIcon;
   onPress: () => void;
   danger?: boolean;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       onPress={onPress}
       style={({ pressed }) => [
         styles.menuButton,
@@ -151,48 +172,72 @@ function ManagerMenuButton({
         pressed && styles.pressed,
       ]}
     >
-      <Text style={[styles.menuButtonText, danger && styles.menuButtonTextDanger]}>{label}</Text>
+      <View style={styles.menuButtonContent}>
+        <Ionicons name={icon} size={23} color={danger ? colors.text : colors.primary} />
+        <Text style={[styles.menuButtonText, danger && styles.menuButtonTextDanger]}>{label}</Text>
+      </View>
     </Pressable>
   );
 }
 
 export function ManagerHomeScreen({ navigation }: HomeProps) {
-  const { logout, user } = useAuth();
+  const { logout } = useAuth();
 
   return (
     <Page>
-      <ScrollView contentContainerStyle={styles.homeContent}>
-        <ScreenTitle>AMAROK ONE</ScreenTitle>
-        <ScreenSubtitle>מרכז שליטה מנהל · {user?.displayName ?? ""}</ScreenSubtitle>
+      <ScrollView style={styles.page} contentContainerStyle={styles.homeContent}>
+        <View style={styles.managerBrandFrame}>
+          <BrandWordmark style={styles.managerWordmark} />
+        </View>
+        <Text style={styles.managerHeading}>מרכז שליטה מנהל</Text>
 
         <View style={styles.menuGrid}>
           <ManagerMenuButton
             label="פתח קריאה"
+            icon="document-text-outline"
             onPress={() => navigation.navigate("ManagerNewServiceCall")}
           />
           <ManagerMenuButton
             label="הוסף לקוח"
+            icon="person-add-outline"
             onPress={() => navigation.navigate("ManagerCustomers")}
           />
           <ManagerMenuButton
             label="הוסף ציוד"
+            icon="construct-outline"
             onPress={() => navigation.navigate("ManagerEquipment")}
           />
           <ManagerMenuButton
             label="קריאות שירות"
+            icon="list-outline"
             onPress={() => navigation.navigate("ManagerServiceCalls")}
           />
           <ManagerMenuButton
             label="לקוחות"
+            icon="people-outline"
             onPress={() => navigation.navigate("ManagerCustomers")}
           />
-          <ManagerMenuButton label="ציוד" onPress={() => navigation.navigate("ManagerEquipment")} />
-          <ManagerMenuButton label="חלפים" onPress={() => navigation.navigate("ManagerParts")} />
+          <ManagerMenuButton
+            label="ציוד"
+            icon="construct-outline"
+            onPress={() => navigation.navigate("ManagerEquipment")}
+          />
+          <ManagerMenuButton
+            label="חלפים"
+            icon="cube-outline"
+            onPress={() => navigation.navigate("ManagerParts")}
+          />
           <ManagerMenuButton
             label="עובדים וניידות"
+            icon="car-outline"
             onPress={() => navigation.navigate("ManagerTechnicians")}
           />
-          <ManagerMenuButton label="יציאה" danger onPress={() => void logout()} />
+          <ManagerMenuButton
+            label="יציאה"
+            icon="log-out-outline"
+            danger
+            onPress={() => void logout()}
+          />
         </View>
       </ScrollView>
     </Page>
@@ -1190,39 +1235,84 @@ export function ManagerTechniciansScreen(_: TechniciansProps) {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: colors.bg },
+  page: { flex: 1, backgroundColor: "transparent" },
   content: { padding: spacing.md, paddingBottom: 48, gap: spacing.md },
   homeContent: {
-    flexGrow: 1,
-    padding: spacing.lg,
+    alignItems: "center",
+    paddingHorizontal: spacing.md,
     paddingTop: 72,
-    paddingBottom: 48,
+    paddingBottom: spacing.xl,
     gap: spacing.lg,
   },
+  managerBrandFrame: {
+    width: 288,
+    height: 74,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  managerWordmark: { width: 288, height: 74 },
+  managerHeading: {
+    color: colors.primary,
+    fontFamily: typography.bold,
+    fontSize: 27,
+    textAlign: "center",
+    writingDirection: "rtl",
+    marginBottom: spacing.xl,
+  },
   menuGrid: {
-    flexDirection: "row-reverse",
+    width: "100%",
+    flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    gap: spacing.md,
+    rowGap: spacing.md,
   },
   menuButton: {
-    width: "47%",
-    minHeight: 86,
+    width: "48%",
+    minHeight: 92,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.primary,
-    backgroundColor: colors.bgPanel,
+    backgroundColor: colors.actionSurface,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
-  menuButtonDanger: { backgroundColor: colors.error, borderColor: colors.error },
-  menuButtonText: { color: colors.primary, fontSize: 17, fontWeight: "700", textAlign: "center" },
-  menuButtonTextDanger: { color: "#ffffff" },
-  pressed: { opacity: 0.75, transform: [{ scale: 0.99 }] },
+  menuButtonDanger: {
+    backgroundColor: "rgba(143, 29, 29, 0.78)",
+    borderColor: colors.text,
+  },
+  menuButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.xs,
+    minHeight: 30,
+  },
+  menuButtonText: {
+    color: colors.primary,
+    fontFamily: typography.bold,
+    fontSize: 16,
+    lineHeight: 22,
+    textAlign: "center",
+    writingDirection: "rtl",
+  },
+  menuButtonTextDanger: { color: colors.text },
+  pressed: { opacity: 0.82, transform: [{ scale: 0.99 }] },
   sectionGap: { gap: spacing.md, marginBottom: spacing.lg },
-  sectionTitle: { color: colors.text, fontSize: 19, fontWeight: "700", textAlign: "right" },
-  fieldLabel: { color: colors.text, fontSize: 15, fontWeight: "700", textAlign: "right" },
+  sectionTitle: {
+    color: colors.text,
+    fontFamily: typography.bold,
+    fontSize: 19,
+    textAlign: "right",
+    writingDirection: "rtl",
+  },
+  fieldLabel: {
+    color: colors.text,
+    fontFamily: typography.bold,
+    fontSize: 15,
+    textAlign: "right",
+    writingDirection: "rtl",
+  },
   input: {
     minHeight: 50,
     borderRadius: radius.md,
@@ -1230,8 +1320,10 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.bgElevated,
     color: colors.text,
+    fontFamily: typography.regular,
     paddingHorizontal: spacing.md,
     textAlign: "right",
+    writingDirection: "rtl",
   },
   textArea: { minHeight: 110, textAlignVertical: "top", paddingTop: spacing.md },
   choices: { flexDirection: "row-reverse", flexWrap: "wrap", gap: spacing.sm },
@@ -1244,7 +1336,12 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   choiceSelected: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
-  choiceText: { color: colors.text, textAlign: "right" },
+  choiceText: {
+    color: colors.text,
+    fontFamily: typography.regular,
+    textAlign: "right",
+    writingDirection: "rtl",
+  },
   row: {
     backgroundColor: colors.bgPanel,
     borderRadius: radius.md,
@@ -1256,12 +1353,48 @@ const styles = StyleSheet.create({
   },
   rowTop: { flexDirection: "row-reverse", justifyContent: "space-between", alignItems: "center" },
   rowNumber: { color: colors.primary, fontWeight: "800", fontSize: 13 },
-  rowTitle: { color: colors.text, fontWeight: "700", fontSize: 17, textAlign: "right" },
-  rowMeta: { color: colors.textMuted, fontSize: 14, textAlign: "right" },
-  detailTitle: { color: colors.text, fontWeight: "800", fontSize: 22, textAlign: "right" },
-  body: { color: colors.text, fontSize: 15, lineHeight: 22, textAlign: "right" },
-  error: { color: colors.error, textAlign: "right", lineHeight: 20 },
-  empty: { color: colors.textMuted, textAlign: "center", paddingVertical: spacing.lg },
+  rowTitle: {
+    color: colors.text,
+    fontFamily: typography.bold,
+    fontSize: 17,
+    textAlign: "right",
+    writingDirection: "rtl",
+  },
+  rowMeta: {
+    color: colors.textMuted,
+    fontFamily: typography.regular,
+    fontSize: 14,
+    textAlign: "right",
+    writingDirection: "rtl",
+  },
+  detailTitle: {
+    color: colors.text,
+    fontFamily: typography.bold,
+    fontSize: 22,
+    textAlign: "right",
+    writingDirection: "rtl",
+  },
+  body: {
+    color: colors.text,
+    fontFamily: typography.regular,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: "right",
+    writingDirection: "rtl",
+  },
+  error: {
+    color: colors.error,
+    fontFamily: typography.regular,
+    textAlign: "right",
+    writingDirection: "rtl",
+    lineHeight: 20,
+  },
+  empty: {
+    color: colors.textMuted,
+    fontFamily: typography.regular,
+    textAlign: "center",
+    paddingVertical: spacing.lg,
+  },
   loader: { marginTop: 80 },
   catalogBlock: { marginTop: spacing.sm, gap: 4 },
   inventoryRow: {
@@ -1276,7 +1409,7 @@ const styles = StyleSheet.create({
   quantity: {
     color: colors.primary,
     fontSize: 22,
-    fontWeight: "800",
+    fontFamily: typography.bold,
     minWidth: 44,
     textAlign: "center",
   },
