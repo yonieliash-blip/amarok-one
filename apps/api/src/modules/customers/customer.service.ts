@@ -100,6 +100,17 @@ export async function getCustomerDetail(
   };
 }
 
+async function nextCustomerNumber(tx: Prisma.TransactionClient): Promise<string> {
+  const sequence = await tx.$queryRaw<Array<{ value: bigint }>>`
+    SELECT nextval('customer_number_seq') AS value
+  `;
+  const next = sequence[0];
+  if (!next) {
+    throw new Error("Customer number sequence did not return a value");
+  }
+  return `CUST-${String(next.value).padStart(3, "0")}`;
+}
+
 export async function createCustomer(
   organizationId: string,
   input: CreateCustomerInput,
@@ -108,21 +119,24 @@ export async function createCustomer(
   await assertOrganizationExists(organizationId);
 
   try {
-    const customer = await prisma.customer.create({
-      data: {
-        organizationId,
-        name: input.name,
-        legalName: input.legalName,
-        registrationNumber: input.registrationNumber,
-        customerNumber: input.customerNumber,
+    const customer = await prisma.$transaction(async (tx) => {
+      const customerNumber = input.customerNumber ?? (await nextCustomerNumber(tx));
+      return tx.customer.create({
+        data: {
+          organizationId,
+          name: input.name,
+          legalName: input.legalName,
+          registrationNumber: input.registrationNumber,
+          customerNumber,
         email: input.email,
         phone: input.phone,
         address: input.address,
         city: input.city,
         country: input.country,
         notes: input.notes,
-        status: input.status ? fromCustomerStatusDto(input.status) : undefined,
-      },
+          status: input.status ? fromCustomerStatusDto(input.status) : undefined,
+        },
+      });
     });
 
     await writeAuditLog({
