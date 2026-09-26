@@ -16,6 +16,42 @@ export async function listManagerCustomers(
   return response.data ?? [];
 }
 
+
+export async function getManagerCustomer(
+  organizationId: string,
+  customerId: string,
+  accessToken: string,
+): Promise<Customer> {
+  const response = await apiRequest<Customer>(
+    `${orgBase(organizationId)}/customers/${customerId}`,
+    { accessToken },
+  );
+  return response.data;
+}
+
+export async function updateManagerCustomer(
+  organizationId: string,
+  customerId: string,
+  accessToken: string,
+  input: Partial<{
+    name: string;
+    registrationNumber: string | null;
+    phone: string | null;
+    address: string | null;
+    city: string | null;
+  }>,
+): Promise<Customer> {
+  const response = await apiRequest<Customer>(
+    `${orgBase(organizationId)}/customers/${customerId}`,
+    {
+      method: "PATCH",
+      accessToken,
+      body: JSON.stringify(input),
+    },
+  );
+  return response.data;
+}
+
 export async function createManagerCustomer(
   organizationId: string,
   accessToken: string,
@@ -72,6 +108,42 @@ export async function listManagerEquipmentTypes(
     accessToken,
   });
   return response.data ?? [];
+}
+
+
+export async function getManagerEquipment(
+  organizationId: string,
+  equipmentId: string,
+  accessToken: string,
+): Promise<Equipment> {
+  const response = await apiRequest<Equipment>(
+    `${orgBase(organizationId)}/equipment/${equipmentId}`,
+    { accessToken },
+  );
+  return response.data;
+}
+
+export async function updateManagerEquipment(
+  organizationId: string,
+  equipmentId: string,
+  accessToken: string,
+  input: Partial<{
+    name: string;
+    internalNumber: string;
+    manufacturer: string | null;
+    model: string | null;
+    serialNumber: string | null;
+  }>,
+): Promise<Equipment> {
+  const response = await apiRequest<Equipment>(
+    `${orgBase(organizationId)}/equipment/${equipmentId}`,
+    {
+      method: "PATCH",
+      accessToken,
+      body: JSON.stringify(input),
+    },
+  );
+  return response.data;
 }
 
 export async function createManagerEquipment(
