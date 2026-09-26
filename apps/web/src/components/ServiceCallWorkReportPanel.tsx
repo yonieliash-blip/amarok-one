@@ -23,7 +23,9 @@ export function ServiceCallWorkReportPanel({
   canEdit,
 }: Props) {
   const visits = lifecycle.visits;
-  const [selectedVisitId, setSelectedVisitId] = useState(visits[0]?.id ?? "");
+  const [selectedVisitIdState, setSelectedVisitIdState] = useState(visits[0]?.id ?? "");
+  const selectedVisitId =
+    visits.find((visit) => visit.id === selectedVisitIdState)?.id ?? visits[0]?.id ?? "";
   const [editor, setEditor] = useState<WorkReportEditorData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -128,7 +130,7 @@ export function ServiceCallWorkReportPanel({
         {visits.length > 1 ? (
           <select
             value={activeVisitId}
-            onChange={(event) => setSelectedVisitId(event.target.value)}
+            onChange={(event) => setSelectedVisitIdState(event.target.value)}
           >
             {visits.map((visit) => (
               <option key={visit.id} value={visit.id}>
