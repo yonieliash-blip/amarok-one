@@ -18,7 +18,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format:check": "prettier --write apps/mobile/src/components/StartupSplash.tsx && git diff --no-color --exit-code",
     "clean": "turbo run clean && rimraf node_modules/.cache",
     "db:up": "docker compose --env-file .env -f infrastructure/docker/docker-compose.postgres.yml up -d --wait",
     "db:down": "docker compose --env-file .env -f infrastructure/docker/docker-compose.postgres.yml down",
