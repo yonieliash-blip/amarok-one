@@ -5,6 +5,8 @@ const DEFAULT_DATABASE_URL = `postgresql://amarok:amarok@localhost:${process.env
 const DEFAULT_JWT_EXPIRES_IN = "15m";
 const DEFAULT_JWT_REFRESH_EXPIRES_IN = "7d";
 const DEFAULT_SEED_ADMIN_PASSWORD = "Admin@123456";
+const DEFAULT_MORNING_TOKEN_URL = "https://api.morning.co/idp/v1/oauth/token";
+const DEFAULT_MORNING_API_BASE_URL = "https://api.greeninvoice.co.il/api/v1";
 
 function parsePort(value: string | undefined): number {
   const parsed = Number(value ?? DEFAULT_PORT);
@@ -50,4 +52,10 @@ export const env = {
   SEED_ADMIN_PASSWORD: process.env.SEED_ADMIN_PASSWORD?.trim() || DEFAULT_SEED_ADMIN_PASSWORD,
   /** Required in production to access GET /health/db (sent as X-Health-Token). */
   HEALTH_DB_TOKEN: process.env.HEALTH_DB_TOKEN?.trim() || undefined,
+  /** OAuth client credentials for the server-side Morning customer sync. */
+  MORNING_CLIENT_ID: process.env.MORNING_CLIENT_ID?.trim() || undefined,
+  MORNING_CLIENT_SECRET: process.env.MORNING_CLIENT_SECRET?.trim() || undefined,
+  MORNING_TOKEN_URL: process.env.MORNING_TOKEN_URL?.trim() || DEFAULT_MORNING_TOKEN_URL,
+  MORNING_API_BASE_URL:
+    process.env.MORNING_API_BASE_URL?.trim().replace(/\/$/, "") || DEFAULT_MORNING_API_BASE_URL,
 } as const;
