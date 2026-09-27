@@ -412,6 +412,8 @@ model Customer {
   legalName          String?
   registrationNumber String?
   customerNumber     String
+  morningClientId    String?
+  morningLastSyncedAt DateTime?
   email              String?
   phone              String?
   address            String?
@@ -429,6 +431,7 @@ model Customer {
   serviceCalls ServiceCall[]
 
   @@unique([organizationId, customerNumber])
+  @@unique([organizationId, morningClientId])
   @@index([organizationId])
   @@index([organizationId, deletedAt])
   @@index([organizationId, status])
@@ -444,6 +447,7 @@ model CustomerContact {
   email          String?
   phone          String?
   jobTitle       String?
+  morningSourceKey String?
   isPrimary      Boolean   @default(false)
   notes          String?
   createdAt      DateTime  @default(now())
@@ -456,6 +460,7 @@ model CustomerContact {
   @@index([organizationId])
   @@index([customerId])
   @@index([customerId, deletedAt])
+  @@unique([customerId, morningSourceKey])
   @@map("customer_contacts")
 }
 

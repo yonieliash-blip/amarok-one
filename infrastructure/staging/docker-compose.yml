@@ -33,6 +33,10 @@ services:
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      MORNING_CLIENT_ID: ${MORNING_CLIENT_ID:-}
+      MORNING_CLIENT_SECRET: ${MORNING_CLIENT_SECRET:-}
+      MORNING_TOKEN_URL: ${MORNING_TOKEN_URL:-https://api.morning.co/idp/v1/oauth/token}
+      MORNING_API_BASE_URL: ${MORNING_API_BASE_URL:-https://api.greeninvoice.co.il/api/v1}
     expose:
       - "3000"
     networks:

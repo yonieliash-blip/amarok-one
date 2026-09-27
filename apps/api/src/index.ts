@@ -20,6 +20,7 @@ const compositionRoot = createCompositionRoot();
 const apiRoutes = createApiRoutes(
   compositionRoot.serviceCallService,
   compositionRoot.accessService,
+  compositionRoot.morningCustomerSyncService,
 );
 
 const app = new Hono();
