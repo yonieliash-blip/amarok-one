@@ -18,6 +18,16 @@ export interface ManagerMemberSummary {
   permissionsVersion: number;
 }
 
+export interface ManagerMemberModule {
+  key: MemberModuleKey;
+  name: string;
+  description: string;
+}
+
+export interface ManagerMemberAccess extends ManagerMemberSummary {
+  availableModules: ManagerMemberModule[];
+}
+
 export async function listManagerMembers(
   organizationId: string,
   accessToken: string,
@@ -47,5 +57,33 @@ export async function createManagerMember(
       body: JSON.stringify(input),
     },
   );
+  return response.data;
+}
+
+export async function getManagerMemberAccess(
+  organizationId: string,
+  memberId: string,
+  accessToken: string,
+): Promise<ManagerMemberAccess> {
+  const response = await apiRequest<ManagerMemberAccess>(
+    `/organizations/${organizationId}/access/members/${memberId}`,
+    { accessToken },
+  );
+  return response.data;
+}
+
+export async function updateManagerMemberModules(
+  organizationId: string,
+  memberId: string,
+  accessToken: string,
+  enabledModules: MemberModuleKey[],
+): Promise<Pick<ManagerMemberSummary, "id" | "enabledModules" | "permissionsVersion">> {
+  const response = await apiRequest<
+    Pick<ManagerMemberSummary, "id" | "enabledModules" | "permissionsVersion">
+  >(`/organizations/${organizationId}/access/members/${memberId}/modules`, {
+    method: "PATCH",
+    accessToken,
+    body: JSON.stringify({ enabledModules }),
+  });
   return response.data;
 }
