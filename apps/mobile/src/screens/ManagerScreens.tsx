@@ -9,7 +9,7 @@ import type {
   ServiceCallLifecycleView,
 } from "@amarok-one/types";
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -254,6 +254,7 @@ export function ManagerHomeScreen({ navigation }: HomeProps) {
 
 export function ManagerCustomersScreen(_: CustomersProps) {
   const { user, accessToken } = useAuth();
+  const listRef = useRef<FlatList<Customer>>(null);
   const [items, setItems] = useState<Customer[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -301,6 +302,7 @@ export function ManagerCustomersScreen(_: CustomersProps) {
     setAddress(customer.address ?? "");
     setCity(customer.city ?? "");
     setError(null);
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
   }
 
   async function save(): Promise<void> {
@@ -353,6 +355,7 @@ export function ManagerCustomersScreen(_: CustomersProps) {
   return (
     <Page>
       <FlatList
+        ref={listRef}
         data={items}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.content}
@@ -415,6 +418,7 @@ export function ManagerCustomersScreen(_: CustomersProps) {
 
 export function ManagerEquipmentScreen(_: EquipmentProps) {
   const { user, accessToken } = useAuth();
+  const listRef = useRef<FlatList<Equipment>>(null);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [types, setTypes] = useState<Awaited<ReturnType<typeof listManagerEquipmentTypes>>>([]);
@@ -474,6 +478,7 @@ export function ManagerEquipmentScreen(_: EquipmentProps) {
     setCustomerId(item.customerId ?? null);
     setEquipmentTypeId(item.equipmentTypeId);
     setError(null);
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
   }
 
   async function save(): Promise<void> {
@@ -522,6 +527,7 @@ export function ManagerEquipmentScreen(_: EquipmentProps) {
   return (
     <Page>
       <FlatList
+        ref={listRef}
         data={equipment}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.content}
