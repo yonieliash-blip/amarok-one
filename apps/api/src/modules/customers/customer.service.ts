@@ -3,6 +3,7 @@ import type {
   Customer,
   CustomerContact,
   CustomerDetail,
+  CustomerSite,
   CustomerStatus,
 } from "@amarok-one/types";
 import { Prisma } from "@prisma/client";
@@ -13,6 +14,7 @@ import {
   fromCustomerStatusDto,
   toCustomerContactDto,
   toCustomerDto,
+  toCustomerSiteDto,
 } from "../../lib/mappers.js";
 import { paginationMeta, parsePagination } from "../../lib/pagination.js";
 import { prisma } from "../../lib/prisma.js";
@@ -26,8 +28,10 @@ import {
 import type {
   CreateContactInput,
   CreateCustomerInput,
+  CreateCustomerSiteInput,
   UpdateContactInput,
   UpdateCustomerInput,
+  UpdateCustomerSiteInput,
 } from "./customer.schemas.js";
 
 export async function listCustomers(
@@ -87,6 +91,10 @@ export async function getCustomerDetail(
         where: activeOnly,
         orderBy: [{ isPrimary: "desc" }, { name: "asc" }],
       },
+      sites: {
+        where: activeOnly,
+        orderBy: { name: "asc" },
+      },
     },
   });
 
@@ -97,6 +105,7 @@ export async function getCustomerDetail(
   return {
     ...toCustomerDto(customer),
     contacts: customer.contacts.map(toCustomerContactDto),
+    sites: customer.sites.map(toCustomerSiteDto),
   };
 }
 
@@ -204,6 +213,10 @@ export async function softDeleteCustomer(
   const deletedAt = new Date();
 
   await prisma.$transaction([
+    prisma.customerSite.updateMany({
+      where: { customerId, organizationId, deletedAt: null },
+      data: { deletedAt },
+    }),
     prisma.customerContact.updateMany({
       where: { customerId, organizationId, deletedAt: null },
       data: { deletedAt },
@@ -235,6 +248,113 @@ async function assertCustomerExists(organizationId: string, customerId: string):
   }
 }
 
+async function assertCustomerSiteExists(
+  organizationId: string,
+  customerId: string,
+  customerSiteId: string,
+): Promise<void> {
+  const site = await prisma.customerSite.findFirst({
+    where: { id: customerSiteId, organizationId, customerId, ...activeOnly },
+    select: { id: true },
+  });
+
+  if (!site) {
+    throw notFound("CustomerSite", customerSiteId);
+  }
+}
+
+export async function listCustomerSites(
+  organizationId: string,
+  customerId: string,
+): Promise<CustomerSite[]> {
+  await assertCustomerExists(organizationId, customerId);
+  const sites = await prisma.customerSite.findMany({
+    where: { organizationId, customerId, ...activeOnly },
+    orderBy: { name: "asc" },
+  });
+  return sites.map(toCustomerSiteDto);
+}
+
+export async function createCustomerSite(
+  organizationId: string,
+  customerId: string,
+  input: CreateCustomerSiteInput,
+  actorId?: string,
+): Promise<CustomerSite> {
+  await assertCustomerExists(organizationId, customerId);
+  try {
+    const site = await prisma.customerSite.create({
+      data: { organizationId, customerId, ...input },
+    });
+    await writeAuditLog({
+      organizationId,
+      actorId,
+      action: "customer_site.created",
+      entityType: "CustomerSite",
+      entityId: site.id,
+      metadata: { customerId, name: site.name },
+    });
+    return toCustomerSiteDto(site);
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw conflict("Customer site name already exists", { name: input.name });
+    }
+    throw error;
+  }
+}
+
+export async function updateCustomerSite(
+  organizationId: string,
+  customerId: string,
+  customerSiteId: string,
+  input: UpdateCustomerSiteInput,
+  actorId?: string,
+): Promise<CustomerSite> {
+  await assertCustomerSiteExists(organizationId, customerId, customerSiteId);
+  try {
+    const site = await prisma.customerSite.update({ where: { id: customerSiteId }, data: input });
+    await writeAuditLog({
+      organizationId,
+      actorId,
+      action: "customer_site.updated",
+      entityType: "CustomerSite",
+      entityId: site.id,
+      metadata: { customerId, fields: Object.keys(input) },
+    });
+    return toCustomerSiteDto(site);
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw conflict("Customer site name already exists", { name: input.name });
+    }
+    throw error;
+  }
+}
+
+export async function softDeleteCustomerSite(
+  organizationId: string,
+  customerId: string,
+  customerSiteId: string,
+  actorId?: string,
+): Promise<void> {
+  await assertCustomerSiteExists(organizationId, customerId, customerSiteId);
+  const deletedAt = new Date();
+  await prisma.$transaction([
+    prisma.customerContact.updateMany({
+      where: { organizationId, customerId, customerSiteId, deletedAt: null },
+      data: { deletedAt },
+    }),
+    prisma.customerSite.update({ where: { id: customerSiteId }, data: { deletedAt } }),
+  ]);
+  await writeAuditLog({
+    organizationId,
+    actorId,
+    action: "customer_site.deleted",
+    entityType: "CustomerSite",
+    entityId: customerSiteId,
+    metadata: { customerId },
+  });
+}
+
 export async function listContacts(
   organizationId: string,
   customerId: string,
@@ -256,6 +376,9 @@ export async function createContact(
   actorId?: string,
 ): Promise<CustomerContact> {
   await assertCustomerExists(organizationId, customerId);
+  if (input.customerSiteId) {
+    await assertCustomerSiteExists(organizationId, customerId, input.customerSiteId);
+  }
 
   const contact = await prisma.$transaction(async (tx) => {
     if (input.isPrimary) {
@@ -269,6 +392,7 @@ export async function createContact(
       data: {
         organizationId,
         customerId,
+        customerSiteId: input.customerSiteId,
         name: input.name,
         email: input.email,
         phone: input.phone,
@@ -306,6 +430,10 @@ export async function updateContact(
     throw notFound("CustomerContact", contactId);
   }
 
+  if (input.customerSiteId) {
+    await assertCustomerSiteExists(organizationId, customerId, input.customerSiteId);
+  }
+
   const contact = await prisma.$transaction(async (tx) => {
     if (input.isPrimary === true) {
       await tx.customerContact.updateMany({
@@ -317,6 +445,7 @@ export async function updateContact(
     return tx.customerContact.update({
       where: { id: contactId },
       data: {
+        ...(input.customerSiteId !== undefined ? { customerSiteId: input.customerSiteId } : {}),
         ...(input.name !== undefined ? { name: input.name } : {}),
         ...(input.email !== undefined ? { email: input.email } : {}),
         ...(input.phone !== undefined ? { phone: input.phone } : {}),

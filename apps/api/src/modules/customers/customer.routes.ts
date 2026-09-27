@@ -9,21 +9,28 @@ import {
   contactIdParamSchema,
   createContactSchema,
   createCustomerSchema,
+  createCustomerSiteSchema,
   customerIdParamSchema,
+  customerSiteIdParamSchema,
   listCustomersQuerySchema,
   updateContactSchema,
   updateCustomerSchema,
+  updateCustomerSiteSchema,
 } from "./customer.schemas.js";
 import {
   createContact,
   createCustomer,
+  createCustomerSite,
   getCustomerDetail,
   listContacts,
   listCustomers,
+  listCustomerSites,
   softDeleteContact,
   softDeleteCustomer,
+  softDeleteCustomerSite,
   updateContact,
   updateCustomer,
+  updateCustomerSite,
 } from "./customer.service.js";
 import type { MorningCustomerSyncService } from "../morning/morning-customer-sync.service.js";
 
@@ -77,6 +84,59 @@ export function createCustomerRoutes(morningCustomerSyncService: MorningCustomer
           actorId(context),
         );
         return context.json(createApiResponse(result));
+      },
+    )
+    .get(
+      "/:customerId/sites",
+      requirePermission("customers:read"),
+      zValidator("param", customerIdParamSchema),
+      async (context) => {
+        const { organizationId, customerId } = context.req.valid("param");
+        const sites = await listCustomerSites(organizationId, customerId);
+        return context.json(createApiResponse(sites));
+      },
+    )
+    .post(
+      "/:customerId/sites",
+      requirePermission("customers:write"),
+      zValidator("param", customerIdParamSchema),
+      zValidator("json", createCustomerSiteSchema),
+      async (context) => {
+        const { organizationId, customerId } = context.req.valid("param");
+        const site = await createCustomerSite(
+          organizationId,
+          customerId,
+          context.req.valid("json"),
+          actorId(context),
+        );
+        return context.json(createApiResponse(site), 201);
+      },
+    )
+    .patch(
+      "/:customerId/sites/:customerSiteId",
+      requirePermission("customers:write"),
+      zValidator("param", customerSiteIdParamSchema),
+      zValidator("json", updateCustomerSiteSchema),
+      async (context) => {
+        const { organizationId, customerId, customerSiteId } = context.req.valid("param");
+        const site = await updateCustomerSite(
+          organizationId,
+          customerId,
+          customerSiteId,
+          context.req.valid("json"),
+          actorId(context),
+        );
+        return context.json(createApiResponse(site));
+      },
+    )
+    .delete(
+      "/:customerId/sites/:customerSiteId",
+      requirePermission("customers:write"),
+      zValidator("param", customerSiteIdParamSchema),
+      async (context) => {
+        const { organizationId, customerId, customerSiteId } = context.req.valid("param");
+        await softDeleteCustomerSite(organizationId, customerId, customerSiteId, actorId(context));
+        return context.body(null, 204);
       },
     )
     .get(

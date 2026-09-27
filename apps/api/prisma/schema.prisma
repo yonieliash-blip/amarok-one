@@ -19,30 +19,31 @@ model Organization {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  companies             Company[]
-  branches              Branch[]
-  customers             Customer[]
-  customerContacts      CustomerContact[]
-  equipmentTypes        EquipmentType[]
-  equipment             Equipment[]
-  partCategories        PartCategory[]
-  partSubcategories     PartSubcategory[]
-  catalogParts          CatalogPart[]
-  inventoryLocations    InventoryLocation[]
-  inventoryItems        InventoryItem[]
-  serviceCalls          ServiceCall[]
-  serviceCallVisits     ServiceCallVisit[]
+  companies              Company[]
+  branches               Branch[]
+  customers              Customer[]
+  customerSites          CustomerSite[]
+  customerContacts       CustomerContact[]
+  equipmentTypes         EquipmentType[]
+  equipment              Equipment[]
+  partCategories         PartCategory[]
+  partSubcategories      PartSubcategory[]
+  catalogParts           CatalogPart[]
+  inventoryLocations     InventoryLocation[]
+  inventoryItems         InventoryItem[]
+  serviceCalls           ServiceCall[]
+  serviceCallVisits      ServiceCallVisit[]
   serviceCallWorkReports ServiceCallWorkReport[]
-  workflowEvents        WorkflowEvent[]
-  userRoles             UserRole[]
-  organizationMembers   OrganizationMember[]
-  memberModuleAccess    MemberModuleAccess[]
-  roles                 Role[]
-  auditLogs             AuditLog[]
-  workDays              WorkDay[]
-  workBreaks            WorkBreak[]
-  attendancePeriodLocks AttendancePeriodLock[]
-  workDayLocations      WorkDayLocation[]
+  workflowEvents         WorkflowEvent[]
+  userRoles              UserRole[]
+  organizationMembers    OrganizationMember[]
+  memberModuleAccess     MemberModuleAccess[]
+  roles                  Role[]
+  auditLogs              AuditLog[]
+  workDays               WorkDay[]
+  workBreaks             WorkBreak[]
+  attendancePeriodLocks  AttendancePeriodLock[]
+  workDayLocations       WorkDayLocation[]
 
   @@index([deletedAt])
   @@map("organizations")
@@ -107,18 +108,18 @@ model User {
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
 
-  userRoles                 UserRole[]
-  organizationMembers       OrganizationMember[]
-  refreshTokens             RefreshToken[]
-  auditLogs                 AuditLog[]             @relation("AuditActor")
-  assignedServiceCalls      ServiceCall[]          @relation("AssignedTechnician")
-  serviceCallVisits         ServiceCallVisit[]     @relation("VisitTechnician")
-  assignedInventoryLocations InventoryLocation[]   @relation("AssignedInventoryLocationUser")
-  serviceCallWorkReports    ServiceCallWorkReport[] @relation("WorkReportTechnician")
-  workDays                  WorkDay[]
-  approvedWorkDays          WorkDay[]              @relation("WorkDayApprover")
-  lockedAttendancePeriods   AttendancePeriodLock[] @relation("AttendancePeriodLocker")
-  unlockedAttendancePeriods AttendancePeriodLock[] @relation("AttendancePeriodUnlocker")
+  userRoles                  UserRole[]
+  organizationMembers        OrganizationMember[]
+  refreshTokens              RefreshToken[]
+  auditLogs                  AuditLog[]              @relation("AuditActor")
+  assignedServiceCalls       ServiceCall[]           @relation("AssignedTechnician")
+  serviceCallVisits          ServiceCallVisit[]      @relation("VisitTechnician")
+  assignedInventoryLocations InventoryLocation[]     @relation("AssignedInventoryLocationUser")
+  serviceCallWorkReports     ServiceCallWorkReport[] @relation("WorkReportTechnician")
+  workDays                   WorkDay[]
+  approvedWorkDays           WorkDay[]               @relation("WorkDayApprover")
+  lockedAttendancePeriods    AttendancePeriodLock[]  @relation("AttendancePeriodLocker")
+  unlockedAttendancePeriods  AttendancePeriodLock[]  @relation("AttendancePeriodUnlocker")
 
   @@index([deletedAt])
   @@index([isActive])
@@ -406,27 +407,28 @@ enum CustomerStatus {
 
 /// Tenant-scoped customer account.
 model Customer {
-  id                 String         @id @default(uuid()) @db.Uuid
-  organizationId     String         @db.Uuid
-  name               String
-  legalName          String?
-  registrationNumber String?
-  customerNumber     String
-  morningClientId    String?
+  id                  String         @id @default(uuid()) @db.Uuid
+  organizationId      String         @db.Uuid
+  name                String
+  legalName           String?
+  registrationNumber  String?
+  customerNumber      String
+  morningClientId     String?
   morningLastSyncedAt DateTime?
-  email              String?
-  phone              String?
-  address            String?
-  city               String?
-  country            String?
-  notes              String?
-  status             CustomerStatus @default(ACTIVE)
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
-  deletedAt          DateTime?
+  email               String?
+  phone               String?
+  address             String?
+  city                String?
+  country             String?
+  notes               String?
+  status              CustomerStatus @default(ACTIVE)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  deletedAt           DateTime?
 
   organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   contacts     CustomerContact[]
+  sites        CustomerSite[]
   equipment    Equipment[]
   serviceCalls ServiceCall[]
 
@@ -438,29 +440,56 @@ model Customer {
   @@map("customers")
 }
 
-/// Contact person belonging to a customer (tenant-scoped).
-model CustomerContact {
+/// Physical work site under a billing customer (for example, a quarry or plant).
+model CustomerSite {
   id             String    @id @default(uuid()) @db.Uuid
   organizationId String    @db.Uuid
   customerId     String    @db.Uuid
   name           String
-  email          String?
-  phone          String?
-  jobTitle       String?
-  morningSourceKey String?
-  isPrimary      Boolean   @default(false)
+  address        String?
+  city           String?
   notes          String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  customer     Customer          @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  contacts     CustomerContact[]
+  equipment    Equipment[]
+  serviceCalls ServiceCall[]
 
+  @@index([organizationId])
+  @@index([customerId, deletedAt])
+  @@map("customer_sites")
+}
+
+/// Contact person belonging to a customer (tenant-scoped).
+model CustomerContact {
+  id               String    @id @default(uuid()) @db.Uuid
+  organizationId   String    @db.Uuid
+  customerId       String    @db.Uuid
+  customerSiteId   String?   @db.Uuid
+  name             String
+  email            String?
+  phone            String?
+  jobTitle         String?
+  morningSourceKey String?
+  isPrimary        Boolean   @default(false)
+  notes            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  customer     Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  customerSite CustomerSite? @relation(fields: [customerSiteId], references: [id], onDelete: SetNull)
+
+  @@unique([customerId, morningSourceKey])
   @@index([organizationId])
   @@index([customerId])
   @@index([customerId, deletedAt])
-  @@unique([customerId, morningSourceKey])
+  @@index([customerSiteId])
   @@map("customer_contacts")
 }
 
@@ -498,6 +527,7 @@ model Equipment {
   organizationId     String          @db.Uuid
   equipmentTypeId    String          @db.Uuid
   customerId         String?         @db.Uuid
+  customerSiteId     String?         @db.Uuid
   branchId           String?         @db.Uuid
   name               String
   internalNumber     String
@@ -519,6 +549,7 @@ model Equipment {
   organization  Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   equipmentType EquipmentType @relation(fields: [equipmentTypeId], references: [id], onDelete: Restrict)
   customer      Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerSite  CustomerSite? @relation(fields: [customerSiteId], references: [id], onDelete: SetNull)
   branch        Branch?       @relation(fields: [branchId], references: [id], onDelete: SetNull)
   serviceCalls  ServiceCall[]
 
@@ -527,6 +558,7 @@ model Equipment {
   @@index([organizationId, deletedAt])
   @@index([organizationId, status])
   @@index([organizationId, customerId])
+  @@index([organizationId, customerSiteId])
   @@index([organizationId, equipmentTypeId])
   @@index([organizationId, manufacturer])
   @@index([organizationId, model])
@@ -597,6 +629,7 @@ model ServiceCall {
   scheduledAt       DateTime?
   completedAt       DateTime?
   customerId        String                    @db.Uuid
+  customerSiteId    String?                   @db.Uuid
   equipmentId       String                    @db.Uuid
   branchId          String?                   @db.Uuid
   assignedUserId    String?                   @db.Uuid
@@ -608,11 +641,12 @@ model ServiceCall {
   updatedAt         DateTime                  @updatedAt
   deletedAt         DateTime?
 
-  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  customer     Customer           @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  equipment    Equipment          @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
-  branch       Branch?            @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  assignedUser User?              @relation("AssignedTechnician", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  organization Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  customer     Customer                @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  customerSite CustomerSite?           @relation(fields: [customerSiteId], references: [id], onDelete: SetNull)
+  equipment    Equipment               @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+  branch       Branch?                 @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  assignedUser User?                   @relation("AssignedTechnician", fields: [assignedUserId], references: [id], onDelete: SetNull)
   visits       ServiceCallVisit[]
   workReports  ServiceCallWorkReport[]
 
@@ -622,6 +656,7 @@ model ServiceCall {
   @@index([organizationId, status])
   @@index([organizationId, priority])
   @@index([organizationId, customerId])
+  @@index([organizationId, customerSiteId])
   @@index([organizationId, equipmentId])
   @@index([organizationId, assignedUserId])
   @@index([organizationId, openedAt])
@@ -646,9 +681,9 @@ model ServiceCallVisit {
   updatedAt        DateTime               @updatedAt
   deletedAt        DateTime?
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  serviceCall  ServiceCall  @relation(fields: [serviceCallId], references: [id], onDelete: Restrict)
-  technician   User         @relation("VisitTechnician", fields: [technicianId], references: [id], onDelete: Restrict)
+  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  serviceCall  ServiceCall            @relation(fields: [serviceCallId], references: [id], onDelete: Restrict)
+  technician   User                   @relation("VisitTechnician", fields: [technicianId], references: [id], onDelete: Restrict)
   workReport   ServiceCallWorkReport?
 
   @@unique([serviceCallId, sequence])
@@ -685,8 +720,8 @@ model PartSubcategory {
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  category     PartCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  category     PartCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   catalogParts CatalogPart[]
 
   @@index([organizationId])
@@ -706,10 +741,10 @@ model CatalogPart {
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
 
-  organization   Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  category       PartCategory            @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  subcategory    PartSubcategory         @relation(fields: [subcategoryId], references: [id], onDelete: Restrict)
-  inventoryItems InventoryItem[]
+  organization    Organization                @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  category        PartCategory                @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  subcategory     PartSubcategory             @relation(fields: [subcategoryId], references: [id], onDelete: Restrict)
+  inventoryItems  InventoryItem[]
   workReportParts ServiceCallWorkReportPart[]
 
   @@index([organizationId])
@@ -720,13 +755,13 @@ model CatalogPart {
 }
 
 model InventoryLocation {
-  id             String               @id @default(uuid()) @db.Uuid
-  organizationId String               @db.Uuid
+  id             String                @id @default(uuid()) @db.Uuid
+  organizationId String                @db.Uuid
   name           String
   type           InventoryLocationType
-  assignedUserId String?              @db.Uuid
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
+  assignedUserId String?               @db.Uuid
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
   deletedAt      DateTime?
 
   organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
@@ -750,9 +785,9 @@ model InventoryItem {
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
 
-  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  location       InventoryLocation @relation(fields: [locationId], references: [id], onDelete: Restrict)
-  part           CatalogPart       @relation(fields: [partId], references: [id], onDelete: Restrict)
+  organization    Organization                @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  location        InventoryLocation           @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  part            CatalogPart                 @relation(fields: [partId], references: [id], onDelete: Restrict)
   workReportParts ServiceCallWorkReportPart[]
 
   @@index([organizationId])
@@ -776,10 +811,10 @@ model ServiceCallWorkReport {
   updatedAt             DateTime  @updatedAt
   deletedAt             DateTime?
 
-  organization Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  serviceCall  ServiceCall             @relation(fields: [serviceCallId], references: [id], onDelete: Restrict)
-  visit        ServiceCallVisit        @relation(fields: [visitId], references: [id], onDelete: Restrict)
-  technician   User                    @relation("WorkReportTechnician", fields: [technicianId], references: [id], onDelete: Restrict)
+  organization Organization                @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  serviceCall  ServiceCall                 @relation(fields: [serviceCallId], references: [id], onDelete: Restrict)
+  visit        ServiceCallVisit            @relation(fields: [visitId], references: [id], onDelete: Restrict)
+  technician   User                        @relation("WorkReportTechnician", fields: [technicianId], references: [id], onDelete: Restrict)
   parts        ServiceCallWorkReportPart[]
 
   @@index([organizationId])

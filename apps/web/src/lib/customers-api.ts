@@ -3,6 +3,7 @@ import type {
   Customer,
   CustomerContact,
   CustomerDetail,
+  CustomerSite,
   CustomerStatus,
 } from "@amarok-one/types";
 import { canWriteCustomers, extractPermissionSlugs } from "@amarok-one/permissions";
@@ -80,12 +81,73 @@ export interface CustomerFormInput {
 }
 
 export interface CustomerContactFormInput {
+  customerSiteId?: string;
   name: string;
   email?: string;
   phone?: string;
   jobTitle?: string;
   isPrimary?: boolean;
   notes?: string;
+}
+
+export interface CustomerSiteFormInput {
+  name: string;
+  address?: string;
+  city?: string;
+  notes?: string;
+}
+
+export async function listCustomerSitesRequest(
+  organizationId: string,
+  customerId: string,
+  accessToken: string,
+): Promise<CustomerSite[]> {
+  const response = await apiRequest<CustomerSite[]>(
+    `${customersBase(organizationId)}/${customerId}/sites`,
+    { accessToken },
+  );
+  return response.data ?? [];
+}
+
+export async function createCustomerSiteRequest(
+  organizationId: string,
+  customerId: string,
+  accessToken: string,
+  input: CustomerSiteFormInput,
+): Promise<CustomerSite> {
+  const response = await apiRequest<CustomerSite>(
+    `${customersBase(organizationId)}/${customerId}/sites`,
+    { method: "POST", accessToken, body: JSON.stringify(input) },
+  );
+  if (!response.data) throw new Error("Failed to create customer site");
+  return response.data;
+}
+
+export async function updateCustomerSiteRequest(
+  organizationId: string,
+  customerId: string,
+  customerSiteId: string,
+  accessToken: string,
+  input: Partial<CustomerSiteFormInput>,
+): Promise<CustomerSite> {
+  const response = await apiRequest<CustomerSite>(
+    `${customersBase(organizationId)}/${customerId}/sites/${customerSiteId}`,
+    { method: "PATCH", accessToken, body: JSON.stringify(input) },
+  );
+  if (!response.data) throw new Error("Failed to update customer site");
+  return response.data;
+}
+
+export async function deleteCustomerSiteRequest(
+  organizationId: string,
+  customerId: string,
+  customerSiteId: string,
+  accessToken: string,
+): Promise<void> {
+  await apiRequest<void>(`${customersBase(organizationId)}/${customerId}/sites/${customerSiteId}`, {
+    method: "DELETE",
+    accessToken,
+  });
 }
 
 export async function createCustomerRequest(

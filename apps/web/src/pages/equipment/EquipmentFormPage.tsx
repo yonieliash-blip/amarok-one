@@ -1,14 +1,14 @@
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import type { Branch, Customer, EquipmentStatus, EquipmentType } from "@amarok-one/types";
+import type { Branch, Customer, CustomerSite, EquipmentStatus, EquipmentType } from "@amarok-one/types";
 import { Button } from "@amarok-one/ui";
 import { useAuth } from "../../auth/useAuth";
 import { ErrorState } from "../../components/ErrorState";
 import { LoadingState } from "../../components/LoadingState";
 import { useTranslation } from "../../i18n/useTranslation";
 import { getApiErrorMessage } from "../../lib/auth-errors";
-import { listCustomersRequest } from "../../lib/customers-api";
+import { listCustomerSitesRequest, listCustomersRequest } from "../../lib/customers-api";
 import { getEquipmentStatusLabel } from "../../lib/equipment-status";
 import {
   createEquipmentRequest,
@@ -32,6 +32,7 @@ const EMPTY_FORM: EquipmentFormInput = {
   year: undefined,
   equipmentTypeId: "",
   customerId: "",
+  customerSiteId: "",
   branchId: "",
   status: "active",
   engineHours: undefined,
@@ -52,6 +53,7 @@ export function EquipmentFormPage() {
   const [form, setForm] = useState<EquipmentFormInput>(EMPTY_FORM);
   const [equipmentTypes, setEquipmentTypes] = useState<EquipmentType[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customerSites, setCustomerSites] = useState<CustomerSite[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -123,6 +125,7 @@ export function EquipmentFormPage() {
           year: item.year,
           equipmentTypeId: item.equipmentTypeId,
           customerId: item.customerId ?? "",
+          customerSiteId: item.customerSiteId ?? "",
           branchId: item.branchId ?? "",
           status: item.status,
           engineHours: item.engineHours,
@@ -152,6 +155,24 @@ export function EquipmentFormPage() {
     };
   }, [isEdit, equipmentId, user, accessToken, t]);
 
+  useEffect(() => {
+    if (!user || !accessToken || !form.customerId) {
+      setCustomerSites([]);
+      return;
+    }
+    let cancelled = false;
+    void listCustomerSitesRequest(user.organization.id, form.customerId, accessToken)
+      .then((sites) => {
+        if (!cancelled) setCustomerSites(sites);
+      })
+      .catch(() => {
+        if (!cancelled) setCustomerSites([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, accessToken, form.customerId]);
+
   function updateField<K extends keyof EquipmentFormInput>(
     key: K,
     value: EquipmentFormInput[K],
@@ -180,6 +201,7 @@ export function EquipmentFormPage() {
       model: form.model?.trim() || undefined,
       year: form.year ? Number(form.year) : undefined,
       customerId: form.customerId?.trim() || undefined,
+      customerSiteId: form.customerSiteId?.trim() || undefined,
       branchId: form.branchId?.trim() || undefined,
       engineHours: form.engineHours !== undefined ? Number(form.engineHours) : undefined,
       mileage: form.mileage !== undefined ? Number(form.mileage) : undefined,
@@ -391,12 +413,30 @@ export function EquipmentFormPage() {
               <span>{t("equipment", "customer")}</span>
               <select
                 value={form.customerId ?? ""}
-                onChange={(event) => updateField("customerId", event.target.value)}
+                onChange={(event) => {
+                  updateField("customerId", event.target.value);
+                  updateField("customerSiteId", "");
+                }}
               >
                 <option value="">{t("equipment", "noCustomer")}</option>
                 {customers.map((customer) => (
                   <option key={customer.id} value={customer.id}>
                     {customer.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="customer-form__field">
+              <span>אתר לקוח</span>
+              <select
+                value={form.customerSiteId ?? ""}
+                disabled={!form.customerId}
+                onChange={(event) => updateField("customerSiteId", event.target.value)}
+              >
+                <option value="">ללא אתר</option>
+                {customerSites.map((site) => (
+                  <option key={site.id} value={site.id}>
+                    {site.name}
                   </option>
                 ))}
               </select>

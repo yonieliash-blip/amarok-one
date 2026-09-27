@@ -9,6 +9,7 @@ export interface ServiceCallCreatePayload {
   openedAt?: string;
   scheduledAt?: string;
   customerId: string;
+  customerSiteId?: string;
   equipmentId: string;
   branchId?: string;
   contactName?: string;
@@ -26,6 +27,7 @@ export interface ServiceCallUpdatePayload {
   openedAt?: string;
   scheduledAt?: string | null;
   customerId?: string;
+  customerSiteId?: string | null;
   equipmentId?: string;
   branchId?: string | null;
   contactName?: string | null;
@@ -40,6 +42,7 @@ export interface ServiceCallFormValues {
   description: string;
   priority: ServiceCallPriority;
   customerId: string;
+  customerSiteId: string;
   equipmentId: string;
   branchId: string;
   contactName: string;
@@ -54,6 +57,7 @@ export const EMPTY_SERVICE_CALL_FORM: ServiceCallFormValues = {
   description: "",
   priority: "normal",
   customerId: "",
+  customerSiteId: "",
   equipmentId: "",
   branchId: "",
   contactName: "",
@@ -72,6 +76,7 @@ export function buildCreatePayload(
     description: values.description.trim() || undefined,
     priority: values.priority,
     customerId: values.customerId,
+    customerSiteId: values.customerSiteId.trim() || undefined,
     equipmentId: values.equipmentId,
     openedAt: scheduling.openedAt,
     scheduledAt: scheduling.scheduledAt,
@@ -93,6 +98,7 @@ export function buildUpdatePayload(
     description: values.description.trim() || null,
     priority: values.priority,
     customerId: values.customerId,
+    customerSiteId: values.customerSiteId.trim() ? values.customerSiteId.trim() : null,
     equipmentId: values.equipmentId,
     openedAt: scheduling.openedAt,
     scheduledAt: scheduling.scheduledAt ?? null,

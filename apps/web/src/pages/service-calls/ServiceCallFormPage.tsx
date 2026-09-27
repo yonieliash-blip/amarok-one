@@ -1,7 +1,14 @@
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import type { Branch, Customer, Equipment, ServiceCallPriority } from "@amarok-one/types";
+import type {
+  Branch,
+  Customer,
+  CustomerContact,
+  CustomerSite,
+  Equipment,
+  ServiceCallPriority,
+} from "@amarok-one/types";
 import { canWriteServiceCalls, extractPermissionSlugs } from "@amarok-one/permissions";
 import { Button } from "@amarok-one/ui";
 import { useAuth } from "../../auth/useAuth";
@@ -10,7 +17,11 @@ import { LoadingState } from "../../components/LoadingState";
 import { UnauthorizedPage } from "../../pages/UnauthorizedPage";
 import { useTranslation } from "../../i18n/useTranslation";
 import { getApiErrorMessage } from "../../lib/auth-errors";
-import { listCustomersRequest } from "../../lib/customers-api";
+import {
+  getCustomerRequest,
+  listCustomerSitesRequest,
+  listCustomersRequest,
+} from "../../lib/customers-api";
 import {
   listBranchesRequest,
   listCompaniesRequest,
@@ -58,6 +69,9 @@ export function ServiceCallFormPage() {
   const [scheduledAtInput, setScheduledAtInput] = useState("");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
+  const [customerSites, setCustomerSites] = useState<CustomerSite[]>([]);
+  const [contacts, setContacts] = useState<CustomerContact[]>([]);
+  const [selectedContactId, setSelectedContactId] = useState("");
   const [branches, setBranches] = useState<Branch[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -67,8 +81,25 @@ export function ServiceCallFormPage() {
 
   const compatibleEquipment = useMemo(() => {
     if (!form.customerId) return equipment;
-    return equipment.filter((item) => !item.customerId || item.customerId === form.customerId);
-  }, [equipment, form.customerId]);
+    return equipment.filter(
+      (item) =>
+        (!item.customerId || item.customerId === form.customerId) &&
+        (!form.customerSiteId
+          ? !item.customerSiteId
+          : !item.customerSiteId || item.customerSiteId === form.customerSiteId),
+    );
+  }, [equipment, form.customerId, form.customerSiteId]);
+
+  const compatibleContacts = useMemo(
+    () =>
+      contacts.filter(
+        (contact) =>
+          !form.customerSiteId ||
+          !contact.customerSiteId ||
+          contact.customerSiteId === form.customerSiteId,
+      ),
+    [contacts, form.customerSiteId],
+  );
 
   useEffect(() => {
     if (!user || !accessToken) return;
@@ -104,6 +135,34 @@ export function ServiceCallFormPage() {
   }, [user, accessToken]);
 
   useEffect(() => {
+    if (!user || !accessToken || !form.customerId) {
+      setCustomerSites([]);
+      setContacts([]);
+      return;
+    }
+    let cancelled = false;
+    void Promise.all([
+      listCustomerSitesRequest(user.organization.id, form.customerId, accessToken),
+      getCustomerRequest(user.organization.id, form.customerId, accessToken),
+    ])
+      .then(([sites, customer]) => {
+        if (!cancelled) {
+          setCustomerSites(sites);
+          setContacts(customer.contacts);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCustomerSites([]);
+          setContacts([]);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, accessToken, form.customerId]);
+
+  useEffect(() => {
     if (!isEdit || !serviceCallId || !user || !accessToken) return;
 
     let cancelled = false;
@@ -122,6 +181,7 @@ export function ServiceCallFormPage() {
           description: call.description ?? "",
           priority: call.priority,
           customerId: call.customerId,
+          customerSiteId: call.customerSiteId ?? "",
           equipmentId: call.equipmentId,
           branchId: call.branchId ?? "",
           contactName: call.contactName ?? "",
@@ -310,7 +370,11 @@ export function ServiceCallFormPage() {
                 value={form.customerId}
                 onChange={(event) => {
                   updateField("customerId", event.target.value);
+                  updateField("customerSiteId", "");
                   updateField("equipmentId", "");
+                  updateField("contactName", "");
+                  updateField("contactPhone", "");
+                  setSelectedContactId("");
                 }}
               >
                 <option value="" disabled>
@@ -319,6 +383,35 @@ export function ServiceCallFormPage() {
                 {customers.map((customer) => (
                   <option key={customer.id} value={customer.id}>
                     {customer.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="customer-form__field">
+              <span>אתר</span>
+              <select
+                value={form.customerSiteId}
+                disabled={!form.customerId}
+                onChange={(event) => {
+                  const customerSiteId = event.target.value;
+                  const site = customerSites.find((entry) => entry.id === customerSiteId);
+                  updateField("customerSiteId", customerSiteId);
+                  updateField("equipmentId", "");
+                  updateField("contactName", "");
+                  updateField("contactPhone", "");
+                  setSelectedContactId("");
+                  if (site) {
+                    updateField(
+                      "location",
+                      [site.name, site.address, site.city].filter(Boolean).join(" — "),
+                    );
+                  }
+                }}
+              >
+                <option value="">ללא אתר</option>
+                {customerSites.map((site) => (
+                  <option key={site.id} value={site.id}>
+                    {site.name}
                   </option>
                 ))}
               </select>
@@ -386,6 +479,28 @@ export function ServiceCallFormPage() {
         <section className="customer-form__section">
           <h3>{t("serviceCalls", "contactSection")}</h3>
           <div className="customer-form__grid">
+            <label className="customer-form__field">
+              <span>איש קשר שמור</span>
+              <select
+                value={selectedContactId}
+                disabled={!form.customerId}
+                onChange={(event) => {
+                  const contact = contacts.find((entry) => entry.id === event.target.value);
+                  setSelectedContactId(event.target.value);
+                  if (contact) {
+                    updateField("contactName", contact.name);
+                    updateField("contactPhone", contact.phone ?? "");
+                  }
+                }}
+              >
+                <option value="">בחירת איש קשר</option>
+                {compatibleContacts.map((contact) => (
+                  <option key={contact.id} value={contact.id}>
+                    {contact.name}
+                  </option>
+                ))}
+              </select>
+            </label>
             <label className="customer-form__field">
               <span>{t("serviceCalls", "contactName")}</span>
               <input

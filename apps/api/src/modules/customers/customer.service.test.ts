@@ -52,6 +52,9 @@ vi.mock("../../lib/prisma.js", () => ({
       create: vi.fn(),
       update: vi.fn(),
     },
+    customerSite: {
+      updateMany: vi.fn(),
+    },
     customerContact: {
       findFirst: vi.fn(),
       findMany: vi.fn(),
@@ -84,7 +87,7 @@ describe("customer.service", () => {
     expect(transactionMock).toHaveBeenCalledOnce();
     const operations = transactionMock.mock.calls[0]?.[0];
     expect(Array.isArray(operations)).toBe(true);
-    expect(operations).toHaveLength(2);
+    expect(operations).toHaveLength(3);
   });
 
   it("clears existing primary contacts when creating a primary contact", async () => {

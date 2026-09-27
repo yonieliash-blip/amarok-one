@@ -267,6 +267,10 @@ export function ServiceCallDetailPage() {
               <dd>{serviceCall.description ?? emptyValue}</dd>
             </div>
             <div>
+              <dt>אתר לקוח</dt>
+              <dd>{serviceCall.customerSite?.name ?? emptyValue}</dd>
+            </div>
+            <div>
               <dt>{t("serviceCalls", "workSite")}</dt>
               <dd>{serviceCall.location ?? emptyValue}</dd>
             </div>

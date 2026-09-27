@@ -15,6 +15,7 @@ export interface ListEquipmentParams {
   pageSize?: number;
   search?: string;
   customerId?: string;
+  customerSiteId?: string;
   manufacturer?: string;
   model?: string;
   equipmentTypeId?: string;
@@ -50,6 +51,7 @@ export async function listEquipmentRequest(
   if (params.pageSize) searchParams.set("pageSize", String(params.pageSize));
   if (params.search?.trim()) searchParams.set("search", params.search.trim());
   if (params.customerId) searchParams.set("customerId", params.customerId);
+  if (params.customerSiteId) searchParams.set("customerSiteId", params.customerSiteId);
   if (params.manufacturer?.trim()) searchParams.set("manufacturer", params.manufacturer.trim());
   if (params.model?.trim()) searchParams.set("model", params.model.trim());
   if (params.equipmentTypeId) searchParams.set("equipmentTypeId", params.equipmentTypeId);
@@ -85,6 +87,7 @@ export interface EquipmentFormInput {
   year?: number;
   equipmentTypeId: string;
   customerId?: string;
+  customerSiteId?: string;
   branchId?: string;
   status?: EquipmentStatus;
   engineHours?: number;

@@ -397,7 +397,12 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
     actorId?: string,
   ): Promise<ServiceCall> {
     await assertOrganizationExists(organizationId);
-    await validateCustomerEquipmentLink(organizationId, input.customerId, input.equipmentId);
+    await validateCustomerSiteEquipmentLink(
+      organizationId,
+      input.customerId,
+      input.customerSiteId,
+      input.equipmentId,
+    );
     assertCreateServiceCallHasNoLifecycleFields(input);
 
     if (input.branchId) {
@@ -423,6 +428,7 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
             openedAt: parseDate(input.openedAt) ?? new Date(),
             scheduledAt: parseDate(input.scheduledAt),
             customerId: input.customerId,
+            customerSiteId: input.customerSiteId,
             equipmentId: input.equipmentId,
             branchId: input.branchId,
             contactName: input.contactName,
@@ -483,10 +489,21 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
     const existing = await loadServiceCallDto(organizationId, serviceCallId);
 
     const nextCustomerId = patchInput.customerId ?? existing.customerId;
+    const nextCustomerSiteId =
+      patchInput.customerSiteId === undefined ? existing.customerSiteId : patchInput.customerSiteId;
     const nextEquipmentId = patchInput.equipmentId ?? existing.equipmentId;
 
-    if (patchInput.customerId !== undefined || patchInput.equipmentId !== undefined) {
-      await validateCustomerEquipmentLink(organizationId, nextCustomerId, nextEquipmentId);
+    if (
+      patchInput.customerId !== undefined ||
+      patchInput.customerSiteId !== undefined ||
+      patchInput.equipmentId !== undefined
+    ) {
+      await validateCustomerSiteEquipmentLink(
+        organizationId,
+        nextCustomerId,
+        nextCustomerSiteId,
+        nextEquipmentId,
+      );
     }
 
     if (patchInput.branchId) {
@@ -509,6 +526,11 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
           }
         : {}),
       ...(patchInput.customerId !== undefined ? { customerId: patchInput.customerId } : {}),
+      ...(patchInput.customerSiteId !== undefined
+        ? patchInput.customerSiteId === null
+          ? { customerSite: { disconnect: true } }
+          : { customerSite: { connect: { id: patchInput.customerSiteId } } }
+        : {}),
       ...(patchInput.equipmentId !== undefined ? { equipmentId: patchInput.equipmentId } : {}),
       ...(patchInput.branchId !== undefined
         ? patchInput.branchId === null
@@ -957,10 +979,10 @@ async function assertCustomerInOrganization(
 async function assertEquipmentInOrganization(
   organizationId: string,
   equipmentId: string,
-): Promise<{ id: string; customerId: string | null }> {
+): Promise<{ id: string; customerId: string | null; customerSiteId: string | null }> {
   const equipment = await prisma.equipment.findFirst({
     where: { id: equipmentId, organizationId, ...activeOnly },
-    select: { id: true, customerId: true },
+    select: { id: true, customerId: true, customerSiteId: true },
   });
 
   if (!equipment) {
@@ -968,6 +990,20 @@ async function assertEquipmentInOrganization(
   }
 
   return equipment;
+}
+
+async function assertCustomerSiteInOrganization(
+  organizationId: string,
+  customerId: string,
+  customerSiteId: string,
+): Promise<void> {
+  const site = await prisma.customerSite.findFirst({
+    where: { id: customerSiteId, organizationId, customerId, ...activeOnly },
+    select: { id: true },
+  });
+  if (!site) {
+    throw notFound("CustomerSite", customerSiteId);
+  }
 }
 
 async function assertBranchInOrganization(organizationId: string, branchId: string): Promise<void> {
@@ -981,12 +1017,24 @@ async function assertBranchInOrganization(organizationId: string, branchId: stri
   }
 }
 
-async function validateCustomerEquipmentLink(
+async function validateCustomerSiteEquipmentLink(
   organizationId: string,
   customerId: string,
+  customerSiteId: string | null | undefined,
   equipmentId: string,
 ): Promise<void> {
   await assertCustomerInOrganization(organizationId, customerId);
   const equipment = await assertEquipmentInOrganization(organizationId, equipmentId);
   assertEquipmentMatchesCustomer(equipment, customerId);
+
+  if (customerSiteId) {
+    await assertCustomerSiteInOrganization(organizationId, customerId, customerSiteId);
+  }
+
+  if (equipment.customerSiteId && equipment.customerSiteId !== customerSiteId) {
+    throw conflict("Equipment is assigned to a different customer site", {
+      equipmentCustomerSiteId: equipment.customerSiteId,
+      requestedCustomerSiteId: customerSiteId ?? null,
+    });
+  }
 }

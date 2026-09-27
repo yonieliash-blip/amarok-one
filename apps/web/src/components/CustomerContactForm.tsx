@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "@amarok-one/ui";
 import { useTranslation } from "../i18n/useTranslation";
 import type { CustomerContactFormInput } from "../lib/customers-api";
+import type { CustomerSite } from "@amarok-one/types";
 
 const EMPTY_CONTACT: CustomerContactFormInput = {
   name: "",
@@ -11,6 +12,7 @@ const EMPTY_CONTACT: CustomerContactFormInput = {
   jobTitle: "",
   isPrimary: false,
   notes: "",
+  customerSiteId: "",
 };
 
 interface CustomerContactFormProps {
@@ -19,6 +21,7 @@ interface CustomerContactFormProps {
   submitting?: boolean;
   onSubmit: (input: CustomerContactFormInput) => Promise<void>;
   onCancel: () => void;
+  sites?: CustomerSite[];
 }
 
 export function CustomerContactForm({
@@ -27,6 +30,7 @@ export function CustomerContactForm({
   submitting = false,
   onSubmit,
   onCancel,
+  sites = [],
 }: CustomerContactFormProps) {
   const { t } = useTranslation();
   const [form, setForm] = useState<CustomerContactFormInput>(initialValues ?? EMPTY_CONTACT);
@@ -42,6 +46,7 @@ export function CustomerContactForm({
     event.preventDefault();
     const payload: CustomerContactFormInput = {
       name: form.name.trim(),
+      customerSiteId: form.customerSiteId?.trim() || undefined,
       email: form.email?.trim() || undefined,
       phone: form.phone?.trim() || undefined,
       jobTitle: form.jobTitle?.trim() || undefined,
@@ -63,6 +68,20 @@ export function CustomerContactForm({
             value={form.name}
             onChange={(event) => updateField("name", event.target.value)}
           />
+        </label>
+        <label className="customer-form__field">
+          <span>אתר לקוח</span>
+          <select
+            value={form.customerSiteId ?? ""}
+            onChange={(event) => updateField("customerSiteId", event.target.value)}
+          >
+            <option value="">כללי ללקוח</option>
+            {sites.map((site) => (
+              <option key={site.id} value={site.id}>
+                {site.name}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="customer-form__field">
           <span>{t("customers", "contactJobTitle")}</span>

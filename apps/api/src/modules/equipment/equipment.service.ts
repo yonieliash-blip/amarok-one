@@ -49,6 +49,20 @@ async function assertCustomerInOrganization(
   }
 }
 
+async function assertCustomerSiteInOrganization(
+  organizationId: string,
+  customerId: string,
+  customerSiteId: string,
+): Promise<void> {
+  const site = await prisma.customerSite.findFirst({
+    where: { id: customerSiteId, organizationId, customerId, ...activeOnly },
+    select: { id: true },
+  });
+  if (!site) {
+    throw notFound("CustomerSite", customerSiteId);
+  }
+}
+
 async function assertBranchInOrganization(organizationId: string, branchId: string): Promise<void> {
   const branch = await prisma.branch.findFirst({
     where: { id: branchId, organizationId, ...activeOnly },
@@ -136,6 +150,7 @@ function buildCreateData(
     organization: { connect: { id: organizationId } },
     equipmentType: { connect: { id: input.equipmentTypeId } },
     ...(input.customerId ? { customer: { connect: { id: input.customerId } } } : {}),
+    ...(input.customerSiteId ? { customerSite: { connect: { id: input.customerSiteId } } } : {}),
     ...(input.branchId ? { branch: { connect: { id: input.branchId } } } : {}),
     name: input.name,
     internalNumber: input.internalNumber,
@@ -164,6 +179,13 @@ export async function createEquipment(
 
   if (input.customerId) {
     await assertCustomerInOrganization(organizationId, input.customerId);
+  }
+
+  if (input.customerSiteId) {
+    if (!input.customerId) {
+      throw conflict("A customer site requires a customer", {});
+    }
+    await assertCustomerSiteInOrganization(organizationId, input.customerId, input.customerSiteId);
   }
 
   if (input.branchId) {
@@ -205,7 +227,7 @@ export async function updateEquipment(
   input: UpdateEquipmentInput,
   actorId?: string,
 ): Promise<EquipmentDetail> {
-  await getEquipmentById(organizationId, equipmentId);
+  const existing = await getEquipmentById(organizationId, equipmentId);
 
   if (input.equipmentTypeId) {
     await assertEquipmentTypeExists(organizationId, input.equipmentTypeId);
@@ -213,6 +235,20 @@ export async function updateEquipment(
 
   if (input.customerId) {
     await assertCustomerInOrganization(organizationId, input.customerId);
+  }
+
+  const nextCustomerId = input.customerId === undefined ? existing.customerId : input.customerId;
+  const nextCustomerSiteId =
+    input.customerId === null && input.customerSiteId === undefined
+      ? null
+      : input.customerSiteId === undefined
+        ? existing.customerSiteId
+        : input.customerSiteId;
+  if (nextCustomerSiteId) {
+    if (!nextCustomerId) {
+      throw conflict("A customer site requires a customer", {});
+    }
+    await assertCustomerSiteInOrganization(organizationId, nextCustomerId, nextCustomerSiteId);
   }
 
   if (input.branchId) {
@@ -233,6 +269,13 @@ export async function updateEquipment(
       ? input.customerId === null
         ? { customer: { disconnect: true } }
         : { customer: { connect: { id: input.customerId } } }
+      : {}),
+    ...(input.customerId === null && input.customerSiteId === undefined
+      ? { customerSite: { disconnect: true } }
+      : input.customerSiteId !== undefined
+      ? input.customerSiteId === null
+        ? { customerSite: { disconnect: true } }
+        : { customerSite: { connect: { id: input.customerSiteId } } }
       : {}),
     ...(input.branchId !== undefined
       ? input.branchId === null

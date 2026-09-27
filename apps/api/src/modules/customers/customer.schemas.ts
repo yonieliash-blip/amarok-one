@@ -61,7 +61,30 @@ export const contactIdParamSchema = customerIdParamSchema.extend({
   contactId: z.string().uuid(),
 });
 
+export const customerSiteIdParamSchema = customerIdParamSchema.extend({
+  customerSiteId: z.string().uuid(),
+});
+
+export const createCustomerSiteSchema = z.object({
+  name: z.string().trim().min(2).max(256),
+  address: z.string().trim().min(2).max(256).optional(),
+  city: z.string().trim().min(2).max(128).optional(),
+  notes: z.string().trim().max(2000).optional(),
+});
+
+export const updateCustomerSiteSchema = z
+  .object({
+    name: z.string().trim().min(2).max(256).optional(),
+    address: z.string().trim().min(2).max(256).nullable().optional(),
+    city: z.string().trim().min(2).max(128).nullable().optional(),
+    notes: z.string().trim().max(2000).nullable().optional(),
+  })
+  .refine((value) => Object.values(value).some((field) => field !== undefined), {
+    message: "At least one field must be provided",
+  });
+
 export const createContactSchema = z.object({
+  customerSiteId: z.string().uuid().optional(),
   name: z.string().trim().min(2).max(128),
   email: z.string().trim().email().max(256).optional(),
   phone: z.string().trim().min(3).max(32).optional(),
@@ -72,6 +95,7 @@ export const createContactSchema = z.object({
 
 export const updateContactSchema = z
   .object({
+    customerSiteId: z.string().uuid().nullable().optional(),
     name: z.string().trim().min(2).max(128).optional(),
     email: z.string().trim().email().max(256).nullable().optional(),
     phone: z.string().trim().min(3).max(32).nullable().optional(),
@@ -85,5 +109,7 @@ export const updateContactSchema = z
 
 export type CreateCustomerInput = z.infer<typeof createCustomerSchema>;
 export type UpdateCustomerInput = z.infer<typeof updateCustomerSchema>;
+export type CreateCustomerSiteInput = z.infer<typeof createCustomerSiteSchema>;
+export type UpdateCustomerSiteInput = z.infer<typeof updateCustomerSiteSchema>;
 export type CreateContactInput = z.infer<typeof createContactSchema>;
 export type UpdateContactInput = z.infer<typeof updateContactSchema>;
