@@ -62,12 +62,12 @@ export function createMorningClient(
     try {
       response = await fetchImpl(config.tokenUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
           grant_type: "client_credentials",
           client_id: config.clientId,
           client_secret: config.clientSecret,
-        }),
+        }).toString(),
       });
     } catch {
       throw new AppError("MORNING_UNAVAILABLE", "Could not reach Morning", 502);

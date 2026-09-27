@@ -42,6 +42,10 @@ describe("Morning client", () => {
     ]);
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "grant_type=client_credentials&client_id=client-id&client_secret=client-secret",
+    });
     expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({
       body: JSON.stringify({ page: 1, pageSize: 100 }),
       headers: { Authorization: "Bearer token" },
