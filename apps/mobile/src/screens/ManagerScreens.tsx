@@ -55,9 +55,12 @@ import {
 } from "../api/service-calls";
 import {
   createManagerMember,
+  getManagerMemberAccess,
   listManagerMembers,
   type ManagerEmployeeRoleSlug,
+  type ManagerMemberAccess,
   type ManagerMemberSummary,
+  updateManagerMemberModules,
 } from "../api/manager-users";
 import { isApiRequestError } from "../api/client";
 import {
@@ -1278,6 +1281,9 @@ export function ManagerTechniciansScreen(_: TechniciansProps) {
   const [roleSlug, setRoleSlug] = useState<ManagerEmployeeRoleSlug>("technician");
   const [newVanName, setNewVanName] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [memberAccess, setMemberAccess] = useState<Record<string, ManagerMemberAccess>>({});
+  const [loadingMemberAccessId, setLoadingMemberAccessId] = useState<string | null>(null);
+  const [savingMemberAccessId, setSavingMemberAccessId] = useState<string | null>(null);
   const [creatingEmployee, setCreatingEmployee] = useState(false);
   const [creatingVan, setCreatingVan] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1381,6 +1387,81 @@ export function ManagerTechniciansScreen(_: TechniciansProps) {
     }
   }
 
+  async function openMemberAccess(memberId: string): Promise<void> {
+    if (!user || !accessToken) return;
+    if (memberAccess[memberId]) {
+      setMemberAccess((current) => {
+        const next = { ...current };
+        delete next[memberId];
+        return next;
+      });
+      return;
+    }
+
+    setLoadingMemberAccessId(memberId);
+    setError(null);
+    try {
+      const access = await getManagerMemberAccess(user.organization.id, memberId, accessToken);
+      setMemberAccess((current) => ({ ...current, [memberId]: access }));
+    } catch (cause) {
+      setError(message(cause, "לא ניתן לטעון את הרשאות העובד"));
+    } finally {
+      setLoadingMemberAccessId(null);
+    }
+  }
+
+  function toggleMemberModule(
+    memberId: string,
+    moduleKey: ManagerMemberAccess["enabledModules"][number],
+  ): void {
+    setMemberAccess((current) => {
+      const access = current[memberId];
+      if (!access) return current;
+
+      const enabledModules = access.enabledModules.includes(moduleKey)
+        ? access.enabledModules.filter((key) => key !== moduleKey)
+        : [...access.enabledModules, moduleKey];
+
+      if (enabledModules.length === 0) {
+        setError("יש להשאיר לפחות מודול אחד פעיל לעובד.");
+        return current;
+      }
+
+      return { ...current, [memberId]: { ...access, enabledModules } };
+    });
+  }
+
+  async function saveMemberModules(memberId: string): Promise<void> {
+    if (!user || !accessToken) return;
+    const access = memberAccess[memberId];
+    if (!access) return;
+
+    setSavingMemberAccessId(memberId);
+    setError(null);
+    try {
+      const updated = await updateManagerMemberModules(
+        user.organization.id,
+        memberId,
+        accessToken,
+        access.enabledModules,
+      );
+      setMemberAccess((current) => ({
+        ...current,
+        [memberId]: {
+          ...access,
+          enabledModules: updated.enabledModules,
+          permissionsVersion: updated.permissionsVersion,
+        },
+      }));
+      await load();
+      Alert.alert("נשמר", "המודולים של העובד עודכנו.");
+    } catch (cause) {
+      setError(message(cause, "לא ניתן לעדכן את המודולים"));
+    } finally {
+      setSavingMemberAccessId(null);
+    }
+  }
+
   function roleLabel(member: ManagerMemberSummary): string {
     if (member.isOrganizationOwner) return "מנהל / בעלים";
     if (member.primaryRole.slug === "technician") return "טכנאי";
@@ -1429,13 +1510,50 @@ export function ManagerTechniciansScreen(_: TechniciansProps) {
         </Card>
 
         <Text style={styles.sectionTitle}>עובדים קיימים</Text>
-        {members.map((member) => (
-          <View key={member.id} style={styles.row}>
-            <Text style={styles.rowTitle}>{member.displayName}</Text>
-            <Text style={styles.rowMeta}>{member.email}</Text>
-            <Text style={styles.rowMeta}>{roleLabel(member)}</Text>
-          </View>
-        ))}
+        {members.map((member) => {
+          const access = memberAccess[member.id];
+          const isOwner = member.isOrganizationOwner;
+
+          return (
+            <Card key={member.id}>
+              <Text style={styles.rowTitle}>{member.displayName}</Text>
+              <Text style={styles.rowMeta}>{member.email}</Text>
+              <Text style={styles.rowMeta}>{roleLabel(member)}</Text>
+              {isOwner ? (
+                <Text style={styles.rowMeta}>לבעלים יש גישה מלאה וקבועה.</Text>
+              ) : (
+                <>
+                  <Button
+                    label={access ? "סגירת ניהול מודולים" : "ניהול מודולים והרשאות"}
+                    loading={loadingMemberAccessId === member.id}
+                    onPress={() => void openMemberAccess(member.id)}
+                  />
+                  {access ? (
+                    <View style={styles.memberAccessSection}>
+                      <Text style={styles.fieldLabel}>מודולים פעילים לעובד</Text>
+                      <Text style={styles.rowMeta}>בחר את הגישה הרלוונטית לתפקיד בפועל.</Text>
+                      <View style={styles.choices}>
+                        {access.availableModules.map((module) => (
+                          <Choice
+                            key={module.key}
+                            label={module.name}
+                            selected={access.enabledModules.includes(module.key)}
+                            onPress={() => void toggleMemberModule(member.id, module.key)}
+                          />
+                        ))}
+                      </View>
+                      <Button
+                        label="שמירת מודולים"
+                        loading={savingMemberAccessId === member.id}
+                        onPress={() => void saveMemberModules(member.id)}
+                      />
+                    </View>
+                  ) : null}
+                </>
+              )}
+            </Card>
+          );
+        })}
 
         <Card>
           <Text style={styles.sectionTitle}>ניידת שירות חדשה</Text>
@@ -1494,6 +1612,7 @@ export function ManagerTechniciansScreen(_: TechniciansProps) {
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: "transparent" },
   content: { padding: spacing.md, paddingBottom: 48, gap: spacing.md },
+  memberAccessSection: { gap: spacing.sm },
   homeContent: {
     alignItems: "center",
     paddingHorizontal: spacing.md,
