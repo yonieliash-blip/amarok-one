@@ -35,15 +35,19 @@ import { WebSplashScreen } from "./components/WebSplashScreen";
 
 export function App() {
   const [showSplash, setShowSplash] = useState(true);
+  const [isSplashLogoLoaded, setIsSplashLogoLoaded] = useState(false);
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => setShowSplash(false), 900);
+    const timeoutId = window.setTimeout(
+      () => setShowSplash(false),
+      isSplashLogoLoaded ? 900 : 3000,
+    );
 
     return () => window.clearTimeout(timeoutId);
-  }, []);
+  }, [isSplashLogoLoaded]);
 
   if (showSplash) {
-    return <WebSplashScreen />;
+    return <WebSplashScreen onLogoLoad={() => setIsSplashLogoLoaded(true)} />;
   }
 
   return (
