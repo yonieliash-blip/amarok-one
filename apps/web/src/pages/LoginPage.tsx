@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Button, Logo } from "@amarok-one/ui";
+import { Button } from "@amarok-one/ui";
 import { getAuthErrorMessage } from "../lib/auth-errors";
 import { useAuth } from "../auth/useAuth";
+import { BrandLogo } from "../components/BrandLogo";
 import { ErrorState } from "../components/ErrorState";
 import { LoadingState } from "../components/LoadingState";
 import { useTranslation } from "../i18n/useTranslation";
@@ -41,7 +42,7 @@ export function LoginPage() {
     <div className="login-page">
       <div className="login-page__panel">
         <div className="login-page__brand">
-          <Logo label={t("common", "appName")} />
+          <BrandLogo size="large" />
           <p className="login-page__tagline">{t("common", "brandTagline")}</p>
         </div>
 

@@ -76,13 +76,19 @@ a {
   color: var(--amarok-text-muted);
 }
 
-.amarok-logo {
-  color: var(--amarok-text);
+.brand-logo {
+  display: block;
+  line-height: 0;
 }
 
-.amarok-logo__mark {
-  background: var(--amarok-accent);
-  color: var(--amarok-accent-text);
+.brand-logo__image {
+  display: block;
+  width: min(100%, 12rem);
+  height: auto;
+}
+
+.brand-logo--large .brand-logo__image {
+  width: min(100%, 17rem);
 }
 
 .amarok-badge--danger {
@@ -144,6 +150,20 @@ a {
   border-top-color: var(--amarok-accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
+}
+
+.web-splash {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: var(--ds-space-6);
+  background: #feba1b;
+}
+
+.web-splash__mark {
+  display: block;
+  width: min(78vw, 32rem);
+  height: auto;
 }
 
 @keyframes spin {

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "@amarok-one/ui/styles.css";
 import { AuthProvider } from "./auth/AuthProvider";
@@ -30,8 +31,21 @@ import { CustomersListPage } from "./pages/customers/CustomersListPage";
 import { MemberAccessPage } from "./pages/administration/MemberAccessPage";
 import { TechniciansListPage } from "./pages/technicians/TechniciansListPage";
 import { AttendanceReportPage } from "./pages/reports/AttendanceReportPage";
+import { WebSplashScreen } from "./components/WebSplashScreen";
 
 export function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => setShowSplash(false), 900);
+
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
+  if (showSplash) {
+    return <WebSplashScreen />;
+  }
+
   return (
     <BrowserRouter>
       <AuthProvider>

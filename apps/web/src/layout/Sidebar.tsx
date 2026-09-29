@@ -1,8 +1,8 @@
 import { NavLink } from "react-router-dom";
 import { buildNavigationItems, permissionSlugsFromCarrier } from "@amarok-one/permissions";
-import { Logo } from "@amarok-one/ui";
 import { useAuth } from "../auth/useAuth";
 import { useTranslation } from "../i18n/useTranslation";
+import { BrandLogo } from "../components/BrandLogo";
 import { NavIcon } from "./nav-icons";
 import { groupNavigationItems } from "./sidebar-groups";
 
@@ -21,7 +21,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   return (
     <>
       <div className="sidebar__brand">
-        <Logo label={t("common", "appName")} />
+        <BrandLogo />
         {user ? (
           <p className="sidebar__org" title={user.organization.name}>
             {user.organization.name}
