@@ -144,6 +144,8 @@ export interface CustomerSite {
   name: string;
   address?: string;
   city?: string;
+  contactName?: string;
+  contactPhone?: string;
   notes?: string;
   createdAt: ISODateString;
   updatedAt: ISODateString;

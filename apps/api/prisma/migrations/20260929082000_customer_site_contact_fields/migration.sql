@@ -1,0 +1,4 @@
+ALTER TABLE "customer_sites"
+  ADD COLUMN IF NOT EXISTS "contactName" TEXT,
+  ADD COLUMN IF NOT EXISTS "contactPhone" TEXT,
+  ADD COLUMN IF NOT EXISTS "notes" TEXT;

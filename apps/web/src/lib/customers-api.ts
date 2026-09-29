@@ -94,6 +94,8 @@ export interface CustomerSiteFormInput {
   name: string;
   address?: string;
   city?: string;
+  contactName?: string;
+  contactPhone?: string;
   notes?: string;
 }
 

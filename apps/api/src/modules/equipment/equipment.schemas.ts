@@ -55,6 +55,7 @@ export const updateEquipmentSchema = z
 export const listEquipmentQuerySchema = paginationQuerySchema.extend({
   search: z.string().trim().max(128).optional(),
   customerId: z.string().uuid().optional(),
+  customerSiteId: z.string().uuid().optional(),
   manufacturer: z.string().trim().max(128).optional(),
   model: z.string().trim().max(128).optional(),
   equipmentTypeId: z.string().uuid().optional(),

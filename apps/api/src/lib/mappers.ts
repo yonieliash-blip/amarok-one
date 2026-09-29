@@ -118,6 +118,8 @@ export function toCustomerSiteDto(model: CustomerSiteModel): CustomerSite {
     name: model.name,
     address: model.address ?? undefined,
     city: model.city ?? undefined,
+    contactName: model.contactName ?? undefined,
+    contactPhone: model.contactPhone ?? undefined,
     notes: model.notes ?? undefined,
     createdAt: model.createdAt.toISOString(),
     updatedAt: model.updatedAt.toISOString(),

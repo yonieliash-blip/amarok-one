@@ -448,6 +448,8 @@ model CustomerSite {
   name           String
   address        String?
   city           String?
+  contactName    String?
+  contactPhone   String?
   notes          String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt

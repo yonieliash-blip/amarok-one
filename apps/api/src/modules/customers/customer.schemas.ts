@@ -69,6 +69,8 @@ export const createCustomerSiteSchema = z.object({
   name: z.string().trim().min(2).max(256),
   address: z.string().trim().min(2).max(256).optional(),
   city: z.string().trim().min(2).max(128).optional(),
+  contactName: z.string().trim().min(2).max(128).optional(),
+  contactPhone: z.string().trim().min(3).max(32).optional(),
   notes: z.string().trim().max(2000).optional(),
 });
 
@@ -77,6 +79,8 @@ export const updateCustomerSiteSchema = z
     name: z.string().trim().min(2).max(256).optional(),
     address: z.string().trim().min(2).max(256).nullable().optional(),
     city: z.string().trim().min(2).max(128).nullable().optional(),
+    contactName: z.string().trim().min(2).max(128).nullable().optional(),
+    contactPhone: z.string().trim().min(3).max(32).nullable().optional(),
     notes: z.string().trim().max(2000).nullable().optional(),
   })
   .refine((value) => Object.values(value).some((field) => field !== undefined), {

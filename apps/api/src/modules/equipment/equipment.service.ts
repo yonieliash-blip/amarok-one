@@ -91,6 +91,7 @@ export async function listEquipment(
   pageSizeValue?: string,
   search?: string,
   customerId?: string,
+  customerSiteId?: string,
   manufacturer?: string,
   model?: string,
   equipmentTypeId?: string,
@@ -103,6 +104,7 @@ export async function listEquipment(
     organizationId,
     search,
     customerId,
+    customerSiteId,
     manufacturer,
     model,
     equipmentTypeId,
@@ -273,10 +275,10 @@ export async function updateEquipment(
     ...(input.customerId === null && input.customerSiteId === undefined
       ? { customerSite: { disconnect: true } }
       : input.customerSiteId !== undefined
-      ? input.customerSiteId === null
-        ? { customerSite: { disconnect: true } }
-        : { customerSite: { connect: { id: input.customerSiteId } } }
-      : {}),
+        ? input.customerSiteId === null
+          ? { customerSite: { disconnect: true } }
+          : { customerSite: { connect: { id: input.customerSiteId } } }
+        : {}),
     ...(input.branchId !== undefined
       ? input.branchId === null
         ? { branch: { disconnect: true } }

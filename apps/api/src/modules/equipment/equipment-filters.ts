@@ -6,6 +6,7 @@ export interface EquipmentListFilters {
   organizationId: string;
   search?: string;
   customerId?: string;
+  customerSiteId?: string;
   manufacturer?: string;
   model?: string;
   equipmentTypeId?: string;
@@ -24,6 +25,10 @@ export function buildEquipmentListWhere(filters: EquipmentListFilters): Prisma.E
 
   if (filters.customerId) {
     where.customerId = filters.customerId;
+  }
+
+  if (filters.customerSiteId) {
+    where.customerSiteId = filters.customerSiteId;
   }
 
   if (filters.manufacturer?.trim()) {

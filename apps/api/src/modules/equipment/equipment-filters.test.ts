@@ -19,19 +19,22 @@ describe("buildEquipmentListWhere", () => {
     expect(where.status).toBe("IN_SERVICE");
   });
 
-  it("filters by customer, manufacturer, model, and equipment type", () => {
+  it("filters by customer, site, manufacturer, model, and equipment type", () => {
     const customerId = "22222222-2222-4222-8222-222222222222";
+    const customerSiteId = "44444444-4444-4444-8444-444444444444";
     const equipmentTypeId = "33333333-3333-4333-8333-333333333333";
 
     const where = buildEquipmentListWhere({
       organizationId,
       customerId,
+      customerSiteId,
       manufacturer: "Toyota",
       model: "8FGU25",
       equipmentTypeId,
     });
 
     expect(where.customerId).toBe(customerId);
+    expect(where.customerSiteId).toBe(customerSiteId);
     expect(where.manufacturer).toEqual({ equals: "Toyota", mode: "insensitive" });
     expect(where.model).toEqual({ equals: "8FGU25", mode: "insensitive" });
     expect(where.equipmentTypeId).toBe(equipmentTypeId);

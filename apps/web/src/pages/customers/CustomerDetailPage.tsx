@@ -53,10 +53,16 @@ export function CustomerDetailPage() {
     name: "",
     address: "",
     city: "",
+    contactName: "",
+    contactPhone: "",
     notes: "",
   });
   const [siteSubmitting, setSiteSubmitting] = useState(false);
   const [siteError, setSiteError] = useState<string | null>(null);
+  const [selectedSiteEquipmentId, setSelectedSiteEquipmentId] = useState<string | null>(null);
+  const [siteEquipment, setSiteEquipment] = useState<Equipment[]>([]);
+  const [siteEquipmentLoading, setSiteEquipmentLoading] = useState(false);
+  const [siteEquipmentError, setSiteEquipmentError] = useState<string | null>(null);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [equipmentLoading, setEquipmentLoading] = useState(false);
   const [serviceCalls, setServiceCalls] = useState<ServiceCall[]>([]);
@@ -157,6 +163,41 @@ export function CustomerDetailPage() {
       cancelled = true;
     };
   }, [user, accessToken, customerId, activeTab]);
+
+  useEffect(() => {
+    if (!user || !accessToken || !customerId || !selectedSiteEquipmentId) {
+      return;
+    }
+
+    const customerSiteId = selectedSiteEquipmentId;
+
+    let cancelled = false;
+
+    async function loadSiteEquipment(): Promise<void> {
+      setSiteEquipmentLoading(true);
+      setSiteEquipmentError(null);
+      try {
+        const result = await listEquipmentRequest(user!.organization.id, accessToken!, {
+          customerId,
+          customerSiteId,
+          pageSize: 100,
+        });
+        if (!cancelled) setSiteEquipment(result.data);
+      } catch {
+        if (!cancelled) {
+          setSiteEquipment([]);
+          setSiteEquipmentError("לא ניתן לטעון את הציוד באתר.");
+        }
+      } finally {
+        if (!cancelled) setSiteEquipmentLoading(false);
+      }
+    }
+
+    void loadSiteEquipment();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, accessToken, customerId, selectedSiteEquipmentId]);
 
   useEffect(() => {
     if (!user || !accessToken || !customerId || activeTab !== "service-calls") {
@@ -278,7 +319,7 @@ export function CustomerDetailPage() {
 
   function beginCreateSite(): void {
     setSiteError(null);
-    setSiteForm({ name: "", address: "", city: "", notes: "" });
+    setSiteForm({ name: "", address: "", city: "", contactName: "", contactPhone: "", notes: "" });
     setSiteEditor("create");
   }
 
@@ -288,6 +329,8 @@ export function CustomerDetailPage() {
       name: site.name,
       address: site.address ?? "",
       city: site.city ?? "",
+      contactName: site.contactName ?? "",
+      contactPhone: site.contactPhone ?? "",
       notes: site.notes ?? "",
     });
     setSiteEditor({ editId: site.id });
@@ -301,6 +344,8 @@ export function CustomerDetailPage() {
       name: siteForm.name.trim(),
       address: siteForm.address?.trim() || undefined,
       city: siteForm.city?.trim() || undefined,
+      contactName: siteForm.contactName?.trim() || undefined,
+      contactPhone: siteForm.contactPhone?.trim() || undefined,
       notes: siteForm.notes?.trim() || undefined,
     };
     try {
@@ -336,6 +381,10 @@ export function CustomerDetailPage() {
       await deleteCustomerSiteRequest(user.organization.id, customerId, site.id, accessToken);
       if (typeof siteEditor === "object" && siteEditor.editId === site.id) {
         setSiteEditor("closed");
+      }
+      if (selectedSiteEquipmentId === site.id) {
+        setSelectedSiteEquipmentId(null);
+        setSiteEquipment([]);
       }
       await reloadCustomer();
     } catch (error) {
@@ -541,6 +590,26 @@ export function CustomerDetailPage() {
                     }
                   />
                 </label>
+                <label className="customer-form__field">
+                  <span>איש קשר באתר</span>
+                  <input
+                    value={siteForm.contactName ?? ""}
+                    onChange={(event) =>
+                      setSiteForm((value) => ({ ...value, contactName: event.target.value }))
+                    }
+                  />
+                </label>
+                <label className="customer-form__field">
+                  <span>טלפון איש קשר</span>
+                  <input
+                    dir="ltr"
+                    type="tel"
+                    value={siteForm.contactPhone ?? ""}
+                    onChange={(event) =>
+                      setSiteForm((value) => ({ ...value, contactPhone: event.target.value }))
+                    }
+                  />
+                </label>
                 <label className="customer-form__field customer-form__field--wide">
                   <span>{t("customers", "internalNotes")}</span>
                   <textarea
@@ -582,19 +651,75 @@ export function CustomerDetailPage() {
                     <strong>{site.name}</strong>
                   </div>
                   {site.address ? (
-                    <p>{site.address}{site.city ? `, ${site.city}` : ""}</p>
+                    <p>
+                      {site.address}
+                      {site.city ? `, ${site.city}` : ""}
+                    </p>
                   ) : site.city ? (
                     <p>{site.city}</p>
                   ) : null}
+                  {site.contactName ? (
+                    <p>
+                      איש קשר: {site.contactName}
+                      {site.contactPhone ? ` · ${formatPhone(site.contactPhone, locale)}` : ""}
+                    </p>
+                  ) : site.contactPhone ? (
+                    <p dir="ltr">{formatPhone(site.contactPhone, locale)}</p>
+                  ) : null}
                   {site.notes ? <p className="customer-detail-notes">{site.notes}</p> : null}
-                  {canWrite && siteEditor === "closed" ? (
+                  {siteEditor === "closed" ? (
                     <div className="customer-contacts-list__actions">
-                      <Button variant="secondary" onClick={() => beginEditSite(site)}>
-                        {t("common", "edit")}
+                      <Button
+                        variant="secondary"
+                        onClick={() =>
+                          setSelectedSiteEquipmentId((current) =>
+                            current === site.id ? null : site.id,
+                          )
+                        }
+                      >
+                        {selectedSiteEquipmentId === site.id ? "סגירת ציוד באתר" : "ציוד באתר"}
                       </Button>
-                      <Button variant="secondary" onClick={() => void handleDeleteSite(site)}>
-                        {t("common", "delete")}
-                      </Button>
+                      {canWrite ? (
+                        <>
+                          <Button variant="secondary" onClick={() => beginEditSite(site)}>
+                            {t("common", "edit")}
+                          </Button>
+                          <Button variant="secondary" onClick={() => void handleDeleteSite(site)}>
+                            {t("common", "delete")}
+                          </Button>
+                        </>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {selectedSiteEquipmentId === site.id ? (
+                    <div className="customer-detail-card customer-detail-card--wide">
+                      <h4>ציוד באתר</h4>
+                      {siteEquipmentLoading ? (
+                        <LoadingState message={t("equipment", "loading")} />
+                      ) : null}
+                      {siteEquipmentError ? (
+                        <p className="customers-alert customers-alert--error">
+                          {siteEquipmentError}
+                        </p>
+                      ) : null}
+                      {!siteEquipmentLoading &&
+                      !siteEquipmentError &&
+                      siteEquipment.length === 0 ? (
+                        <p className="customer-detail-notes">אין ציוד משויך לאתר זה.</p>
+                      ) : null}
+                      {!siteEquipmentLoading && siteEquipment.length > 0 ? (
+                        <ul className="customer-contacts-list">
+                          {siteEquipment.map((item) => (
+                            <li key={item.id}>
+                              <Link to={`/equipment/${item.id}`} className="customers-table__link">
+                                <strong>{item.name}</strong>
+                              </Link>
+                              <p dir="ltr">{item.internalNumber}</p>
+                              <EquipmentStatusBadge status={item.status} />
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
                     </div>
                   ) : null}
                 </li>
@@ -665,7 +790,10 @@ export function CustomerDetailPage() {
                     ) : null}
                   </div>
                   {contact.customerSiteId ? (
-                    <p>{customer.sites.find((site) => site.id === contact.customerSiteId)?.name ?? "אתר שהוסר"}</p>
+                    <p>
+                      {customer.sites.find((site) => site.id === contact.customerSiteId)?.name ??
+                        "אתר שהוסר"}
+                    </p>
                   ) : null}
                   {contact.jobTitle ? <p>{contact.jobTitle}</p> : null}
                   {contact.email ? <p dir="ltr">{contact.email}</p> : null}

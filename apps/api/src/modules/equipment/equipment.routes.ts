@@ -50,6 +50,7 @@ export const equipmentRoutes = new Hono()
         query.pageSize?.toString(),
         query.search,
         query.customerId,
+        query.customerSiteId,
         query.manufacturer,
         query.model,
         query.equipmentTypeId,
