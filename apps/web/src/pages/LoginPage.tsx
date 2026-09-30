@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Button } from "@amarok-one/ui";
 import { getAuthErrorMessage } from "../lib/auth-errors";
 import { useAuth } from "../auth/useAuth";
@@ -10,16 +10,10 @@ import { useTranslation } from "../i18n/useTranslation";
 export function LoginPage() {
   const { login, status } = useAuth();
   const { t } = useTranslation();
-  const [email, setEmail] = useState("admin@demo.amarok.one");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const passwordRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    passwordRef.current?.focus();
-  }, []);
-
   if (status === "loading") {
     return <LoadingState fullScreen />;
   }
@@ -61,6 +55,7 @@ export function LoginPage() {
                 name="email"
                 type="email"
                 autoComplete="username"
+                autoFocus
                 required
                 dir="ltr"
                 value={email}
@@ -73,7 +68,6 @@ export function LoginPage() {
             <div className="login-form__field">
               <label htmlFor="password">{t("auth", "password")}</label>
               <input
-                ref={passwordRef}
                 id="password"
                 name="password"
                 type="password"
