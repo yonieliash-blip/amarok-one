@@ -12,7 +12,9 @@ function createDashboardRoute(kind: DashboardKind) {
 }
 
 export { ManagementDashboardPage } from "./ManagementDashboardPage";
-export const ExecutiveDashboardPage = createDashboardRoute("executive");
+// Organization owners land on the executive route. Reuse the approved management
+// dashboard here so the default landing page has the same data-driven design.
+export { ManagementDashboardPage as ExecutiveDashboardPage } from "./ManagementDashboardPage";
 export const WarehouseDashboardPage = createDashboardRoute("warehouse");
 export const AccountingDashboardPage = createDashboardRoute("accounting");
 export const ReadOnlyDashboardPage = createDashboardRoute("read-only");
