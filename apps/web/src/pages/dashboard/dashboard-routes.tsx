@@ -11,7 +11,7 @@ function createDashboardRoute(kind: DashboardKind) {
   };
 }
 
-export const ManagementDashboardPage = createDashboardRoute("management");
+export { ManagementDashboardPage } from "./ManagementDashboardPage";
 export const ExecutiveDashboardPage = createDashboardRoute("executive");
 export const WarehouseDashboardPage = createDashboardRoute("warehouse");
 export const AccountingDashboardPage = createDashboardRoute("accounting");
