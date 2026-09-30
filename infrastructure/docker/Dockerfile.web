@@ -20,9 +20,11 @@ COPY --from=pruner /app/out/full/ .
 RUN pnpm turbo run build --filter=@amarok-one/web
 
 FROM nginx:1.27-alpine AS runner
+ARG BUILD_SHA=unknown
 RUN apk add --no-cache wget
 COPY infrastructure/docker/nginx.web.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
+RUN printf '%s\n' "$BUILD_SHA" > /usr/share/nginx/html/version.txt
 EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \

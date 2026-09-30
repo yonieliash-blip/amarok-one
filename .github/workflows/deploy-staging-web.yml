@@ -38,15 +38,25 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
 
       - name: Deploy current main to Staging
+        env:
+          TARGET_SHA: ${{ github.sha }}
         run: |
-          ssh -o BatchMode=yes -o IdentitiesOnly=yes ubuntu@staging.amarok-ce.com <<'REMOTE'
+          ssh -o BatchMode=yes -o IdentitiesOnly=yes ubuntu@staging.amarok-ce.com "TARGET_SHA='$TARGET_SHA' bash -s" <<'REMOTE'
             set -euo pipefail
             cd /home/ubuntu/amarok-one
             test "$(git branch --show-current)" = "main"
-            git pull --ff-only origin main
+            git fetch --no-tags origin main
+            test "$(git rev-parse origin/main)" = "$TARGET_SHA"
+            git merge --ff-only origin/main
+            test "$(git rev-parse HEAD)" = "$TARGET_SHA"
             sudo docker compose \
               --env-file infrastructure/staging/staging.env \
               -f infrastructure/staging/docker-compose.yml \
-              up -d --build --no-deps web
+              build --no-cache --build-arg BUILD_SHA="$TARGET_SHA" web
+            sudo docker compose \
+              --env-file infrastructure/staging/staging.env \
+              -f infrastructure/staging/docker-compose.yml \
+              up -d --no-deps --force-recreate web
             curl --fail --show-error --retry 5 --retry-all-errors https://staging.amarok-ce.com/health
+            test "$(curl --fail --show-error --retry 5 --retry-all-errors https://staging.amarok-ce.com/version.txt)" = "$TARGET_SHA"
           REMOTE
