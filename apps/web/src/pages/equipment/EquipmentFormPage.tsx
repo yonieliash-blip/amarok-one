@@ -1,7 +1,13 @@
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import type { Branch, Customer, CustomerSite, EquipmentStatus, EquipmentType } from "@amarok-one/types";
+import type {
+  Branch,
+  Customer,
+  CustomerSite,
+  EquipmentStatus,
+  EquipmentType,
+} from "@amarok-one/types";
 import { Button } from "@amarok-one/ui";
 import { useAuth } from "../../auth/useAuth";
 import { ErrorState } from "../../components/ErrorState";
