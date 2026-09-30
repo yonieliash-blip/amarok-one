@@ -1,0 +1,54 @@
+name: Reset Staging technicians and equipment
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "infrastructure/staging/reset-technicians-and-equipment.sql"
+      - ".github/workflows/reset-staging-technicians-and-equipment.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reset-staging-technicians-and-equipment
+  cancel-in-progress: false
+
+jobs:
+  reset:
+    name: Remove Staging technicians and equipment only
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Configure SSH
+        env:
+          STAGING_SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          STAGING_SSH_KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$STAGING_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$STAGING_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+
+      - name: Soft-delete Staging technicians and equipment
+        env:
+          TARGET_SHA: ${{ github.sha }}
+        run: |
+          ssh -o BatchMode=yes -o IdentitiesOnly=yes ubuntu@staging.amarok-ce.com "TARGET_SHA='$TARGET_SHA' bash -s" <<'REMOTE'
+            set -euo pipefail
+            cd /home/ubuntu/amarok-one
+            test "$(git branch --show-current)" = "main"
+            git fetch --no-tags origin main
+            test "$(git rev-parse origin/main)" = "$TARGET_SHA"
+            git merge --ff-only origin/main
+            set -a
+            . infrastructure/staging/staging.env
+            set +a
+            sudo docker compose \
+              --env-file infrastructure/staging/staging.env \
+              -f infrastructure/staging/docker-compose.yml \
+              exec -T postgres psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+              < infrastructure/staging/reset-technicians-and-equipment.sql
+          REMOTE
