@@ -653,6 +653,36 @@ export interface TranslationMessages {
     emptyQueueTitle: string;
     emptyQueueMessage: string;
   };
+  managementDashboard: {
+    title: string;
+    subtitle: string;
+    newServiceCall: string;
+    refresh: string;
+    loading: string;
+    loadError: string;
+    openCallsTitle: string;
+    openCallsNote: string;
+    inProgressTitle: string;
+    inProgressNote: string;
+    todayTitle: string;
+    todayNote: string;
+    waitingManagerTitle: string;
+    waitingManagerNote: string;
+    recentCallsTitle: string;
+    viewAll: string;
+    callNumber: string;
+    customer: string;
+    subject: string;
+    status: string;
+    date: string;
+    noCalls: string;
+    partsTitle: string;
+    allParts: string;
+    part: string;
+    category: string;
+    partNumber: string;
+    noParts: string;
+  };
   userMenu: {
     fullName: string;
     email: string;
