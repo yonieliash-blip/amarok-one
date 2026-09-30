@@ -34,7 +34,7 @@ export function Header({ title, onMenuToggle, menuOpen = false }: HeaderProps) {
   return (
     <header className="app-header">
       <div className="app-header__brand">
-        <BrandLogo />
+        <BrandLogo variant="header" />
       </div>
 
       <nav className="app-header__navigation" aria-label={t("common", "mainNavigation")}>
