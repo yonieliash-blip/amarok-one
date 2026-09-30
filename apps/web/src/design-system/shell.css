@@ -1224,3 +1224,252 @@
     padding: var(--ds-space-4);
   }
 }
+
+/* Management dashboard — approved operational dashboard layout. */
+.management-dashboard {
+  display: grid;
+  gap: var(--ds-space-6);
+}
+
+.management-dashboard__header,
+.management-panel__header,
+.management-dashboard__actions {
+  display: flex;
+  align-items: center;
+}
+
+.management-dashboard__header {
+  justify-content: space-between;
+  gap: var(--ds-space-5);
+}
+
+.management-dashboard__title {
+  margin: 0;
+  color: var(--ds-color-text);
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  line-height: 1.15;
+}
+
+.management-dashboard__subtitle {
+  margin: var(--ds-space-2) 0 0;
+  color: var(--ds-color-text-muted);
+}
+
+.management-dashboard__actions {
+  gap: var(--ds-space-3);
+}
+
+.management-dashboard__actions .amarok-button {
+  min-height: 2.8rem;
+  border-radius: var(--ds-radius-lg);
+}
+
+.management-dashboard__notice,
+.management-panel__empty {
+  margin: 0;
+  padding: var(--ds-space-6);
+  color: var(--ds-color-text-muted);
+  text-align: center;
+}
+
+.management-dashboard__notice {
+  border: 1px solid var(--ds-color-error);
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-color-error-muted);
+  color: var(--ds-color-error-on);
+}
+
+.management-dashboard__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--ds-space-4);
+}
+
+.management-metric {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-4);
+  min-height: 8.5rem;
+  padding: var(--ds-card-padding);
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-xl);
+  background: var(--ds-color-bg-surface);
+  box-shadow: 0 8px 20px rgba(17, 27, 75, 0.04);
+}
+
+.management-metric__icon {
+  display: grid;
+  flex: 0 0 auto;
+  width: 3.35rem;
+  height: 3.35rem;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.management-metric--open .management-metric__icon {
+  background: var(--ds-color-error-muted);
+  color: var(--ds-color-error);
+}
+.management-metric--inProgress .management-metric__icon {
+  background: var(--ds-color-info-muted);
+  color: var(--ds-color-info);
+}
+.management-metric--today .management-metric__icon {
+  background: var(--ds-color-success-muted);
+  color: var(--ds-color-success);
+}
+.management-metric--waitingManager .management-metric__icon {
+  background: var(--ds-color-warning-muted);
+  color: var(--ds-color-warning);
+}
+
+.management-metric__label,
+.management-metric__value,
+.management-metric__note {
+  margin: 0;
+}
+
+.management-metric__label {
+  color: var(--ds-color-text);
+  font-weight: var(--ds-font-weight-bold);
+}
+
+.management-metric__value {
+  margin-top: var(--ds-space-1);
+  color: var(--ds-color-text);
+  font-size: 2rem;
+  font-weight: var(--ds-font-weight-bold);
+  line-height: 1;
+}
+
+.management-metric__note {
+  margin-top: var(--ds-space-2);
+  color: var(--ds-color-text-muted);
+  font-size: var(--ds-text-body-sm-size);
+}
+
+.management-dashboard__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(18rem, 1fr);
+  gap: var(--ds-space-5);
+}
+
+.management-panel {
+  overflow: hidden;
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-xl);
+  background: var(--ds-color-bg-surface);
+  box-shadow: 0 8px 20px rgba(17, 27, 75, 0.04);
+}
+
+.management-panel__header {
+  justify-content: space-between;
+  min-height: 4.25rem;
+  padding: 0 var(--ds-card-padding);
+  border-bottom: 1px solid var(--ds-color-border-subtle);
+}
+
+.management-panel__header h3 {
+  margin: 0;
+  color: var(--ds-color-text);
+  font-size: var(--ds-text-heading-sm-size);
+}
+
+.management-panel__header a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-1);
+  color: var(--ds-color-info-on);
+  font-weight: var(--ds-font-weight-bold);
+  text-decoration: none;
+}
+
+.management-dashboard__table-wrap {
+  overflow-x: auto;
+}
+
+.management-dashboard__table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--ds-color-text);
+  font-size: var(--ds-text-body-sm-size);
+}
+
+.management-dashboard__table th,
+.management-dashboard__table td {
+  padding: var(--ds-space-4) var(--ds-space-5);
+  border-bottom: 1px solid var(--ds-color-border-subtle);
+  text-align: start;
+  white-space: nowrap;
+}
+
+.management-dashboard__table th {
+  color: var(--ds-color-text-muted);
+  background: var(--ds-color-bg-subtle);
+  font-weight: var(--ds-font-weight-bold);
+}
+
+.management-dashboard__table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.management-dashboard__table a {
+  color: var(--ds-color-info-on);
+  font-weight: var(--ds-font-weight-bold);
+  text-decoration: none;
+}
+
+.management-dashboard__table--compact td:first-child {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+}
+
+@media (max-width: 960px) {
+  .management-dashboard__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .management-dashboard__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .management-dashboard {
+    gap: var(--ds-space-5);
+  }
+  .management-dashboard__header {
+    align-items: flex-start;
+  }
+  .management-dashboard__actions .customers-page__action-link .amarok-button {
+    min-width: auto;
+  }
+  .management-metric {
+    min-height: 8rem;
+    padding: var(--ds-space-4);
+    gap: var(--ds-space-3);
+  }
+  .management-metric__icon {
+    width: 2.85rem;
+    height: 2.85rem;
+  }
+  .management-metric__value {
+    font-size: 1.75rem;
+  }
+  .management-metric__note {
+    display: none;
+  }
+  .management-panel__header {
+    padding-inline: var(--ds-space-4);
+  }
+  .management-dashboard__table th,
+  .management-dashboard__table td {
+    padding: var(--ds-space-3) var(--ds-space-4);
+  }
+  .management-panel--calls .management-dashboard__table th:nth-child(2),
+  .management-panel--calls .management-dashboard__table td:nth-child(2),
+  .management-panel--calls .management-dashboard__table th:nth-child(5),
+  .management-panel--calls .management-dashboard__table td:nth-child(5) {
+    display: none;
+  }
+}
