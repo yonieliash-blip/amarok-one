@@ -915,6 +915,9 @@
 
 .app-header__brand .brand-logo__image {
   width: 10.5rem;
+  /* The source wordmark is dark for the yellow splash screen. In the navy header,
+     make a high-contrast header-only version without changing the splash asset. */
+  filter: brightness(0) invert(1);
 }
 
 .app-header__navigation {
