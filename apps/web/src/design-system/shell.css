@@ -906,6 +906,9 @@
   border-bottom: 3px solid var(--ds-color-primary);
   color: #fff;
   backdrop-filter: none;
+  overflow: visible;
+  position: relative;
+  z-index: var(--ds-z-sticky);
 }
 
 .app-header__brand {
@@ -925,6 +928,7 @@
   justify-content: center;
   gap: var(--ds-space-2);
   flex: 1;
+  overflow: visible;
 }
 
 .app-header__navigation-link {
@@ -949,8 +953,23 @@
 }
 
 .app-header__navigation-link--active {
-  color: #fff;
-  border-bottom-color: var(--ds-color-primary);
+  position: relative;
+  z-index: 1;
+  align-self: flex-start;
+  min-height: calc(4.25rem + var(--ds-space-7));
+  margin-block-end: calc(-1 * var(--ds-space-7));
+  padding-inline: var(--ds-space-5);
+  color: #17263a;
+  background: var(--ds-color-primary);
+  border-bottom-color: transparent;
+  border-radius: 0 0 var(--ds-radius-xl) var(--ds-radius-xl);
+  box-shadow: 0 0.75rem 1.25rem rgba(23, 38, 58, 0.18);
+}
+
+.app-header__navigation-link--active:hover,
+.app-header__navigation-link--active:focus-visible {
+  color: #17263a;
+  background: #ffd24a;
 }
 
 .app-header__start {
