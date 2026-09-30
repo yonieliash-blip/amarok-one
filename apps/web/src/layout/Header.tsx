@@ -2,7 +2,6 @@ import { Menu } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { buildNavigationItems, permissionSlugsFromCarrier } from "@amarok-one/permissions";
 import { BrandLogo } from "../components/BrandLogo";
-import { OrganizationSwitcher } from "./OrganizationSwitcher";
 import { UserMenu } from "./UserMenu";
 import { useAuth } from "../auth/useAuth";
 import { useTranslation } from "../i18n/useTranslation";
@@ -78,7 +77,6 @@ export function Header({ title, onMenuToggle, menuOpen = false }: HeaderProps) {
       </div>
 
       <div className="app-header__end">
-        <OrganizationSwitcher />
         <UserMenu />
       </div>
     </header>

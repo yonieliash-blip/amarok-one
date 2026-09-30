@@ -108,11 +108,11 @@ a {
 
 .brand-logo__header-layer--wordmark {
   background: var(--ds-color-primary);
-  clip-path: inset(0 0 50% 0);
+  clip-path: inset(0 0 35% 0);
 }
 
 .brand-logo__header-layer--tagline {
-  clip-path: inset(50% 0 0 0);
+  clip-path: inset(65% 0 0 0);
 }
 
 .amarok-badge--danger {
