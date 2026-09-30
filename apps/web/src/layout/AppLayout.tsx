@@ -1,6 +1,7 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { Header } from "./Header";
+import { MobileNavigation } from "./MobileNavigation";
 import { Sidebar } from "./Sidebar";
 import { useTranslation } from "../i18n/useTranslation";
 
@@ -89,6 +90,7 @@ export function AppLayout() {
         <main className="app-shell__content">
           <Outlet />
         </main>
+        <MobileNavigation onOpenMenu={() => setSidebarOpen(true)} />
       </div>
 
       {isMobileNav && sidebarOpen ? (

@@ -874,3 +874,353 @@
     display: block;
   }
 }
+
+/* Light dashboard application shell — visual direction approved for AMAROK ONE. */
+.app-shell {
+  display: block;
+  background: var(--ds-color-bg-base);
+}
+
+.app-shell__main {
+  min-height: 100vh;
+}
+
+.app-shell__content {
+  max-width: 96rem;
+  padding: var(--ds-space-8) var(--ds-page-padding);
+}
+
+.sidebar--docked {
+  display: none;
+}
+
+.mobile-navigation {
+  display: none;
+}
+
+.app-header {
+  min-height: 4.25rem;
+  padding: 0 var(--ds-page-padding);
+  gap: var(--ds-space-6);
+  background: linear-gradient(105deg, #17263a, #243a50);
+  border-bottom: 3px solid var(--ds-color-primary);
+  color: #fff;
+  backdrop-filter: none;
+}
+
+.app-header__brand {
+  order: 3;
+  flex: 0 0 auto;
+}
+
+.app-header__brand .brand-logo__image {
+  width: 10.5rem;
+}
+
+.app-header__navigation {
+  order: 2;
+  display: flex;
+  align-self: stretch;
+  align-items: stretch;
+  justify-content: center;
+  gap: var(--ds-space-2);
+  flex: 1;
+}
+
+.app-header__navigation-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--ds-space-4);
+  border-bottom: 3px solid transparent;
+  color: rgba(255, 255, 255, 0.84);
+  font-size: var(--ds-text-body-sm-size);
+  font-weight: var(--ds-font-weight-bold);
+  white-space: nowrap;
+}
+
+.app-header__navigation-link:hover,
+.app-header__navigation-link:focus-visible {
+  color: #fff;
+}
+
+.app-header__navigation-link:focus-visible {
+  outline: 2px solid var(--ds-color-primary);
+  outline-offset: -4px;
+}
+
+.app-header__navigation-link--active {
+  color: #fff;
+  border-bottom-color: var(--ds-color-primary);
+}
+
+.app-header__start {
+  order: 1;
+  flex: 0 0 auto;
+}
+
+.app-header__titles,
+.app-header__eyebrow,
+.app-header__context {
+  display: none;
+}
+
+.app-header__end {
+  order: 0;
+  gap: var(--ds-space-2);
+}
+
+.user-menu__trigger {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.user-menu__role {
+  color: rgba(255, 255, 255, 0.64);
+}
+
+.dashboard {
+  gap: var(--ds-space-6);
+}
+
+.dashboard__hero {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.dashboard__greeting,
+.dashboard__eyebrow {
+  display: none;
+}
+
+.dashboard__title {
+  margin: 0;
+  color: var(--ds-color-text);
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  line-height: 1.15;
+}
+
+.dashboard__subtitle {
+  font-size: var(--ds-text-body-lg-size);
+}
+
+.service-manager-dashboard__hero-actions .amarok-button,
+.customers-page__action-link .amarok-button {
+  min-height: 2.75rem;
+  border-radius: var(--ds-radius-lg);
+  box-shadow: 0 6px 16px rgba(254, 186, 27, 0.22);
+}
+
+.amarok-button--secondary {
+  background: #fff;
+  color: var(--ds-color-text);
+  border-color: var(--ds-color-border);
+}
+
+.dashboard__stats,
+.dashboard__stats--six {
+  grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
+  gap: var(--ds-space-4);
+}
+
+.dashboard__stat-card,
+.amarok-card {
+  background: var(--ds-color-bg-surface);
+  border-color: var(--ds-color-border);
+  box-shadow: 0 8px 20px rgba(17, 27, 75, 0.04);
+}
+
+.dashboard__stat-card {
+  min-height: 9rem;
+  padding: var(--ds-card-padding);
+  border-radius: var(--ds-radius-xl);
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard__stat-card::after {
+  content: "";
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline: var(--ds-space-5);
+  height: 3px;
+  border-radius: var(--ds-radius-full);
+  background: linear-gradient(90deg, var(--ds-color-primary), transparent);
+  opacity: 0.75;
+}
+
+.dashboard__stat-card:nth-child(2n)::after {
+  background: linear-gradient(90deg, var(--ds-color-success), transparent);
+}
+
+.dashboard__stat-card:nth-child(3n)::after {
+  background: linear-gradient(90deg, var(--ds-color-info), transparent);
+}
+
+.dashboard__stat-card--active {
+  border-color: var(--ds-color-primary);
+  box-shadow: 0 0 0 2px rgba(254, 186, 27, 0.2);
+}
+
+.amarok-card__title,
+.dashboard__section-title,
+.service-manager-dashboard__workspace-header .dashboard__section-title {
+  color: var(--ds-color-text);
+}
+
+.dashboard__stat-value {
+  color: var(--ds-color-text);
+  font-size: 2.25rem;
+}
+
+.dashboard__stat-note,
+.dashboard__placeholder-copy,
+.amarok-card__description,
+.service-manager-dashboard__queue-meta {
+  color: var(--ds-color-text-muted);
+}
+
+.service-manager-dashboard__workspace {
+  margin-top: 0;
+  padding: var(--ds-card-padding);
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-xl);
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(17, 27, 75, 0.04);
+}
+
+.service-manager-dashboard__view-all,
+.customers-table__link {
+  color: var(--ds-color-info-on);
+}
+
+@media (max-width: 960px) {
+  .app-header__navigation-link {
+    padding-inline: var(--ds-space-3);
+  }
+
+  .app-header__brand .brand-logo__image {
+    width: 8.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-shell__content {
+    padding: var(--ds-space-6) var(--ds-page-padding-mobile) var(--ds-space-12);
+  }
+
+  .app-header {
+    min-height: 4.5rem;
+    justify-content: space-between;
+  }
+
+  .app-header__brand {
+    order: 2;
+  }
+
+  .app-header__brand .brand-logo__image {
+    width: 7.5rem;
+  }
+
+  .app-header__navigation,
+  .app-header__end {
+    display: none;
+  }
+
+  .app-header__start {
+    order: 1;
+  }
+
+  .app-header__menu-button {
+    display: inline-flex;
+    border: 0;
+    background: transparent;
+    color: #fff;
+  }
+
+  .mobile-navigation {
+    position: fixed;
+    inset-inline: 0;
+    inset-block-end: 0;
+    z-index: var(--ds-z-sticky);
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    min-height: 4.75rem;
+    padding: var(--ds-space-1) var(--ds-space-2) env(safe-area-inset-bottom);
+    border-top: 1px solid var(--ds-color-border);
+    background: rgba(255, 255, 255, 0.97);
+    box-shadow: 0 -8px 20px rgba(17, 27, 75, 0.08);
+  }
+
+  .mobile-navigation__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ds-space-1);
+    min-width: 0;
+    padding: var(--ds-space-1);
+    border: 0;
+    border-radius: var(--ds-radius-md);
+    background: transparent;
+    color: var(--ds-color-text-muted);
+    font: inherit;
+    font-size: 0.6875rem;
+    line-height: 1.1;
+    cursor: pointer;
+  }
+
+  .mobile-navigation__item span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-navigation__item--active {
+    color: var(--ds-color-warning-on);
+  }
+
+  .mobile-navigation__item:focus-visible {
+    outline: var(--ds-focus-ring);
+    outline-offset: -2px;
+  }
+
+  .dashboard__stats,
+  .dashboard__stats--six {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ds-space-3);
+  }
+
+  .dashboard__stat-card {
+    min-height: 8.5rem;
+    padding: var(--ds-space-4);
+  }
+
+  .dashboard__stat-value {
+    font-size: 2rem;
+  }
+
+  .dashboard__hero {
+    gap: var(--ds-space-4);
+  }
+
+  .service-manager-dashboard__hero-actions {
+    width: 100%;
+  }
+
+  .service-manager-dashboard__hero-actions > * {
+    flex: 1;
+  }
+
+  .service-manager-dashboard__hero-actions .amarok-button {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .service-manager-dashboard__workspace {
+    padding: var(--ds-space-4);
+  }
+}
