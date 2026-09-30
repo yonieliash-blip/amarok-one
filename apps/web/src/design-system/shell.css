@@ -1388,14 +1388,28 @@
   opacity: 0.88;
 }
 
-.management-metric__spark i:nth-child(1) { height: 0.75rem; }
-.management-metric__spark i:nth-child(2) { height: 1.2rem; }
-.management-metric__spark i:nth-child(3) { height: 1.7rem; }
+.management-metric__spark i:nth-child(1) {
+  height: 0.75rem;
+}
+.management-metric__spark i:nth-child(2) {
+  height: 1.2rem;
+}
+.management-metric__spark i:nth-child(3) {
+  height: 1.7rem;
+}
 
-.management-metric--open .management-metric__spark { color: var(--ds-color-error); }
-.management-metric--inProgress .management-metric__spark { color: var(--ds-color-info); }
-.management-metric--today .management-metric__spark { color: var(--ds-color-success); }
-.management-metric--waitingManager .management-metric__spark { color: var(--ds-color-warning); }
+.management-metric--open .management-metric__spark {
+  color: var(--ds-color-error);
+}
+.management-metric--inProgress .management-metric__spark {
+  color: var(--ds-color-info);
+}
+.management-metric--today .management-metric__spark {
+  color: var(--ds-color-success);
+}
+.management-metric--waitingManager .management-metric__spark {
+  color: var(--ds-color-warning);
+}
 
 .management-dashboard__grid {
   display: grid;
