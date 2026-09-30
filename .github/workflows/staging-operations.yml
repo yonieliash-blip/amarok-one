@@ -1,0 +1,91 @@
+name: Staging operations
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Safe Staging operation to run
+        required: true
+        type: choice
+        default: status
+        options:
+          - status
+          - logs
+          - database_readiness
+          - restart_web
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-operations
+  cancel-in-progress: false
+
+jobs:
+  operate:
+    name: ${{ inputs.operation }} on Staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: staging
+
+    steps:
+      - name: Configure SSH
+        env:
+          STAGING_SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          STAGING_SSH_KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$STAGING_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$STAGING_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+
+      - name: Run safe operation
+        env:
+          OPERATION: ${{ inputs.operation }}
+        run: |
+          ssh -o BatchMode=yes -o IdentitiesOnly=yes ubuntu@staging.amarok-ce.com \
+            "OPERATION='$OPERATION' bash -s" <<'REMOTE'
+            set -euo pipefail
+
+            cd /home/ubuntu/amarok-one
+            test "$(git branch --show-current)" = "main"
+
+            compose() {
+              sudo docker compose \
+                --env-file infrastructure/staging/staging.env \
+                -f infrastructure/staging/docker-compose.yml "$@"
+            }
+
+            case "$OPERATION" in
+              status)
+                compose config --quiet
+                compose ps
+                sudo docker system df
+                curl --fail --show-error --retry 3 --retry-all-errors \
+                  https://staging.amarok-ce.com/health
+                curl --fail --show-error --retry 3 --retry-all-errors \
+                  https://staging-api.amarok-ce.com/health
+                ;;
+              logs)
+                compose logs --no-color --timestamps --tail 250 api web caddy
+                ;;
+              database_readiness)
+                set -a
+                . infrastructure/staging/staging.env
+                set +a
+                compose exec -T postgres pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+                compose exec -T postgres psql -v ON_ERROR_STOP=1 \
+                  -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+                  -c 'SELECT current_database() AS database, now() AS checked_at;'
+                ;;
+              restart_web)
+                compose up -d --no-deps --force-recreate web
+                curl --fail --show-error --retry 5 --retry-all-errors \
+                  https://staging.amarok-ce.com/health
+                ;;
+              *)
+                echo "Unsupported operation: $OPERATION" >&2
+                exit 64
+                ;;
+            esac
+          REMOTE

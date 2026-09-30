@@ -72,3 +72,18 @@ docker compose \
 ```
 
 Do not add `--volumes` unless staging data has been backed up and deletion is explicitly approved.
+
+## GitHub Staging operations
+
+The repository provides a manual **Staging operations** workflow for routine, non-destructive
+checks without opening an SSH terminal. It is intentionally limited to the following operations:
+
+- `status`: validate the Compose configuration, list service status, show Docker disk usage, and
+  check the public web and API health endpoints;
+- `logs`: collect the latest 250 timestamped lines from API, web, and Caddy;
+- `database_readiness`: check PostgreSQL readiness and run a read-only identity/time query;
+- `restart_web`: recreate the web container only, then verify its public health endpoint.
+
+This workflow must remain Staging-only. It must not run arbitrary shell input, stop or recreate
+PostgreSQL, delete Docker volumes, reset data, or run database migrations. Schema migrations run
+only as part of a reviewed application deployment.
