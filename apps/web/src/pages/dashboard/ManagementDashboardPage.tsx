@@ -204,6 +204,11 @@ export function ManagementDashboardPage() {
                       {t("managementDashboard", metric.noteKey)}
                     </p>
                   </div>
+                  <span className="management-metric__spark" aria-hidden="true">
+                    <i />
+                    <i />
+                    <i />
+                  </span>
                 </article>
               );
             })}
@@ -257,9 +262,11 @@ export function ManagementDashboardPage() {
                   <h3>{t("managementDashboard", "overviewTitle")}</h3>
                 </header>
                 <div className="management-overview">
-                  <div className="management-overview__total">
-                    <strong>{formatNumber(calls.length, locale)}</strong>
-                    <span>{t("managementDashboard", "totalCalls")}</span>
+                  <div className="management-overview__donut">
+                    <div className="management-overview__total">
+                      <strong>{formatNumber(calls.length, locale)}</strong>
+                      <span>{t("managementDashboard", "totalCalls")}</span>
+                    </div>
                   </div>
                   <ul className="management-overview__list">
                     {metrics.map((metric) => (
