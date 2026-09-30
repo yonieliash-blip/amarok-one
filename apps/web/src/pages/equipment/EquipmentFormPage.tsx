@@ -1,7 +1,13 @@
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import type { Branch, Customer, CustomerSite, EquipmentStatus, EquipmentType } from "@amarok-one/types";
+import type {
+  Branch,
+  Customer,
+  CustomerSite,
+  EquipmentStatus,
+  EquipmentType,
+} from "@amarok-one/types";
 import { Button } from "@amarok-one/ui";
 import { useAuth } from "../../auth/useAuth";
 import { ErrorState } from "../../components/ErrorState";
@@ -156,18 +162,29 @@ export function EquipmentFormPage() {
   }, [isEdit, equipmentId, user, accessToken, t]);
 
   useEffect(() => {
-    if (!user || !accessToken || !form.customerId) {
-      setCustomerSites([]);
-      return;
-    }
     let cancelled = false;
-    void listCustomerSitesRequest(user.organization.id, form.customerId, accessToken)
-      .then((sites) => {
-        if (!cancelled) setCustomerSites(sites);
-      })
-      .catch(() => {
+
+    async function loadCustomerSites(): Promise<void> {
+      if (!user || !accessToken || !form.customerId) {
+        await Promise.resolve();
         if (!cancelled) setCustomerSites([]);
-      });
+        return;
+      }
+
+      try {
+        const sites = await listCustomerSitesRequest(
+          user.organization.id,
+          form.customerId,
+          accessToken,
+        );
+        if (!cancelled) setCustomerSites(sites);
+      } catch {
+        if (!cancelled) setCustomerSites([]);
+      }
+    }
+
+    void loadCustomerSites();
+
     return () => {
       cancelled = true;
     };

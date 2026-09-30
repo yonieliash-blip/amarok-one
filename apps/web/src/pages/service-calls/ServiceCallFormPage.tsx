@@ -135,28 +135,37 @@ export function ServiceCallFormPage() {
   }, [user, accessToken]);
 
   useEffect(() => {
-    if (!user || !accessToken || !form.customerId) {
-      setCustomerSites([]);
-      setContacts([]);
-      return;
-    }
     let cancelled = false;
-    void Promise.all([
-      listCustomerSitesRequest(user.organization.id, form.customerId, accessToken),
-      getCustomerRequest(user.organization.id, form.customerId, accessToken),
-    ])
-      .then(([sites, customer]) => {
-        if (!cancelled) {
-          setCustomerSites(sites);
-          setContacts(customer.contacts);
-        }
-      })
-      .catch(() => {
+
+    async function loadCustomerData(): Promise<void> {
+      if (!user || !accessToken || !form.customerId) {
+        await Promise.resolve();
         if (!cancelled) {
           setCustomerSites([]);
           setContacts([]);
         }
-      });
+        return;
+      }
+
+      try {
+        const [sites, customer] = await Promise.all([
+          listCustomerSitesRequest(user.organization.id, form.customerId, accessToken),
+          getCustomerRequest(user.organization.id, form.customerId, accessToken),
+        ]);
+        if (!cancelled) {
+          setCustomerSites(sites);
+          setContacts(customer.contacts);
+        }
+      } catch {
+        if (!cancelled) {
+          setCustomerSites([]);
+          setContacts([]);
+        }
+      }
+    }
+
+    void loadCustomerData();
+
     return () => {
       cancelled = true;
     };
