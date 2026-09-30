@@ -73,7 +73,6 @@ docker compose \
 
 Do not add `--volumes` unless staging data has been backed up and deletion is explicitly approved.
 
-
 ## GitHub Staging operations
 
 The repository provides a manual **Staging operations** workflow for routine, non-destructive
