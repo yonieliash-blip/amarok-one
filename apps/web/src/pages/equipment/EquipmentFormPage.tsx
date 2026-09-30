@@ -162,18 +162,29 @@ export function EquipmentFormPage() {
   }, [isEdit, equipmentId, user, accessToken, t]);
 
   useEffect(() => {
-    if (!user || !accessToken || !form.customerId) {
-      setCustomerSites([]);
-      return;
-    }
     let cancelled = false;
-    void listCustomerSitesRequest(user.organization.id, form.customerId, accessToken)
-      .then((sites) => {
-        if (!cancelled) setCustomerSites(sites);
-      })
-      .catch(() => {
+
+    async function loadCustomerSites(): Promise<void> {
+      if (!user || !accessToken || !form.customerId) {
+        await Promise.resolve();
         if (!cancelled) setCustomerSites([]);
-      });
+        return;
+      }
+
+      try {
+        const sites = await listCustomerSitesRequest(
+          user.organization.id,
+          form.customerId,
+          accessToken,
+        );
+        if (!cancelled) setCustomerSites(sites);
+      } catch {
+        if (!cancelled) setCustomerSites([]);
+      }
+    }
+
+    void loadCustomerSites();
+
     return () => {
       cancelled = true;
     };
