@@ -34,6 +34,8 @@ type PageStatus = "loading" | "ready" | "error";
 
 interface Metric {
   id: "open" | "inProgress" | "today" | "waitingManager";
+  titleKey: "openCallsTitle" | "inProgressTitle" | "todayTitle" | "waitingManagerTitle";
+  noteKey: "openCallsNote" | "inProgressNote" | "todayNote" | "waitingManagerNote";
   icon: LucideIcon;
   value: number;
 }
@@ -101,14 +103,34 @@ export function ManagementDashboardPage() {
 
   const metrics = useMemo<Metric[]>(
     () => [
-      { id: "open", icon: ClipboardList, value: calls.filter(isActiveServiceCall).length },
-      { id: "inProgress", icon: UsersRound, value: calls.filter(isInProgressServiceCall).length },
+      {
+        id: "open",
+        titleKey: "openCallsTitle",
+        noteKey: "openCallsNote",
+        icon: ClipboardList,
+        value: calls.filter(isActiveServiceCall).length,
+      },
+      {
+        id: "inProgress",
+        titleKey: "inProgressTitle",
+        noteKey: "inProgressNote",
+        icon: UsersRound,
+        value: calls.filter(isInProgressServiceCall).length,
+      },
       {
         id: "today",
+        titleKey: "todayTitle",
+        noteKey: "todayNote",
         icon: CalendarDays,
         value: calls.filter((call) => isScheduledToday(call, todayStart, todayEnd)).length,
       },
-      { id: "waitingManager", icon: Clock3, value: calls.filter(isWaitingForManager).length },
+      {
+        id: "waitingManager",
+        titleKey: "waitingManagerTitle",
+        noteKey: "waitingManagerNote",
+        icon: Clock3,
+        value: calls.filter(isWaitingForManager).length,
+      },
     ],
     [calls, todayEnd, todayStart],
   );
@@ -175,11 +197,11 @@ export function ManagementDashboardPage() {
                   </div>
                   <div>
                     <p className="management-metric__label">
-                      {t("managementDashboard", `${metric.id}Title`)}
+                      {t("managementDashboard", metric.titleKey)}
                     </p>
                     <p className="management-metric__value">{formatNumber(metric.value, locale)}</p>
                     <p className="management-metric__note">
-                      {t("managementDashboard", `${metric.id}Note`)}
+                      {t("managementDashboard", metric.noteKey)}
                     </p>
                   </div>
                 </article>
@@ -229,41 +251,64 @@ export function ManagementDashboardPage() {
               )}
             </article>
 
-            <article className="management-panel management-panel--parts">
-              <header className="management-panel__header">
-                <h3>{t("managementDashboard", "partsTitle")}</h3>
-                <Link to="/parts">
-                  {t("managementDashboard", "allParts")} <ChevronLeft size={17} />
-                </Link>
-              </header>
-              {recentParts.length ? (
-                <div className="management-dashboard__table-wrap">
-                  <table className="management-dashboard__table management-dashboard__table--compact">
-                    <thead>
-                      <tr>
-                        <th>{t("managementDashboard", "part")}</th>
-                        <th>{t("managementDashboard", "category")}</th>
-                        <th>{t("managementDashboard", "partNumber")}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentParts.map((part) => (
-                        <tr key={part.id}>
-                          <td>
-                            <Package size={17} aria-hidden="true" />
-                            {part.name}
-                          </td>
-                          <td>{part.category?.name ?? "—"}</td>
-                          <td dir="ltr">{part.partNumber ?? "—"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+            <div className="management-dashboard__aside">
+              <article className="management-panel management-panel--overview">
+                <header className="management-panel__header">
+                  <h3>{t("managementDashboard", "overviewTitle")}</h3>
+                </header>
+                <div className="management-overview">
+                  <div className="management-overview__total">
+                    <strong>{formatNumber(calls.length, locale)}</strong>
+                    <span>{t("managementDashboard", "totalCalls")}</span>
+                  </div>
+                  <ul className="management-overview__list">
+                    {metrics.map((metric) => (
+                      <li key={metric.id} className={`management-overview__item--${metric.id}`}>
+                        <span className="management-overview__dot" aria-hidden="true" />
+                        <span>{t("managementDashboard", metric.titleKey)}</span>
+                        <strong>{formatNumber(metric.value, locale)}</strong>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              ) : (
-                <p className="management-panel__empty">{t("managementDashboard", "noParts")}</p>
-              )}
-            </article>
+              </article>
+
+              <article className="management-panel management-panel--parts">
+                <header className="management-panel__header">
+                  <h3>{t("managementDashboard", "partsTitle")}</h3>
+                  <Link to="/parts">
+                    {t("managementDashboard", "allParts")} <ChevronLeft size={17} />
+                  </Link>
+                </header>
+                {recentParts.length ? (
+                  <div className="management-dashboard__table-wrap">
+                    <table className="management-dashboard__table management-dashboard__table--compact">
+                      <thead>
+                        <tr>
+                          <th>{t("managementDashboard", "part")}</th>
+                          <th>{t("managementDashboard", "category")}</th>
+                          <th>{t("managementDashboard", "partNumber")}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {recentParts.map((part) => (
+                          <tr key={part.id}>
+                            <td>
+                              <Package size={17} aria-hidden="true" />
+                              {part.name}
+                            </td>
+                            <td>{part.category?.name ?? "—"}</td>
+                            <td dir="ltr">{part.partNumber ?? "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="management-panel__empty">{t("managementDashboard", "noParts")}</p>
+                )}
+              </article>
+            </div>
           </section>
         </>
       ) : null}
