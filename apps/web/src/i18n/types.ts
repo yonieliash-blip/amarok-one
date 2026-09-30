@@ -676,6 +676,8 @@ export interface TranslationMessages {
     status: string;
     date: string;
     noCalls: string;
+    overviewTitle: string;
+    totalCalls: string;
     partsTitle: string;
     allParts: string;
     part: string;

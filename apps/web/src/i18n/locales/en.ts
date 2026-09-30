@@ -679,6 +679,8 @@ export const en: TranslationMessages = {
     status: "Status",
     date: "Date and time",
     noCalls: "There are no service calls to display yet.",
+    overviewTitle: "Today overview",
+    totalCalls: "Total calls",
     partsTitle: "Suppliers and parts",
     allParts: "All parts",
     part: "Part",

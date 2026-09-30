@@ -677,6 +677,8 @@ export const he: TranslationMessages = {
     status: "סטטוס",
     date: "תאריך ושעה",
     noCalls: "אין עדיין קריאות שירות להצגה.",
+    overviewTitle: "תמונת מצב היום",
+    totalCalls: "סה״כ קריאות",
     partsTitle: "ספקים וחלפים",
     allParts: "לכל החלפים",
     part: "חלף",

@@ -91,6 +91,30 @@ a {
   width: min(100%, 17rem);
 }
 
+.brand-logo__image--header {
+  position: relative;
+  aspect-ratio: 2929 / 606;
+  overflow: hidden;
+}
+
+.brand-logo__header-layer {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background: #fff;
+  -webkit-mask: var(--brand-logo-mask) center / contain no-repeat;
+  mask: var(--brand-logo-mask) center / contain no-repeat;
+}
+
+.brand-logo__header-layer--wordmark {
+  background: var(--ds-color-primary);
+  clip-path: inset(0 0 50% 0);
+}
+
+.brand-logo__header-layer--tagline {
+  clip-path: inset(50% 0 0 0);
+}
+
 .amarok-badge--danger {
   background: rgba(239, 68, 68, 0.15);
   color: #fca5a5;
