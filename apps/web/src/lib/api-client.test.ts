@@ -39,23 +39,24 @@ describe("session storage", () => {
     clearStoredSession();
   });
 
-  it("persists refresh token and active role across reads", () => {
-    persistRefreshToken("refresh-token-value", "role-123");
+  it("persists refresh token, active role, and organization across reads", () => {
+    persistRefreshToken("refresh-token-value", "role-123", "organization-123");
     const session = readStoredSession();
 
     expect(session?.refreshToken).toBe("refresh-token-value");
     expect(session?.activeRoleId).toBe("role-123");
+    expect(session?.organizationId).toBe("organization-123");
   });
 
   it("updates active role without requiring a new refresh token", () => {
-    persistRefreshToken("refresh-token-value", "role-123");
+    persistRefreshToken("refresh-token-value", "role-123", "organization-123");
     persistActiveRoleId("role-456");
 
     expect(readStoredSession()?.activeRoleId).toBe("role-456");
   });
 
   it("clears active role on logout", () => {
-    persistRefreshToken("refresh-token-value", "role-123");
+    persistRefreshToken("refresh-token-value", "role-123", "organization-123");
     clearStoredSession();
 
     expect(readStoredSession()).toBeNull();

@@ -26,7 +26,7 @@ function applySession(
   setUser(session.user);
   persistActiveRoleId(session.user.role.id);
   if (session.refreshToken) {
-    persistRefreshToken(session.refreshToken, session.user.role.id);
+    persistRefreshToken(session.refreshToken, session.user.role.id, session.user.organization.id);
   }
 }
 
@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const session = await refreshSessionRequest(
         stored.refreshToken,
-        userRef.current?.organization.id ?? stored.activeRoleId,
+        userRef.current?.organization.id ?? stored.organizationId,
       );
       applySession(
         session,
@@ -174,7 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const session = await refreshSessionRequest(
           stored.refreshToken,
-          userRef.current?.organization.id ?? stored.activeRoleId,
+          userRef.current?.organization.id ?? stored.organizationId,
         );
         if (cancelled) {
           return;
