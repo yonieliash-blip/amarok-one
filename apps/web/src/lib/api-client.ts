@@ -4,20 +4,29 @@ import { env } from "./env";
 const REFRESH_TOKEN_KEY = "amarok_refresh_token";
 const TOKEN_EXPIRES_KEY = "amarok_token_expires_at";
 const ACTIVE_ROLE_KEY = "amarok_active_role_id";
+const ORGANIZATION_ID_KEY = "amarok_organization_id";
 
 export interface StoredSession {
   refreshToken: string;
   expiresAt: number;
   activeRoleId?: string;
+  organizationId?: string;
 }
 
-export function persistRefreshToken(refreshToken: string, activeRoleId?: string): void {
+export function persistRefreshToken(
+  refreshToken: string,
+  activeRoleId?: string,
+  organizationId?: string,
+): void {
   const REFRESH_TTL_MS = 7 * 24 * 60 * 60 * 1000;
   const expiresAt = Date.now() + REFRESH_TTL_MS;
   sessionStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
   sessionStorage.setItem(TOKEN_EXPIRES_KEY, String(expiresAt));
   if (activeRoleId) {
     sessionStorage.setItem(ACTIVE_ROLE_KEY, activeRoleId);
+  }
+  if (organizationId) {
+    sessionStorage.setItem(ORGANIZATION_ID_KEY, organizationId);
   }
 }
 
@@ -29,6 +38,7 @@ export function readStoredSession(): StoredSession | null {
   const refreshToken = sessionStorage.getItem(REFRESH_TOKEN_KEY);
   const expiresAtRaw = sessionStorage.getItem(TOKEN_EXPIRES_KEY);
   const activeRoleId = sessionStorage.getItem(ACTIVE_ROLE_KEY) ?? undefined;
+  const organizationId = sessionStorage.getItem(ORGANIZATION_ID_KEY) ?? undefined;
 
   if (!refreshToken || !expiresAtRaw) {
     return null;
@@ -40,13 +50,14 @@ export function readStoredSession(): StoredSession | null {
     return null;
   }
 
-  return { refreshToken, expiresAt, activeRoleId };
+  return { refreshToken, expiresAt, activeRoleId, organizationId };
 }
 
 export function clearStoredSession(): void {
   sessionStorage.removeItem(REFRESH_TOKEN_KEY);
   sessionStorage.removeItem(TOKEN_EXPIRES_KEY);
   sessionStorage.removeItem(ACTIVE_ROLE_KEY);
+  sessionStorage.removeItem(ORGANIZATION_ID_KEY);
 }
 
 export class ApiRequestError extends Error {
