@@ -188,6 +188,33 @@ export async function assignTechnicianRequest(
   return response.data;
 }
 
+export interface RescheduleVisitPayload {
+  technicianId: string;
+  scheduledStart: string;
+  scheduledEnd?: string;
+}
+
+export async function rescheduleServiceCallVisitRequest(
+  organizationId: string,
+  serviceCallId: string,
+  visitId: string,
+  accessToken: string,
+  payload: RescheduleVisitPayload,
+): Promise<ServiceCallLifecycleView> {
+  const response = await apiRequest<ServiceCallLifecycleView>(
+    `${serviceCallsBase(organizationId)}/${serviceCallId}/visits/${visitId}/reschedule`,
+    {
+      method: "POST",
+      accessToken,
+      body: JSON.stringify(payload),
+    },
+  );
+  if (!response.data) {
+    throw new Error("Reschedule failed");
+  }
+  return response.data;
+}
+
 export async function transitionServiceCallLifecycleRequest(
   organizationId: string,
   serviceCallId: string,

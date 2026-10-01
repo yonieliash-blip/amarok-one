@@ -302,6 +302,54 @@ export class WorkflowEngine {
         }
         break;
       }
+      case "RescheduleVisit": {
+        if (!aggregate) {
+          throw new WorkflowDomainError("INVALID_COMMAND", "Aggregate must exist");
+        }
+        const visitId = command.payload.visitId;
+        const technicianId = command.payload.technicianId;
+        const scheduledStart = command.payload.scheduledStart;
+        if (typeof visitId !== "string" || !visitId.trim()) {
+          throw new WorkflowDomainError("INVALID_COMMAND", "visitId is required");
+        }
+        if (typeof technicianId !== "string" || !technicianId.trim()) {
+          throw new WorkflowDomainError("INVALID_COMMAND", "technicianId is required");
+        }
+        if (typeof scheduledStart !== "string" || !scheduledStart.trim()) {
+          throw new WorkflowDomainError("INVALID_COMMAND", "scheduledStart is required");
+        }
+        const visit = aggregate.visits.find((candidate) => candidate.id === visitId);
+        if (!visit) {
+          throw new WorkflowDomainError("VISIT_NOT_FOUND", "Visit not found", { visitId });
+        }
+        if (visit.status !== "assigned" && visit.status !== "planned") {
+          throw new WorkflowDomainError(
+            "INVALID_STATE_TRANSITION",
+            "Only an assigned or planned visit can be rescheduled",
+            { visitId, status: visit.status },
+          );
+        }
+        events.push(
+          applyWorkflowEvent.eventFromFact({
+            id: ids.nextEventId(),
+            organizationId: command.organizationId,
+            aggregateId: command.aggregateId,
+            type: "visit.rescheduled",
+            payload: {
+              visitId,
+              assignedTechnicianId: technicianId,
+              scheduledStart,
+              scheduledEnd: command.payload.scheduledEnd,
+            },
+            occurredAt,
+            actorId: command.issuerId,
+            correlationId,
+            causationId: command.id,
+            sequence: baseSequence + events.length,
+          }),
+        );
+        break;
+      }
       case "ChangeWorkflowState": {
         if (!aggregate) {
           throw new WorkflowDomainError("INVALID_COMMAND", "Aggregate must exist");

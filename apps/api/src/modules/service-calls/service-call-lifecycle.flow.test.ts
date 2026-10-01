@@ -195,6 +195,55 @@ describe("Service call lifecycle flow (workflow engine)", () => {
       }),
     ).rejects.toBeInstanceOf(WorkflowDomainError);
   });
+
+  it("reschedules an unstarted visit but rejects a visit already in progress", async () => {
+    const { store, dispatch } = harness();
+    await dispatch("InitializeServiceCallWorkflow", {
+      externalServiceCallId: callId,
+      initialLifecycleKey: "new",
+    });
+    await dispatch("TransitionServiceCallLifecycle", {
+      toLifecycleKey: "waiting_assignment",
+    });
+    await dispatch("AssignTechnicianToVisit", {
+      visitId,
+      technicianId: techId,
+      sequence: 1,
+      scheduledStart: "2026-07-30T08:00:00.000Z",
+    });
+    await dispatch("RescheduleVisit", {
+      visitId,
+      technicianId: followUpTechId,
+      scheduledStart: "2026-07-30T09:30:00.000Z",
+    });
+
+    let aggregate = applyWorkflowEvent.rehydrate(await store.loadEvents(orgId, callId));
+    expect(aggregate.visits).toEqual([
+      expect.objectContaining({
+        id: visitId,
+        assignedTechnicianId: followUpTechId,
+        scheduledStart: "2026-07-30T09:30:00.000Z",
+      }),
+    ]);
+
+    await dispatch("StartVisitDriving", { visitId, technicianId: followUpTechId });
+    await expect(
+      dispatch("RescheduleVisit", {
+        visitId,
+        technicianId: techId,
+        scheduledStart: "2026-07-30T10:00:00.000Z",
+      }),
+    ).rejects.toBeInstanceOf(WorkflowDomainError);
+
+    aggregate = applyWorkflowEvent.rehydrate(await store.loadEvents(orgId, callId));
+    expect(aggregate.visits[0]).toEqual(
+      expect.objectContaining({
+        assignedTechnicianId: followUpTechId,
+        scheduledStart: "2026-07-30T09:30:00.000Z",
+        status: "driving",
+      }),
+    );
+  });
 });
 
 describe("Service call RBAC helpers", () => {

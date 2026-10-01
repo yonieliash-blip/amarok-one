@@ -3,6 +3,7 @@ import {
   CircleCheck,
   ClipboardPlus,
   Flag,
+  Pencil,
   Truck,
   UserCheck,
   UserPlus,
@@ -34,6 +35,7 @@ const HISTORY_EVENT_ICONS: Record<ServiceCallHistoryEventType, LucideIcon> = {
   created: ClipboardPlus,
   technician_dispatched: UserCheck,
   additional_visit: UserPlus,
+  visit_rescheduled: Pencil,
   technician_departed: Truck,
   work_started: Wrench,
   visit_finished: Flag,
@@ -147,6 +149,8 @@ function getHistoryEventTitle(
       return event.isContinuationByOtherTechnician
         ? t("serviceCalls", "historyEventContinuationVisit")
         : t("serviceCalls", "historyEventAdditionalVisit");
+    case "visit_rescheduled":
+      return t("serviceCalls", "historyEventVisitRescheduled");
     case "technician_departed":
       return t("serviceCalls", "historyEventTechnicianDeparted");
     case "work_started":
@@ -170,6 +174,7 @@ function getHistoryEventDetail(
         : null;
     case "technician_dispatched":
     case "additional_visit":
+    case "visit_rescheduled":
     case "technician_departed":
     case "work_started":
     case "visit_finished":

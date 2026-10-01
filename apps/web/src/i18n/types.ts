@@ -641,6 +641,7 @@ export interface TranslationMessages {
     historyEventTechnicianDispatched: string;
     historyEventAdditionalVisit: string;
     historyEventContinuationVisit: string;
+    historyEventVisitRescheduled: string;
     historyEventTechnicianDeparted: string;
     historyEventWorkStarted: string;
     historyEventVisitFinished: string;
@@ -721,6 +722,10 @@ export interface TranslationMessages {
     assigning: string;
     assignmentSuccess: string;
     assignmentError: string;
+    reschedule: string;
+    rescheduling: string;
+    rescheduleSuccess: string;
+    rescheduleError: string;
     viewServiceCall: string;
     plannedVisit: string;
     unassignedHint: string;

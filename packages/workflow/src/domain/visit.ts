@@ -68,6 +68,21 @@ export class Visit {
     return new Visit({ ...this.toProps(), status, updatedAt });
   }
 
+  withSchedule(
+    assignedTechnicianId: string,
+    scheduledStart: ISODateString,
+    scheduledEnd: ISODateString | undefined,
+    updatedAt: ISODateString,
+  ): Visit {
+    return new Visit({
+      ...this.toProps(),
+      assignedTechnicianId,
+      scheduledStart,
+      scheduledEnd,
+      updatedAt,
+    });
+  }
+
   toProps(): VisitProps {
     return {
       id: this.id,

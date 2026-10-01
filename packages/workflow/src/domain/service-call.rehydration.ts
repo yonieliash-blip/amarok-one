@@ -168,6 +168,37 @@ function applySingleEvent(aggregate: ServiceCall | null, event: WorkflowEvent): 
         updatedAt: event.occurredAt,
       });
     }
+    case "visit.rescheduled": {
+      if (!aggregate) {
+        throw new WorkflowDomainError(
+          "INVARIANT_VIOLATION",
+          "Cannot reschedule visit before initialization",
+        );
+      }
+      const visitId = requireString(event.payload, "visitId");
+      const technicianId = requireString(event.payload, "assignedTechnicianId");
+      const scheduledStart = requireString(event.payload, "scheduledStart");
+      const scheduledEnd =
+        typeof event.payload.scheduledEnd === "string" ? event.payload.scheduledEnd : undefined;
+      const visits = aggregate.visits.map((visit) => {
+        if (visit.id !== visitId) {
+          return visit;
+        }
+        return visit.withSchedule(technicianId, scheduledStart, scheduledEnd, event.occurredAt);
+      });
+
+      if (!visits.some((visit) => visit.id === visitId)) {
+        throw new WorkflowDomainError("VISIT_NOT_FOUND", "Visit not found on aggregate", {
+          visitId,
+        });
+      }
+
+      return aggregate.withPatch({
+        visits,
+        version: event.sequence,
+        updatedAt: event.occurredAt,
+      });
+    }
     case "visit.started":
     case "visit.driving_started":
     case "visit.working_started":
