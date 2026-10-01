@@ -212,6 +212,15 @@ export interface TranslationMessages {
     moduleFinance: string;
     moduleOffice: string;
     moduleAdministration: string;
+    statusActive: string;
+    statusSuspended: string;
+    suspendedHint: string;
+    suspendMember: string;
+    reactivateMember: string;
+    suspendConfirm: string;
+    reactivateConfirm: string;
+    memberSuspended: string;
+    memberReactivated: string;
   };
   mySchedulePage: {
     eyebrow: string;

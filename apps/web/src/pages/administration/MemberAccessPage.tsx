@@ -13,6 +13,7 @@ import {
   listMemberAccessRequest,
   createMemberRequest,
   updateMemberModulesRequest,
+  updateMemberStatusRequest,
   type MemberAccessSummary,
 } from "../../lib/access-api";
 
@@ -43,6 +44,7 @@ export function MemberAccessPage() {
   const [membersRetryKey, setMembersRetryKey] = useState(0);
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [changingMemberStatus, setChangingMemberStatus] = useState(false);
   const [newMember, setNewMember] = useState<{
     displayName: string;
     email: string;
@@ -223,6 +225,49 @@ export function MemberAccessPage() {
     }
   }
 
+  async function handleMemberStatus(): Promise<void> {
+    if (!user || !accessToken || !selectedMember || selectedMember.isOrganizationOwner) return;
+    const nextStatus = selectedMember.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
+    const confirmation =
+      nextStatus === "SUSPENDED"
+        ? t("memberAccess", "suspendConfirm", { name: selectedMember.displayName })
+        : t("memberAccess", "reactivateConfirm", { name: selectedMember.displayName });
+    if (!window.confirm(confirmation)) return;
+
+    setChangingMemberStatus(true);
+    setErrorMessage(null);
+    setSaveMessage(null);
+    try {
+      const result = await updateMemberStatusRequest(
+        user.organization.id,
+        selectedMember.id,
+        accessToken,
+        nextStatus,
+      );
+      setMembers((current) =>
+        current.map((member) =>
+          member.id === result.id
+            ? {
+                ...member,
+                status: result.status,
+                permissionsVersion: result.permissionsVersion,
+              }
+            : member,
+        ),
+      );
+      setSaveMessage(
+        nextStatus === "SUSPENDED"
+          ? t("memberAccess", "memberSuspended")
+          : t("memberAccess", "memberReactivated"),
+      );
+      await refreshSession();
+    } catch (error) {
+      setErrorMessage(getAuthErrorMessage(error));
+    } finally {
+      setChangingMemberStatus(false);
+    }
+  }
+
   return (
     <div className="customers-page">
       <header className="customers-page__header">
@@ -355,6 +400,13 @@ export function MemberAccessPage() {
                       {member.primaryRole.name}
                       {member.isOrganizationOwner ? ` · ${t("memberAccess", "ownerBadge")}` : ""}
                     </span>
+                    <span
+                      className={`member-access__member-status member-access__member-status--${member.status.toLowerCase()}`}
+                    >
+                      {member.status === "ACTIVE"
+                        ? t("memberAccess", "statusActive")
+                        : t("memberAccess", "statusSuspended")}
+                    </span>
                   </button>
                 </li>
               ))}
@@ -380,6 +432,11 @@ export function MemberAccessPage() {
             ) : (
               <>
                 <h2>{selectedMember.displayName}</h2>
+                {selectedMember.status === "SUSPENDED" ? (
+                  <p className="member-access__suspended-note">
+                    {t("memberAccess", "suspendedHint")}
+                  </p>
+                ) : null}
                 <p className="member-access__hint">{t("memberAccess", "moduleHint")}</p>
                 <fieldset className="member-access__modules">
                   <legend>{t("memberAccess", "enabledModules")}</legend>
@@ -412,6 +469,18 @@ export function MemberAccessPage() {
                     {status === "saving"
                       ? t("common", "loading")
                       : t("memberAccess", "saveModules")}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={changingMemberStatus || status === "saving"}
+                    onClick={() => void handleMemberStatus()}
+                  >
+                    {changingMemberStatus
+                      ? t("common", "loading")
+                      : selectedMember.status === "ACTIVE"
+                        ? t("memberAccess", "suspendMember")
+                        : t("memberAccess", "reactivateMember")}
                   </Button>
                 </div>
               </>

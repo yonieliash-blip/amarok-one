@@ -10,6 +10,7 @@ import {
   createOrganizationMemberSchema,
   memberIdParamSchema,
   updateMemberModuleAccessSchema,
+  updateMemberStatusSchema,
 } from "./access.schemas.js";
 
 export function createAccessRoutes(accessService: AccessService): Hono {
@@ -53,6 +54,26 @@ export function createAccessRoutes(accessService: AccessService): Hono {
         const { organizationId, memberId } = context.req.valid("param");
         const member = await accessService.getMemberAccess(organizationId, memberId);
         return context.json(createApiResponse(member));
+      },
+    )
+    .patch(
+      "/members/:memberId/status",
+      requirePermission("users:write"),
+      zValidator("param", memberIdParamSchema),
+      zValidator("json", updateMemberStatusSchema),
+      async (context) => {
+        const { organizationId, memberId } = context.req.valid("param");
+        const auth = getAuth(context);
+        return context.json(
+          createApiResponse(
+            await accessService.updateMemberStatus(
+              organizationId,
+              memberId,
+              auth.user.sub,
+              context.req.valid("json"),
+            ),
+          ),
+        );
       },
     )
     .patch(

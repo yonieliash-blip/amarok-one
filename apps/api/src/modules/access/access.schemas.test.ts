@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createOrganizationMemberSchema } from "./access.schemas.js";
+import { createOrganizationMemberSchema, updateMemberStatusSchema } from "./access.schemas.js";
 
 describe("createOrganizationMemberSchema", () => {
   const valid = {
@@ -21,5 +21,12 @@ describe("createOrganizationMemberSchema", () => {
     expect(() =>
       createOrganizationMemberSchema.parse({ ...valid, primaryRoleSlug: "system-administrator" }),
     ).toThrow();
+  });
+
+  it("only accepts active and suspended member statuses", () => {
+    expect(updateMemberStatusSchema.parse({ status: "SUSPENDED" })).toEqual({
+      status: "SUSPENDED",
+    });
+    expect(() => updateMemberStatusSchema.parse({ status: "DELETED" })).toThrow();
   });
 });

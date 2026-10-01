@@ -12,6 +12,7 @@ export interface MemberAccessSummary {
     name: string;
   };
   isOrganizationOwner: boolean;
+  status: "ACTIVE" | "SUSPENDED";
   enabledModules: MemberModuleKey[];
   permissionsVersion: number;
 }
@@ -81,6 +82,24 @@ export async function updateMemberModulesRequest(
     method: "PATCH",
     accessToken,
     body: JSON.stringify({ enabledModules }),
+  });
+  return response.data;
+}
+
+export async function updateMemberStatusRequest(
+  organizationId: string,
+  memberId: string,
+  accessToken: string,
+  status: "ACTIVE" | "SUSPENDED",
+): Promise<{ id: string; status: "ACTIVE" | "SUSPENDED"; permissionsVersion: number }> {
+  const response = await apiRequest<{
+    id: string;
+    status: "ACTIVE" | "SUSPENDED";
+    permissionsVersion: number;
+  }>(`/organizations/${organizationId}/access/members/${memberId}/status`, {
+    method: "PATCH",
+    accessToken,
+    body: JSON.stringify({ status }),
   });
   return response.data;
 }

@@ -22,7 +22,21 @@ import {
 import type {
   CreateOrganizationMemberInput,
   UpdateMemberModuleAccessInput,
+  UpdateMemberStatusInput,
 } from "./access.schemas.js";
+
+async function loadMemberForManagement(organizationId: string, memberId: string) {
+  return prisma.organizationMember.findFirst({
+    where: {
+      id: memberId,
+      organizationId,
+      ...activeOnly,
+      user: activeOnly,
+      primaryRole: activeOnly,
+    },
+    include: memberInclude,
+  });
+}
 
 function assertActorCanManageTarget(
   actorMember: Awaited<ReturnType<typeof loadOrganizationMemberById>>,
@@ -115,6 +129,7 @@ export function createAccessService() {
         name: member.primaryRole.name,
       },
       isOrganizationOwner: member.isOrganizationOwner,
+      status: member.status,
       enabledModules: resolved.enabledModules,
       permissionsVersion: member.permissionsVersion,
     };
@@ -125,7 +140,6 @@ export function createAccessService() {
       where: {
         organizationId,
         ...activeOnly,
-        status: "ACTIVE",
         user: activeOnly,
         primaryRole: activeOnly,
       },
@@ -146,6 +160,7 @@ export function createAccessService() {
           name: member.primaryRole.name,
         },
         isOrganizationOwner: member.isOrganizationOwner,
+        status: member.status,
         enabledModules: resolved.enabledModules,
         permissionsVersion: member.permissionsVersion,
       };
@@ -153,7 +168,7 @@ export function createAccessService() {
   }
 
   async function getMemberAccess(organizationId: string, memberId: string) {
-    const member = await loadOrganizationMemberById(organizationId, memberId);
+    const member = await loadMemberForManagement(organizationId, memberId);
     if (!member) {
       throw notFound("Organization member not found");
     }
@@ -170,6 +185,7 @@ export function createAccessService() {
         name: member.primaryRole.name,
       },
       isOrganizationOwner: member.isOrganizationOwner,
+      status: member.status,
       enabledModules: resolved.enabledModules,
       availableModules: MODULE_DEFINITIONS.map((module) => ({
         key: module.key,
@@ -196,7 +212,7 @@ export function createAccessService() {
         },
         include: memberInclude,
       }),
-      loadOrganizationMemberById(organizationId, memberId),
+      loadMemberForManagement(organizationId, memberId),
     ]);
 
     if (!targetMember) {
@@ -235,7 +251,7 @@ export function createAccessService() {
       },
     });
 
-    const refreshed = await loadOrganizationMemberById(organizationId, memberId);
+    const refreshed = await loadMemberForManagement(organizationId, memberId);
     if (!refreshed) {
       throw notFound("Organization member not found");
     }
@@ -245,6 +261,63 @@ export function createAccessService() {
       id: refreshed.id,
       enabledModules: resolved.enabledModules,
       permissionsVersion,
+    };
+  }
+
+  async function updateMemberStatus(
+    organizationId: string,
+    memberId: string,
+    actorUserId: string,
+    input: UpdateMemberStatusInput,
+  ) {
+    const [actorMember, targetMember] = await Promise.all([
+      loadOrganizationMember(organizationId, actorUserId),
+      loadMemberForManagement(organizationId, memberId),
+    ]);
+
+    if (!targetMember) {
+      throw notFound("Organization member not found");
+    }
+
+    assertActorCanManageTarget(actorMember, targetMember);
+    if (targetMember.isOrganizationOwner || targetMember.primaryRole.isOwner) {
+      throw forbidden("The organization owner account cannot be suspended");
+    }
+
+    if (targetMember.status === input.status) {
+      return {
+        id: targetMember.id,
+        status: targetMember.status,
+        permissionsVersion: targetMember.permissionsVersion,
+      };
+    }
+
+    const updated = await prisma.organizationMember.update({
+      where: { id: targetMember.id },
+      data: {
+        status: input.status,
+        permissionsVersion: { increment: 1 },
+      },
+      select: { status: true, permissionsVersion: true },
+    });
+
+    await writeAuditLog({
+      organizationId,
+      actorId: actorUserId,
+      action: input.status === "SUSPENDED" ? "member.suspended" : "member.reactivated",
+      entityType: "OrganizationMember",
+      entityId: targetMember.id,
+      metadata: {
+        targetUserId: targetMember.userId,
+        before: { status: targetMember.status },
+        after: { status: updated.status, permissionsVersion: updated.permissionsVersion },
+      },
+    });
+
+    return {
+      id: targetMember.id,
+      status: updated.status,
+      permissionsVersion: updated.permissionsVersion,
     };
   }
 
@@ -264,6 +337,7 @@ export function createAccessService() {
     listMembers,
     getMemberAccess,
     updateMemberModuleAccess,
+    updateMemberStatus,
     assertOwnerInvariantOnDemote,
   };
 }

@@ -421,6 +421,26 @@ a {
   font-size: 0.875rem;
 }
 
+.member-access__member-status {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 0.5rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.member-access__member-status--active {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.member-access__member-status--suspended {
+  color: #92400e;
+  background: #fef3c7;
+}
+
 .member-access__modules {
   border: 0;
   margin: 0;
@@ -445,6 +465,14 @@ a {
 .member-access__hint,
 .member-access__owner-note p {
   color: var(--amarok-text-muted);
+}
+
+.member-access__suspended-note {
+  margin: 0 0 0.75rem;
+  padding: 0.75rem;
+  color: #92400e;
+  background: #fef3c7;
+  border-radius: 0.5rem;
 }
 
 .form-success {
