@@ -198,14 +198,14 @@ describe("Service call lifecycle flow (workflow engine)", () => {
 });
 
 describe("Service call RBAC helpers", () => {
-  it("grants assign/close only to service manager defaults", () => {
+  it("allows a service coordinator to dispatch without allowing closure", () => {
     const manager = getDefaultRolePermissions("service-manager");
     const coordinator = getDefaultRolePermissions("service-coordinator");
     const technician = getDefaultRolePermissions("technician");
 
     expect(canAssignServiceCalls(manager)).toBe(true);
     expect(canCloseServiceCalls(manager)).toBe(true);
-    expect(canAssignServiceCalls(coordinator)).toBe(false);
+    expect(canAssignServiceCalls(coordinator)).toBe(true);
     expect(canCloseServiceCalls(coordinator)).toBe(false);
     expect(canAssignServiceCalls(technician)).toBe(false);
     expect(technician).toContain(PERMISSIONS.MY_SERVICE_CALLS_WRITE);

@@ -656,6 +656,31 @@ export interface TranslationMessages {
     emptyQueueTitle: string;
     emptyQueueMessage: string;
   };
+  dispatch: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    date: string;
+    previousDay: string;
+    nextDay: string;
+    today: string;
+    refresh: string;
+    loading: string;
+    loadError: string;
+    unassigned: string;
+    noUnassigned: string;
+    noVisits: string;
+    technician: string;
+    scheduleTime: string;
+    assign: string;
+    assigning: string;
+    assignmentSuccess: string;
+    assignmentError: string;
+    viewServiceCall: string;
+    plannedVisit: string;
+    unassignedHint: string;
+    assignmentPermissionHint: string;
+  };
   managementDashboard: {
     title: string;
     subtitle: string;

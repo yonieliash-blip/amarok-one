@@ -13,6 +13,7 @@ import { tenantGuard } from "../../middleware/tenant-guard.js";
 import { organizationIdParamSchema } from "../organizations/organization.schemas.js";
 import {
   createServiceCallSchema,
+  dispatchBoardQuerySchema,
   listServiceCallsQuerySchema,
   serviceCallIdParamSchema,
   updateServiceCallSchema,
@@ -52,6 +53,21 @@ export function createServiceCallRoutes(serviceCallService: ServiceCallService):
         const { organizationId } = context.req.valid("param");
         const assignees = await serviceCallService.listAssignableUsers(organizationId);
         return context.json(createApiResponse(assignees));
+      },
+    )
+    .get(
+      "/dispatch",
+      requireAllPermissions("calendar:read", "service_calls:read"),
+      zValidator("param", organizationIdParamSchema),
+      zValidator("query", dispatchBoardQuerySchema),
+      async (context) => {
+        const { organizationId } = context.req.valid("param");
+        const { scheduledFrom, scheduledTo } = context.req.valid("query");
+        return context.json(
+          createApiResponse(
+            await serviceCallService.getDispatchBoard(organizationId, scheduledFrom, scheduledTo),
+          ),
+        );
       },
     )
     .get(

@@ -291,6 +291,21 @@ export interface OrganizationMember {
   };
 }
 
+/** A scheduled field visit shown on the service dispatch board. */
+export interface DispatchBoardAssignment {
+  visit: ServiceCallVisit;
+  serviceCall: ServiceCall;
+}
+
+/** Operational day view for dispatching technicians to service calls. */
+export interface DispatchBoard {
+  scheduledFrom: ISODateString;
+  scheduledTo: ISODateString;
+  technicians: OrganizationMember[];
+  assignments: DispatchBoardAssignment[];
+  unassignedServiceCalls: ServiceCall[];
+}
+
 /** Field service work order */
 export interface ServiceCall {
   id: EntityId;

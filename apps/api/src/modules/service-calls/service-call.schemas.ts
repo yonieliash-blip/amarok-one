@@ -74,5 +74,15 @@ export const listServiceCallsQuerySchema = paginationQuerySchema.extend({
   openedTo: dateTimeSchema.optional(),
 });
 
+export const dispatchBoardQuerySchema = z
+  .object({
+    scheduledFrom: z.string().datetime({ offset: true }),
+    scheduledTo: z.string().datetime({ offset: true }),
+  })
+  .refine((value) => new Date(value.scheduledFrom) < new Date(value.scheduledTo), {
+    message: "scheduledFrom must be before scheduledTo",
+    path: ["scheduledTo"],
+  });
+
 export type CreateServiceCallInput = z.infer<typeof createServiceCallSchema>;
 export type UpdateServiceCallInput = z.infer<typeof updateServiceCallSchema>;

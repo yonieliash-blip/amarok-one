@@ -33,6 +33,7 @@ import { TechniciansListPage } from "./pages/technicians/TechniciansListPage";
 import { AttendanceReportPage } from "./pages/reports/AttendanceReportPage";
 import { WebSplashScreen } from "./components/WebSplashScreen";
 import { TasksPage } from "./pages/tasks/TasksPage";
+import { DispatchBoardPage } from "./pages/calendar/DispatchBoardPage";
 
 export function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -93,7 +94,7 @@ export function App() {
                   element={<ModulePlaceholderPage titleKey="mySchedule" />}
                 />
                 <Route path="technicians" element={<TechniciansListPage />} />
-                <Route path="calendar" element={<ModulePlaceholderPage titleKey="calendar" />} />
+                <Route path="calendar" element={<DispatchBoardPage />} />
                 <Route path="inventory" element={<InventoryPage />} />
                 <Route
                   path="purchase-orders"
