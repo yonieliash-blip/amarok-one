@@ -190,6 +190,37 @@ a {
   height: auto;
 }
 
+.tasks-page__card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.tasks-page__status {
+  border-radius: 999px;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.tasks-page__status--open {
+  background: var(--ds-color-info-muted);
+  color: var(--ds-color-info-on);
+}
+.tasks-page__status--in_progress {
+  background: var(--ds-color-warning-muted);
+  color: var(--ds-color-warning-on);
+}
+.tasks-page__status--waiting {
+  background: var(--ds-color-bg-hover);
+  color: var(--ds-color-text);
+}
+.tasks-page__status--completed {
+  background: var(--ds-color-success-muted);
+  color: var(--ds-color-success-on);
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);

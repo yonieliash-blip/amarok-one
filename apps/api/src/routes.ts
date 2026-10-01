@@ -17,6 +17,7 @@ import type { ServiceCallService } from "./modules/service-calls/service-call.se
 import { partsRoutes } from "./modules/parts/parts.routes.js";
 import { technicianRoutes } from "./modules/technicians/technician.routes.js";
 import { attendanceRoutes } from "./modules/attendance/attendance.routes.js";
+import { tasksRoutes } from "./modules/tasks/task.routes.js";
 
 export function createApiRoutes(
   serviceCallService: ServiceCallService,
@@ -40,6 +41,7 @@ export function createApiRoutes(
     .route("/organizations/:organizationId/attendance", attendanceRoutes)
     .route("/organizations/:organizationId/inventory", inventoryRoutes)
     .route("/organizations/:organizationId/parts", partsRoutes)
+    .route("/organizations/:organizationId/tasks", tasksRoutes)
     .route(
       "/organizations/:organizationId/service-calls",
       createServiceCallRoutes(serviceCallService),

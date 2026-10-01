@@ -45,6 +45,7 @@ export interface TranslationMessages {
     inventory: string;
     purchaseOrders: string;
     parts: string;
+    tasks: string;
     accounting: string;
     reports: string;
     memberAccess: string;
@@ -81,6 +82,7 @@ export interface TranslationMessages {
     inventory: string;
     purchaseOrders: string;
     parts: string;
+    tasks: string;
     accounting: string;
     reports: string;
     default: string;
@@ -198,6 +200,7 @@ export interface TranslationMessages {
     moduleService: string;
     moduleInventory: string;
     moduleFinance: string;
+    moduleOffice: string;
     moduleAdministration: string;
   };
   technicians: {

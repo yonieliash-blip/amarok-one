@@ -22,6 +22,7 @@ const MODULE_LABEL_KEYS: Record<MemberModuleKey, string> = {
   service: "moduleService",
   inventory: "moduleInventory",
   finance: "moduleFinance",
+  office: "moduleOffice",
   administration: "moduleAdministration",
 };
 

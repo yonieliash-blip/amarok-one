@@ -31,6 +31,7 @@ const NAV_ICON_MAP: Record<string, LucideIcon> = {
   inventory: Package,
   "purchase-orders": ShoppingCart,
   parts: Package,
+  tasks: ClipboardList,
   accounting: FileText,
   reports: BarChart3,
   "member-access": UserCog,
