@@ -1,5 +1,7 @@
 import type {
   ApiMeta,
+  DispatchBoard,
+  MySchedule,
   InventoryLocationSummary,
   InventoryItem,
   OrganizationMember,
@@ -27,6 +29,7 @@ import { mapWorkflowError } from "../../lib/workflow-errors.js";
 import { PrismaWorkflowEventStore } from "../../infrastructure/workflow/prisma-workflow-event-store.js";
 import { assertOrganizationExists } from "../organizations/organization.service.js";
 import { buildServiceCallListWhere } from "./service-call-filters.js";
+import { parseDispatchRange } from "./service-call-dispatch.js";
 import { assertEquipmentMatchesCustomer } from "./service-call-relationship.js";
 import type { CreateServiceCallInput, UpdateServiceCallInput } from "./service-call.schemas.js";
 import type { ServiceCallWorkflowPort } from "./service-call-workflow.port.js";
@@ -316,6 +319,88 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
     const data: ServiceCall[] = items.map(toServiceCallDto);
 
     return { data, meta };
+  }
+
+  async function getDispatchBoard(
+    organizationId: string,
+    scheduledFrom: string,
+    scheduledTo: string,
+  ): Promise<DispatchBoard> {
+    await assertOrganizationExists(organizationId);
+    const range = parseDispatchRange(scheduledFrom, scheduledTo);
+
+    const [technicians, visits, unassignedCalls] = await Promise.all([
+      listAssignableUsers(organizationId),
+      prisma.serviceCallVisit.findMany({
+        where: {
+          organizationId,
+          deletedAt: null,
+          status: { notIn: ["FINISHED", "CANCELLED", "COMPLETED"] },
+          scheduledStart: { gte: range.scheduledFrom, lt: range.scheduledTo },
+          serviceCall: { deletedAt: null, lifecycleState: { not: "CLOSED" } },
+        },
+        include: {
+          technician: { select: { id: true, email: true, displayName: true } },
+          serviceCall: { include: serviceCallInclude },
+        },
+        orderBy: [{ scheduledStart: "asc" }, { sequence: "asc" }],
+      }),
+      prisma.serviceCall.findMany({
+        where: {
+          organizationId,
+          ...activeOnly,
+          assignedUserId: null,
+          lifecycleState: { not: "CLOSED" },
+        },
+        include: serviceCallInclude,
+        orderBy: [{ priority: "desc" }, { openedAt: "asc" }],
+      }),
+    ]);
+
+    return {
+      scheduledFrom: range.scheduledFrom.toISOString(),
+      scheduledTo: range.scheduledTo.toISOString(),
+      technicians,
+      assignments: visits.map((visit) => ({
+        visit: toVisitDto(visit),
+        serviceCall: toServiceCallDto(visit.serviceCall),
+      })),
+      unassignedServiceCalls: unassignedCalls.map(toServiceCallDto),
+    };
+  }
+
+  async function getMySchedule(
+    organizationId: string,
+    technicianId: string,
+    scheduledFrom: string,
+    scheduledTo: string,
+  ): Promise<MySchedule> {
+    await assertOrganizationExists(organizationId);
+    const range = parseDispatchRange(scheduledFrom, scheduledTo);
+    const visits = await prisma.serviceCallVisit.findMany({
+      where: {
+        organizationId,
+        technicianId,
+        deletedAt: null,
+        status: { not: "CANCELLED" },
+        scheduledStart: { gte: range.scheduledFrom, lt: range.scheduledTo },
+        serviceCall: { deletedAt: null },
+      },
+      include: {
+        technician: { select: { id: true, email: true, displayName: true } },
+        serviceCall: { include: serviceCallInclude },
+      },
+      orderBy: [{ scheduledStart: "asc" }, { sequence: "asc" }],
+    });
+
+    return {
+      scheduledFrom: range.scheduledFrom.toISOString(),
+      scheduledTo: range.scheduledTo.toISOString(),
+      entries: visits.map((visit) => ({
+        visit: toVisitDto(visit),
+        serviceCall: toServiceCallDto(visit.serviceCall),
+      })),
+    };
   }
 
   async function loadServiceCallDto(
@@ -935,6 +1020,8 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
     assertAssignedServiceCallAccess,
     listAssignableUsers,
     listServiceCalls,
+    getDispatchBoard,
+    getMySchedule,
     getServiceCallById,
     getTechnicianCurrentTask,
     reconcileServiceCallWorkflow,

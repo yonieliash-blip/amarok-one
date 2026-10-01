@@ -4,6 +4,7 @@ import type {
   InventoryLocationDetail,
   InventoryLocationSummary,
   InventoryOverview,
+  MyVanInventory,
 } from "@amarok-one/types";
 import { Prisma } from "@prisma/client";
 import { writeAuditLog } from "../../lib/audit.js";
@@ -139,6 +140,53 @@ export async function listInventoryOverview(organizationId: string): Promise<Inv
   return {
     vans: mapped.filter((location) => location.type === "service_van"),
     warehouses: mapped.filter((location) => location.type === "central_warehouse"),
+  };
+}
+
+/** Returns only the active service van assigned to the authenticated field user. */
+export async function getMyVanInventory(
+  organizationId: string,
+  userId: string,
+): Promise<MyVanInventory> {
+  await assertOrganizationExists(organizationId);
+
+  const van = await prisma.inventoryLocation.findFirst({
+    where: {
+      organizationId,
+      type: "SERVICE_VAN",
+      assignedUserId: userId,
+      deletedAt: null,
+    },
+    include: {
+      assignedUser: { select: { displayName: true } },
+      items: {
+        where: { deletedAt: null, quantity: { gt: 0 } },
+        include: {
+          part: {
+            include: {
+              category: { select: { id: true, name: true } },
+              subcategory: { select: { id: true, name: true } },
+            },
+          },
+        },
+        orderBy: [
+          { part: { category: { name: "asc" } } },
+          { part: { subcategory: { name: "asc" } } },
+          { part: { name: "asc" } },
+        ],
+      },
+    },
+  });
+
+  if (!van) {
+    return {};
+  }
+
+  return {
+    van: {
+      ...toLocationDto(van),
+      items: van.items.map(toInventoryItemDto),
+    },
   };
 }
 

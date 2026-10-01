@@ -12,6 +12,7 @@ export interface MemberAccessSummary {
     name: string;
   };
   isOrganizationOwner: boolean;
+  status: "ACTIVE" | "SUSPENDED";
   enabledModules: MemberModuleKey[];
   permissionsVersion: number;
 }
@@ -22,6 +23,26 @@ export interface MemberAccessDetail extends MemberAccessSummary {
     name: string;
     description: string;
   }>;
+}
+
+export interface CreateMemberInput {
+  displayName: string;
+  email: string;
+  initialPassword: string;
+  primaryRoleSlug: "technician" | "service-coordinator";
+  enabledModules: MemberModuleKey[];
+}
+
+export async function createMemberRequest(
+  organizationId: string,
+  accessToken: string,
+  input: CreateMemberInput,
+): Promise<MemberAccessSummary> {
+  const response = await apiRequest<MemberAccessSummary>(
+    `/organizations/${organizationId}/access/members`,
+    { method: "POST", accessToken, body: JSON.stringify(input) },
+  );
+  return response.data;
 }
 
 export async function listMemberAccessRequest(
@@ -61,6 +82,24 @@ export async function updateMemberModulesRequest(
     method: "PATCH",
     accessToken,
     body: JSON.stringify({ enabledModules }),
+  });
+  return response.data;
+}
+
+export async function updateMemberStatusRequest(
+  organizationId: string,
+  memberId: string,
+  accessToken: string,
+  status: "ACTIVE" | "SUSPENDED",
+): Promise<{ id: string; status: "ACTIVE" | "SUSPENDED"; permissionsVersion: number }> {
+  const response = await apiRequest<{
+    id: string;
+    status: "ACTIVE" | "SUSPENDED";
+    permissionsVersion: number;
+  }>(`/organizations/${organizationId}/access/members/${memberId}/status`, {
+    method: "PATCH",
+    accessToken,
+    body: JSON.stringify({ status }),
   });
   return response.data;
 }

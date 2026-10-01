@@ -17,6 +17,8 @@ import { LoginPage } from "./pages/LoginPage";
 import { ModulePlaceholderPage } from "./pages/ModulePlaceholderPage";
 import { UnauthorizedPage } from "./pages/UnauthorizedPage";
 import { MyServiceCallsPage } from "./pages/my/MyServiceCallsPage";
+import { MyEquipmentPage } from "./pages/my/MyEquipmentPage";
+import { MySchedulePage } from "./pages/my/MySchedulePage";
 import { ServiceCallDetailPage } from "./pages/service-calls/ServiceCallDetailPage";
 import { ServiceCallFormPage } from "./pages/service-calls/ServiceCallFormPage";
 import { ServiceCallsListPage } from "./pages/service-calls/ServiceCallsListPage";
@@ -33,6 +35,7 @@ import { TechniciansListPage } from "./pages/technicians/TechniciansListPage";
 import { AttendanceReportPage } from "./pages/reports/AttendanceReportPage";
 import { WebSplashScreen } from "./components/WebSplashScreen";
 import { TasksPage } from "./pages/tasks/TasksPage";
+import { DispatchBoardPage } from "./pages/calendar/DispatchBoardPage";
 
 export function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -84,16 +87,10 @@ export function App() {
                 <Route path="service-calls/:serviceCallId" element={<ServiceCallDetailPage />} />
                 <Route path="service-calls/:serviceCallId/edit" element={<ServiceCallFormPage />} />
                 <Route path="my/service-calls" element={<MyServiceCallsPage />} />
-                <Route
-                  path="my/equipment"
-                  element={<ModulePlaceholderPage titleKey="myEquipment" />}
-                />
-                <Route
-                  path="my/schedule"
-                  element={<ModulePlaceholderPage titleKey="mySchedule" />}
-                />
+                <Route path="my/equipment" element={<MyEquipmentPage />} />
+                <Route path="my/schedule" element={<MySchedulePage />} />
                 <Route path="technicians" element={<TechniciansListPage />} />
-                <Route path="calendar" element={<ModulePlaceholderPage titleKey="calendar" />} />
+                <Route path="calendar" element={<DispatchBoardPage />} />
                 <Route path="inventory" element={<InventoryPage />} />
                 <Route
                   path="purchase-orders"

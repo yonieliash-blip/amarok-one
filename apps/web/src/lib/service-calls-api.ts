@@ -3,6 +3,8 @@ import type {
   Branch,
   Company,
   Customer,
+  DispatchBoard,
+  MySchedule,
   Equipment,
   OrganizationMember,
   ServiceCall,
@@ -55,6 +57,38 @@ export async function listAssignableUsersRequest(
     { accessToken },
   );
   return response.data ?? [];
+}
+
+export async function getDispatchBoardRequest(
+  organizationId: string,
+  accessToken: string,
+  scheduledFrom: string,
+  scheduledTo: string,
+): Promise<DispatchBoard> {
+  const query = new URLSearchParams({ scheduledFrom, scheduledTo });
+  const response = await apiRequest<DispatchBoard>(
+    `${serviceCallsBase(organizationId)}/dispatch?${query.toString()}`,
+    { accessToken },
+  );
+  if (!response.data) {
+    throw new Error("Dispatch board not found");
+  }
+  return response.data;
+}
+
+export async function getMyScheduleRequest(
+  organizationId: string,
+  accessToken: string,
+  scheduledFrom: string,
+  scheduledTo: string,
+): Promise<MySchedule> {
+  const query = new URLSearchParams({ scheduledFrom, scheduledTo });
+  const response = await apiRequest<MySchedule>(
+    `${serviceCallsBase(organizationId)}/my-schedule?${query.toString()}`,
+    { accessToken },
+  );
+  if (!response.data) throw new Error("My schedule not found");
+  return response.data;
 }
 
 export async function listServiceCallsRequest(

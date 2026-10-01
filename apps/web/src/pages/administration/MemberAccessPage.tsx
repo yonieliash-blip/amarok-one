@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { MODULE_KEYS } from "@amarok-one/permissions";
+import { getDefaultModulesForRole, MODULE_KEYS } from "@amarok-one/permissions";
 import type { MemberModuleKey } from "@amarok-one/types";
 import { Button } from "@amarok-one/ui";
 import { useAuth } from "../../auth/useAuth";
@@ -11,11 +11,14 @@ import { getAuthErrorMessage } from "../../lib/auth-errors";
 import {
   getMemberAccessRequest,
   listMemberAccessRequest,
+  createMemberRequest,
   updateMemberModulesRequest,
+  updateMemberStatusRequest,
   type MemberAccessSummary,
 } from "../../lib/access-api";
 
 type PageStatus = "loading" | "ready" | "error" | "saving";
+type StaffRoleSlug = "technician" | "service-coordinator";
 
 const MODULE_LABEL_KEYS: Record<MemberModuleKey, string> = {
   core: "moduleCore",
@@ -39,6 +42,22 @@ export function MemberAccessPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [membersRetryKey, setMembersRetryKey] = useState(0);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [changingMemberStatus, setChangingMemberStatus] = useState(false);
+  const [newMember, setNewMember] = useState<{
+    displayName: string;
+    email: string;
+    initialPassword: string;
+    primaryRoleSlug: StaffRoleSlug;
+    enabledModules: MemberModuleKey[];
+  }>({
+    displayName: "",
+    email: "",
+    initialPassword: "",
+    primaryRoleSlug: "technician",
+    enabledModules: [...getDefaultModulesForRole("technician")] as MemberModuleKey[],
+  });
 
   const selectedMember = useMemo(
     () => members.find((member) => member.id === selectedMemberId) ?? null,
@@ -179,6 +198,76 @@ export function MemberAccessPage() {
     });
   }
 
+  async function handleCreate(): Promise<void> {
+    if (!user || !accessToken || newMember.enabledModules.length === 0) return;
+    setCreating(true);
+    setErrorMessage(null);
+    setSaveMessage(null);
+    try {
+      const created = await createMemberRequest(user.organization.id, accessToken, newMember);
+      setMembers((current) =>
+        [...current, created].sort((a, b) => a.displayName.localeCompare(b.displayName)),
+      );
+      setSelectedMemberId(created.id);
+      setCreateOpen(false);
+      setNewMember({
+        displayName: "",
+        email: "",
+        initialPassword: "",
+        primaryRoleSlug: "technician",
+        enabledModules: [...getDefaultModulesForRole("technician")] as MemberModuleKey[],
+      });
+      setSaveMessage(t("memberAccess", "memberCreated"));
+    } catch (error) {
+      setErrorMessage(getAuthErrorMessage(error));
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function handleMemberStatus(): Promise<void> {
+    if (!user || !accessToken || !selectedMember || selectedMember.isOrganizationOwner) return;
+    const nextStatus = selectedMember.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
+    const confirmation =
+      nextStatus === "SUSPENDED"
+        ? t("memberAccess", "suspendConfirm", { name: selectedMember.displayName })
+        : t("memberAccess", "reactivateConfirm", { name: selectedMember.displayName });
+    if (!window.confirm(confirmation)) return;
+
+    setChangingMemberStatus(true);
+    setErrorMessage(null);
+    setSaveMessage(null);
+    try {
+      const result = await updateMemberStatusRequest(
+        user.organization.id,
+        selectedMember.id,
+        accessToken,
+        nextStatus,
+      );
+      setMembers((current) =>
+        current.map((member) =>
+          member.id === result.id
+            ? {
+                ...member,
+                status: result.status,
+                permissionsVersion: result.permissionsVersion,
+              }
+            : member,
+        ),
+      );
+      setSaveMessage(
+        nextStatus === "SUSPENDED"
+          ? t("memberAccess", "memberSuspended")
+          : t("memberAccess", "memberReactivated"),
+      );
+      await refreshSession();
+    } catch (error) {
+      setErrorMessage(getAuthErrorMessage(error));
+    } finally {
+      setChangingMemberStatus(false);
+    }
+  }
+
   return (
     <div className="customers-page">
       <header className="customers-page__header">
@@ -187,7 +276,103 @@ export function MemberAccessPage() {
           <h2 className="customers-page__title">{t("memberAccess", "title")}</h2>
           <p className="customers-page__subtitle">{t("memberAccess", "subtitle")}</p>
         </div>
+        <Button type="button" onClick={() => setCreateOpen((value) => !value)}>
+          {createOpen ? t("memberAccess", "cancelCreate") : t("memberAccess", "addMember")}
+        </Button>
       </header>
+
+      {createOpen ? (
+        <section className="member-access__create" aria-labelledby="member-create-title">
+          <h3 id="member-create-title">{t("memberAccess", "addMember")}</h3>
+          <div className="member-access__create-grid">
+            <label>
+              <span>{t("memberAccess", "name")}</span>
+              <input
+                value={newMember.displayName}
+                onChange={(event) =>
+                  setNewMember((current) => ({ ...current, displayName: event.target.value }))
+                }
+              />
+            </label>
+            <label>
+              <span>{t("memberAccess", "email")}</span>
+              <input
+                type="email"
+                dir="ltr"
+                value={newMember.email}
+                onChange={(event) =>
+                  setNewMember((current) => ({ ...current, email: event.target.value }))
+                }
+              />
+            </label>
+            <label>
+              <span>{t("memberAccess", "initialPassword")}</span>
+              <input
+                type="password"
+                dir="ltr"
+                value={newMember.initialPassword}
+                onChange={(event) =>
+                  setNewMember((current) => ({ ...current, initialPassword: event.target.value }))
+                }
+              />
+            </label>
+            <label>
+              <span>{t("memberAccess", "role")}</span>
+              <select
+                value={newMember.primaryRoleSlug}
+                onChange={(event) => {
+                  const primaryRoleSlug = event.target.value as StaffRoleSlug;
+                  setNewMember((current) => ({
+                    ...current,
+                    primaryRoleSlug,
+                    enabledModules: [
+                      ...getDefaultModulesForRole(primaryRoleSlug),
+                    ] as MemberModuleKey[],
+                  }));
+                }}
+              >
+                <option value="technician">{t("memberAccess", "roleTechnician")}</option>
+                <option value="service-coordinator">{t("memberAccess", "roleCoordinator")}</option>
+              </select>
+            </label>
+          </div>
+          <fieldset className="member-access__modules">
+            <legend>{t("memberAccess", "enabledModules")}</legend>
+            {MODULE_KEYS.map((moduleKey) => (
+              <label key={moduleKey} className="member-access__module">
+                <input
+                  type="checkbox"
+                  checked={newMember.enabledModules.includes(moduleKey)}
+                  onChange={(event) =>
+                    setNewMember((current) => ({
+                      ...current,
+                      enabledModules: event.target.checked
+                        ? [...new Set([...current.enabledModules, moduleKey])]
+                        : current.enabledModules.filter((key) => key !== moduleKey),
+                    }))
+                  }
+                />
+                <span>
+                  <strong>{t("memberAccess", MODULE_LABEL_KEYS[moduleKey])}</strong>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+          <Button
+            type="button"
+            disabled={
+              creating ||
+              newMember.displayName.trim().length < 2 ||
+              !newMember.email ||
+              newMember.initialPassword.length < 12 ||
+              newMember.enabledModules.length === 0
+            }
+            onClick={() => void handleCreate()}
+          >
+            {creating ? t("common", "loading") : t("memberAccess", "createMember")}
+          </Button>
+        </section>
+      ) : null}
 
       {errorMessage ? <p className="form-error">{errorMessage}</p> : null}
       {saveMessage ? <p className="form-success">{saveMessage}</p> : null}
@@ -215,6 +400,13 @@ export function MemberAccessPage() {
                       {member.primaryRole.name}
                       {member.isOrganizationOwner ? ` · ${t("memberAccess", "ownerBadge")}` : ""}
                     </span>
+                    <span
+                      className={`member-access__member-status member-access__member-status--${member.status.toLowerCase()}`}
+                    >
+                      {member.status === "ACTIVE"
+                        ? t("memberAccess", "statusActive")
+                        : t("memberAccess", "statusSuspended")}
+                    </span>
                   </button>
                 </li>
               ))}
@@ -240,6 +432,11 @@ export function MemberAccessPage() {
             ) : (
               <>
                 <h2>{selectedMember.displayName}</h2>
+                {selectedMember.status === "SUSPENDED" ? (
+                  <p className="member-access__suspended-note">
+                    {t("memberAccess", "suspendedHint")}
+                  </p>
+                ) : null}
                 <p className="member-access__hint">{t("memberAccess", "moduleHint")}</p>
                 <fieldset className="member-access__modules">
                   <legend>{t("memberAccess", "enabledModules")}</legend>
@@ -272,6 +469,18 @@ export function MemberAccessPage() {
                     {status === "saving"
                       ? t("common", "loading")
                       : t("memberAccess", "saveModules")}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={changingMemberStatus || status === "saving"}
+                    onClick={() => void handleMemberStatus()}
+                  >
+                    {changingMemberStatus
+                      ? t("common", "loading")
+                      : selectedMember.status === "ACTIVE"
+                        ? t("memberAccess", "suspendMember")
+                        : t("memberAccess", "reactivateMember")}
                   </Button>
                 </div>
               </>

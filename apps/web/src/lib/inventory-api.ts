@@ -1,4 +1,9 @@
-import type { InventoryItem, InventoryLocationSummary, InventoryOverview } from "@amarok-one/types";
+import type {
+  InventoryItem,
+  InventoryLocationSummary,
+  InventoryOverview,
+  MyVanInventory,
+} from "@amarok-one/types";
 import { apiRequest } from "./api-client";
 
 function base(organizationId: string): string {
@@ -10,6 +15,16 @@ export async function getInventoryOverviewRequest(
   accessToken: string,
 ): Promise<InventoryOverview> {
   const response = await apiRequest<InventoryOverview>(base(organizationId), { accessToken });
+  return response.data;
+}
+
+export async function getMyVanInventoryRequest(
+  organizationId: string,
+  accessToken: string,
+): Promise<MyVanInventory> {
+  const response = await apiRequest<MyVanInventory>(`${base(organizationId)}/my-van`, {
+    accessToken,
+  });
   return response.data;
 }
 

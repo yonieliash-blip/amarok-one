@@ -291,6 +291,33 @@ export interface OrganizationMember {
   };
 }
 
+/** A scheduled field visit shown on the service dispatch board. */
+export interface DispatchBoardAssignment {
+  visit: ServiceCallVisit;
+  serviceCall: ServiceCall;
+}
+
+/** Operational day view for dispatching technicians to service calls. */
+export interface DispatchBoard {
+  scheduledFrom: ISODateString;
+  scheduledTo: ISODateString;
+  technicians: OrganizationMember[];
+  assignments: DispatchBoardAssignment[];
+  unassignedServiceCalls: ServiceCall[];
+}
+
+/** A technician's own scheduled field visit, scoped to the authenticated user. */
+export interface MyScheduleEntry {
+  visit: ServiceCallVisit;
+  serviceCall: ServiceCall;
+}
+
+export interface MySchedule {
+  scheduledFrom: ISODateString;
+  scheduledTo: ISODateString;
+  entries: MyScheduleEntry[];
+}
+
 /** Field service work order */
 export interface ServiceCall {
   id: EntityId;
@@ -455,6 +482,11 @@ export interface InventoryLocationDetail extends InventoryLocationSummary {
 export interface InventoryOverview {
   vans: InventoryLocationDetail[];
   warehouses: InventoryLocationDetail[];
+}
+
+/** The service-van stock assigned to the authenticated field user. */
+export interface MyVanInventory {
+  van?: InventoryLocationDetail;
 }
 
 export interface WorkReportPartUsage {

@@ -6,7 +6,12 @@ import { organizationIdParamSchema } from "../organizations/organization.schemas
 import { requirePermission } from "../../middleware/jwt-guard.js";
 import { tenantGuard } from "../../middleware/tenant-guard.js";
 import type { AccessService } from "./access.service.js";
-import { memberIdParamSchema, updateMemberModuleAccessSchema } from "./access.schemas.js";
+import {
+  createOrganizationMemberSchema,
+  memberIdParamSchema,
+  updateMemberModuleAccessSchema,
+  updateMemberStatusSchema,
+} from "./access.schemas.js";
 
 export function createAccessRoutes(accessService: AccessService): Hono {
   return new Hono()
@@ -21,6 +26,26 @@ export function createAccessRoutes(accessService: AccessService): Hono {
         return context.json(createApiResponse(members));
       },
     )
+    .post(
+      "/members",
+      requirePermission("users:write"),
+      zValidator("param", organizationIdParamSchema),
+      zValidator("json", createOrganizationMemberSchema),
+      async (context) => {
+        const { organizationId } = context.req.valid("param");
+        const auth = getAuth(context);
+        return context.json(
+          createApiResponse(
+            await accessService.createMember(
+              organizationId,
+              auth.user.sub,
+              context.req.valid("json"),
+            ),
+          ),
+          201,
+        );
+      },
+    )
     .get(
       "/members/:memberId",
       requirePermission("users:read"),
@@ -29,6 +54,26 @@ export function createAccessRoutes(accessService: AccessService): Hono {
         const { organizationId, memberId } = context.req.valid("param");
         const member = await accessService.getMemberAccess(organizationId, memberId);
         return context.json(createApiResponse(member));
+      },
+    )
+    .patch(
+      "/members/:memberId/status",
+      requirePermission("users:write"),
+      zValidator("param", memberIdParamSchema),
+      zValidator("json", updateMemberStatusSchema),
+      async (context) => {
+        const { organizationId, memberId } = context.req.valid("param");
+        const auth = getAuth(context);
+        return context.json(
+          createApiResponse(
+            await accessService.updateMemberStatus(
+              organizationId,
+              memberId,
+              auth.user.sub,
+              context.req.valid("json"),
+            ),
+          ),
+        );
       },
     )
     .patch(
