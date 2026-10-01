@@ -13,6 +13,7 @@ on:
           - logs
           - database_readiness
           - migration_preflight
+          - customer_site_indexes_diagnostic
           - apply_customer_site_indexes
           - restart_web
           - deploy_api_and_migrate
@@ -101,6 +102,22 @@ jobs:
                   psql -X -v ON_ERROR_STOP=1 -P pager=off \
                     -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
                     -c "SELECT COUNT(*) AS duplicate_active_customer_site_groups FROM (SELECT 1 FROM customer_sites WHERE \"deletedAt\" IS NULL GROUP BY \"customerId\", \"name\" HAVING COUNT(*) > 1) AS duplicates;"
+                '
+                ;;
+              customer_site_indexes_diagnostic)
+                git fetch --no-tags origin main
+                git merge --ff-only origin/main
+                compose exec -T postgres sh -ec '
+                  set -eu
+                  psql -X -v ON_ERROR_STOP=1 -P pager=off \
+                    -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+                    -c "SELECT migration_name, finished_at, rolled_back_at FROM \"_prisma_migrations\" WHERE migration_name IN (\$\$20261001033000_tasks_module\$\$, \$\$20261001110000_customer_sites_missing_indexes\$\$) ORDER BY migration_name;"
+                  psql -X -v ON_ERROR_STOP=1 -P pager=off \
+                    -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+                    -c "SELECT COUNT(*) AS duplicate_active_customer_site_groups FROM (SELECT 1 FROM customer_sites WHERE \"deletedAt\" IS NULL GROUP BY \"customerId\", \"name\" HAVING COUNT(*) > 1) AS duplicates;"
+                  psql -X -v ON_ERROR_STOP=1 -P pager=off \
+                    -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+                    -c "SELECT indexname FROM pg_indexes WHERE schemaname = \$\$public\$\$ AND indexname IN (\$\$customer_sites_customerId_name_active_key\$\$, \$\$customer_contacts_customerSiteId_idx\$\$) ORDER BY indexname;"
                 '
                 ;;
               apply_customer_site_indexes)
