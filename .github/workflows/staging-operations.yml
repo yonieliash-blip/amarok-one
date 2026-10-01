@@ -97,6 +97,9 @@ jobs:
                   psql -X -v ON_ERROR_STOP=1 -P pager=off \
                     -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
                     -c "SELECT conname FROM pg_constraint WHERE conname IN (\$\$customer_sites_organizationId_fkey\$\$, \$\$customer_sites_customerId_fkey\$\$, \$\$customer_contacts_customerSiteId_fkey\$\$, \$\$equipment_customerSiteId_fkey\$\$, \$\$service_calls_customerSiteId_fkey\$\$) ORDER BY conname;"
+                  psql -X -v ON_ERROR_STOP=1 -P pager=off \
+                    -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+                    -c "SELECT COUNT(*) AS duplicate_active_customer_site_groups FROM (SELECT 1 FROM customer_sites WHERE \"deletedAt\" IS NULL GROUP BY \"customerId\", \"name\" HAVING COUNT(*) > 1) AS duplicates;"
                 '
                 ;;
               restart_web)
