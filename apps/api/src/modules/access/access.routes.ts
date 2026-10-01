@@ -6,11 +6,28 @@ import { organizationIdParamSchema } from "../organizations/organization.schemas
 import { requirePermission } from "../../middleware/jwt-guard.js";
 import { tenantGuard } from "../../middleware/tenant-guard.js";
 import type { AccessService } from "./access.service.js";
-import { memberIdParamSchema, updateMemberModuleAccessSchema } from "./access.schemas.js";
+import {
+  createOrganizationMemberSchema,
+  memberIdParamSchema,
+  updateMemberModuleAccessSchema,
+} from "./access.schemas.js";
 
 export function createAccessRoutes(accessService: AccessService): Hono {
   return new Hono()
     .use("*", tenantGuard)
+    .post(
+      "/members",
+      requirePermission("users:write"),
+      zValidator("param", organizationIdParamSchema),
+      zValidator("json", createOrganizationMemberSchema),
+      async (context) => {
+        const { organizationId } = context.req.valid("param");
+        const body = context.req.valid("json");
+        const auth = getAuth(context);
+        const member = await accessService.createMember(organizationId, auth.user.sub, body);
+        return context.json(createApiResponse(member), 201);
+      },
+    )
     .get(
       "/members",
       requirePermission("users:read"),

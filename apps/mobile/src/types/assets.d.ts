@@ -2,3 +2,8 @@ declare module "*.png" {
   const source: number;
   export default source;
 }
+
+declare module "*.jpeg" {
+  const source: number;
+  export default source;
+}

@@ -1,4 +1,5 @@
 import type {
+  OrganizationMember,
   ServiceCall,
   ServiceCallLifecycleState,
   ServiceCallLifecycleView,
@@ -10,6 +11,58 @@ import { apiRequest } from "./client";
 
 function base(organizationId: string): string {
   return `/organizations/${organizationId}/service-calls`;
+}
+
+export interface CreateManagerServiceCallInput {
+  title: string;
+  description?: string;
+  priority?: ServiceCall["priority"];
+  customerId: string;
+  equipmentId: string;
+  contactName?: string;
+  contactPhone?: string;
+  location?: string;
+  notes?: string;
+}
+
+export async function createManagerServiceCall(
+  organizationId: string,
+  accessToken: string,
+  input: CreateManagerServiceCallInput,
+): Promise<ServiceCall> {
+  const response = await apiRequest<ServiceCall>(base(organizationId), {
+    method: "POST",
+    accessToken,
+    body: JSON.stringify(input),
+  });
+  return response.data;
+}
+
+export async function listAssignableTechnicians(
+  organizationId: string,
+  accessToken: string,
+): Promise<OrganizationMember[]> {
+  const response = await apiRequest<OrganizationMember[]>(`${base(organizationId)}/assignees`, {
+    accessToken,
+  });
+  return response.data ?? [];
+}
+
+export async function assignServiceCallTechnician(
+  organizationId: string,
+  serviceCallId: string,
+  technicianId: string,
+  accessToken: string,
+): Promise<ServiceCallLifecycleView> {
+  const response = await apiRequest<ServiceCallLifecycleView>(
+    `${base(organizationId)}/${serviceCallId}/lifecycle/assign`,
+    {
+      method: "POST",
+      accessToken,
+      body: JSON.stringify({ technicianId }),
+    },
+  );
+  return response.data;
 }
 
 export async function listMyServiceCalls(

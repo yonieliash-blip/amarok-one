@@ -1,12 +1,15 @@
 import {
   MODULE_DEFINITIONS,
   ORGANIZATION_OWNER_ROLE_SLUG,
+  getDefaultModulesForRole,
   isModuleKey,
   type ModuleKey,
 } from "@amarok-one/permissions";
-import { forbidden, notFound, badRequest } from "../../lib/errors.js";
+import { forbidden, notFound, badRequest, conflict } from "../../lib/errors.js";
 import { activeOnly } from "../../lib/mappers.js";
 import { prisma } from "../../lib/prisma.js";
+import { hashPassword } from "../../lib/password.js";
+import { Prisma } from "@prisma/client";
 import { writeAuditLog } from "../../lib/audit.js";
 import {
   bumpMemberPermissionsVersion,
@@ -17,7 +20,10 @@ import {
   resolveMemberAuthorization,
   getEnabledModuleKeys,
 } from "../../lib/member-access.js";
-import type { UpdateMemberModuleAccessInput } from "./access.schemas.js";
+import type {
+  CreateOrganizationMemberInput,
+  UpdateMemberModuleAccessInput,
+} from "./access.schemas.js";
 
 function assertActorCanManageTarget(
   actorMember: Awaited<ReturnType<typeof loadOrganizationMemberById>>,
@@ -43,6 +49,105 @@ function assertActorCanManageTarget(
 }
 
 export function createAccessService() {
+  async function createMember(
+    organizationId: string,
+    actorUserId: string,
+    input: CreateOrganizationMemberInput,
+  ) {
+    const email = input.email.trim().toLowerCase();
+    const role = await prisma.role.findFirst({
+      where: {
+        organizationId,
+        slug: input.roleSlug,
+        deletedAt: null,
+      },
+    });
+
+    if (!role) {
+      throw notFound("Role not found");
+    }
+
+    const passwordHash = await hashPassword(input.password);
+
+    try {
+      const created = await prisma.$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            email,
+            displayName: input.displayName.trim(),
+            passwordHash,
+            isActive: true,
+          },
+        });
+
+        await tx.userRole.create({
+          data: {
+            organizationId,
+            userId: user.id,
+            roleId: role.id,
+          },
+        });
+
+        const member = await tx.organizationMember.create({
+          data: {
+            organizationId,
+            userId: user.id,
+            primaryRoleId: role.id,
+            isOrganizationOwner: false,
+            status: "ACTIVE",
+          },
+        });
+
+        const moduleKeys = [...getDefaultModulesForRole(role.slug)];
+        if (moduleKeys.length > 0) {
+          await tx.memberModuleAccess.createMany({
+            data: moduleKeys.map((moduleKey) => ({
+              organizationId,
+              organizationMemberId: member.id,
+              moduleKey,
+              enabled: true,
+            })),
+          });
+        }
+
+        return {
+          id: member.id,
+          userId: user.id,
+          displayName: user.displayName,
+          email: user.email,
+          primaryRole: {
+            id: role.id,
+            slug: role.slug,
+            name: role.name,
+          },
+          isOrganizationOwner: false,
+          enabledModules: moduleKeys,
+          permissionsVersion: member.permissionsVersion,
+        };
+      });
+
+      await writeAuditLog({
+        organizationId,
+        actorId: actorUserId,
+        action: "member.created",
+        entityType: "OrganizationMember",
+        entityId: created.id,
+        metadata: {
+          targetUserId: created.userId,
+          email: created.email,
+          roleSlug: created.primaryRole.slug,
+        },
+      });
+
+      return created;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        throw conflict("Email already exists", { email });
+      }
+      throw error;
+    }
+  }
+
   async function listMembers(organizationId: string) {
     const members = await prisma.organizationMember.findMany({
       where: {
@@ -183,6 +288,7 @@ export function createAccessService() {
   }
 
   return {
+    createMember,
     listMembers,
     getMemberAccess,
     updateMemberModuleAccess,
