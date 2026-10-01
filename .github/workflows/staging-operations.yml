@@ -114,6 +114,9 @@ jobs:
                     -c "SELECT migration_name, finished_at, rolled_back_at FROM \"_prisma_migrations\" WHERE migration_name IN (\$\$20261001033000_tasks_module\$\$, \$\$20261001110000_customer_sites_missing_indexes\$\$) ORDER BY migration_name;"
                   psql -X -v ON_ERROR_STOP=1 -P pager=off \
                     -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+                    -c "SELECT to_regclass(\$\$public.tasks\$\$) AS tasks_table, to_regtype(\$\$public.\"TaskStatus\"\$\$) AS task_status_type, to_regtype(\$\$public.\"TaskPriority\"\$\$) AS task_priority_type;"
+                  psql -X -v ON_ERROR_STOP=1 -P pager=off \
+                    -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
                     -c "SELECT COUNT(*) AS duplicate_active_customer_site_groups FROM (SELECT 1 FROM customer_sites WHERE \"deletedAt\" IS NULL GROUP BY \"customerId\", \"name\" HAVING COUNT(*) > 1) AS duplicates;"
                   psql -X -v ON_ERROR_STOP=1 -P pager=off \
                     -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
