@@ -17,6 +17,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { ModulePlaceholderPage } from "./pages/ModulePlaceholderPage";
 import { UnauthorizedPage } from "./pages/UnauthorizedPage";
 import { MyServiceCallsPage } from "./pages/my/MyServiceCallsPage";
+import { MySchedulePage } from "./pages/my/MySchedulePage";
 import { ServiceCallDetailPage } from "./pages/service-calls/ServiceCallDetailPage";
 import { ServiceCallFormPage } from "./pages/service-calls/ServiceCallFormPage";
 import { ServiceCallsListPage } from "./pages/service-calls/ServiceCallsListPage";
@@ -89,10 +90,7 @@ export function App() {
                   path="my/equipment"
                   element={<ModulePlaceholderPage titleKey="myEquipment" />}
                 />
-                <Route
-                  path="my/schedule"
-                  element={<ModulePlaceholderPage titleKey="mySchedule" />}
-                />
+                <Route path="my/schedule" element={<MySchedulePage />} />
                 <Route path="technicians" element={<TechniciansListPage />} />
                 <Route path="calendar" element={<DispatchBoardPage />} />
                 <Route path="inventory" element={<InventoryPage />} />

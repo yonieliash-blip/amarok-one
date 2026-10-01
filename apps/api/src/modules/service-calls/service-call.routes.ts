@@ -14,6 +14,7 @@ import { organizationIdParamSchema } from "../organizations/organization.schemas
 import {
   createServiceCallSchema,
   dispatchBoardQuerySchema,
+  myScheduleQuerySchema,
   listServiceCallsQuerySchema,
   serviceCallIdParamSchema,
   updateServiceCallSchema,
@@ -66,6 +67,26 @@ export function createServiceCallRoutes(serviceCallService: ServiceCallService):
         return context.json(
           createApiResponse(
             await serviceCallService.getDispatchBoard(organizationId, scheduledFrom, scheduledTo),
+          ),
+        );
+      },
+    )
+    .get(
+      "/my-schedule",
+      requirePermission("my_schedule:read"),
+      zValidator("param", organizationIdParamSchema),
+      zValidator("query", myScheduleQuerySchema),
+      async (context) => {
+        const { organizationId } = context.req.valid("param");
+        const { scheduledFrom, scheduledTo } = context.req.valid("query");
+        return context.json(
+          createApiResponse(
+            await serviceCallService.getMySchedule(
+              organizationId,
+              actorId(context),
+              scheduledFrom,
+              scheduledTo,
+            ),
           ),
         );
       },

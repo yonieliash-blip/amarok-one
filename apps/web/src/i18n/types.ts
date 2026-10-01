@@ -213,6 +213,19 @@ export interface TranslationMessages {
     moduleOffice: string;
     moduleAdministration: string;
   };
+  mySchedulePage: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    date: string;
+    previousDay: string;
+    nextDay: string;
+    today: string;
+    loading: string;
+    loadError: string;
+    empty: string;
+    visit: string;
+  };
   technicians: {
     eyebrow: string;
     title: string;

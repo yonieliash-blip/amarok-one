@@ -306,6 +306,18 @@ export interface DispatchBoard {
   unassignedServiceCalls: ServiceCall[];
 }
 
+/** A technician's own scheduled field visit, scoped to the authenticated user. */
+export interface MyScheduleEntry {
+  visit: ServiceCallVisit;
+  serviceCall: ServiceCall;
+}
+
+export interface MySchedule {
+  scheduledFrom: ISODateString;
+  scheduledTo: ISODateString;
+  entries: MyScheduleEntry[];
+}
+
 /** Field service work order */
 export interface ServiceCall {
   id: EntityId;

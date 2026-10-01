@@ -84,5 +84,7 @@ export const dispatchBoardQuerySchema = z
     path: ["scheduledTo"],
   });
 
+export const myScheduleQuerySchema = dispatchBoardQuerySchema;
+
 export type CreateServiceCallInput = z.infer<typeof createServiceCallSchema>;
 export type UpdateServiceCallInput = z.infer<typeof updateServiceCallSchema>;

@@ -1,6 +1,7 @@
 import type {
   ApiMeta,
   DispatchBoard,
+  MySchedule,
   InventoryLocationSummary,
   InventoryItem,
   OrganizationMember,
@@ -365,6 +366,40 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
         serviceCall: toServiceCallDto(visit.serviceCall),
       })),
       unassignedServiceCalls: unassignedCalls.map(toServiceCallDto),
+    };
+  }
+
+  async function getMySchedule(
+    organizationId: string,
+    technicianId: string,
+    scheduledFrom: string,
+    scheduledTo: string,
+  ): Promise<MySchedule> {
+    await assertOrganizationExists(organizationId);
+    const range = parseDispatchRange(scheduledFrom, scheduledTo);
+    const visits = await prisma.serviceCallVisit.findMany({
+      where: {
+        organizationId,
+        technicianId,
+        deletedAt: null,
+        status: { not: "CANCELLED" },
+        scheduledStart: { gte: range.scheduledFrom, lt: range.scheduledTo },
+        serviceCall: { deletedAt: null },
+      },
+      include: {
+        technician: { select: { id: true, email: true, displayName: true } },
+        serviceCall: { include: serviceCallInclude },
+      },
+      orderBy: [{ scheduledStart: "asc" }, { sequence: "asc" }],
+    });
+
+    return {
+      scheduledFrom: range.scheduledFrom.toISOString(),
+      scheduledTo: range.scheduledTo.toISOString(),
+      entries: visits.map((visit) => ({
+        visit: toVisitDto(visit),
+        serviceCall: toServiceCallDto(visit.serviceCall),
+      })),
     };
   }
 
@@ -986,6 +1021,7 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
     listAssignableUsers,
     listServiceCalls,
     getDispatchBoard,
+    getMySchedule,
     getServiceCallById,
     getTechnicianCurrentTask,
     reconcileServiceCallWorkflow,
