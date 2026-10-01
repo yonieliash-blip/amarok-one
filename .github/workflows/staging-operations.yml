@@ -12,6 +12,7 @@ on:
           - status
           - logs
           - database_readiness
+          - migration_preflight
           - restart_web
           - deploy_api_and_migrate
 
@@ -76,6 +77,26 @@ jobs:
                   psql -v ON_ERROR_STOP=1 \
                     -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
                     -c "SELECT current_database() AS database, now() AS checked_at;"
+                '
+                ;;
+              migration_preflight)
+                compose exec -T postgres sh -ec '
+                  set -eu
+                  psql -X -v ON_ERROR_STOP=1 -P pager=off \
+                    -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+                    -c "SELECT migration_name, finished_at, rolled_back_at, applied_steps_count FROM \"_prisma_migrations\" WHERE migration_name = \$\$20260927220000_customer_sites\$\$;"
+                  psql -X -v ON_ERROR_STOP=1 -P pager=off \
+                    -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+                    -c "SELECT to_regclass(\$\$public.customer_sites\$\$) AS customer_sites_table;"
+                  psql -X -v ON_ERROR_STOP=1 -P pager=off \
+                    -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+                    -c "SELECT table_name, column_name, is_nullable FROM information_schema.columns WHERE table_schema = \$\$public\$\$ AND (table_name = \$\$customer_sites\$\$ OR (table_name IN (\$\$customer_contacts\$\$, \$\$equipment\$\$, \$\$service_calls\$\$) AND column_name = \$\$customerSiteId\$\$)) ORDER BY table_name, column_name;"
+                  psql -X -v ON_ERROR_STOP=1 -P pager=off \
+                    -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+                    -c "SELECT indexname FROM pg_indexes WHERE schemaname = \$\$public\$\$ AND indexname IN (\$\$customer_sites_customerId_name_active_key\$\$, \$\$customer_sites_organizationId_idx\$\$, \$\$customer_sites_customerId_deletedAt_idx\$\$, \$\$customer_contacts_customerSiteId_idx\$\$, \$\$equipment_organizationId_customerSiteId_idx\$\$, \$\$service_calls_organizationId_customerSiteId_idx\$\$) ORDER BY indexname;"
+                  psql -X -v ON_ERROR_STOP=1 -P pager=off \
+                    -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+                    -c "SELECT conname FROM pg_constraint WHERE conname IN (\$\$customer_sites_organizationId_fkey\$\$, \$\$customer_sites_customerId_fkey\$\$, \$\$customer_contacts_customerSiteId_fkey\$\$, \$\$equipment_customerSiteId_fkey\$\$, \$\$service_calls_customerSiteId_fkey\$\$) ORDER BY conname;"
                 '
                 ;;
               restart_web)
