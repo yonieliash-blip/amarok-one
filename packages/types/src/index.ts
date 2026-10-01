@@ -30,6 +30,36 @@ export interface HealthStatus {
   timestamp: ISODateString;
 }
 
+export type TaskStatus = "open" | "in_progress" | "waiting" | "completed";
+export type TaskPriority = "low" | "normal" | "high" | "urgent";
+
+export interface TaskAssignee {
+  id: EntityId;
+  displayName: string;
+  email: string;
+}
+
+export interface Task {
+  id: EntityId;
+  organizationId: EntityId;
+  title: string;
+  description?: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  dueAt?: ISODateString;
+  assignedToId: EntityId;
+  assignedTo: TaskAssignee;
+  createdBy?: TaskAssignee;
+  completedAt?: ISODateString;
+  completedBy?: TaskAssignee;
+  completionNote?: string;
+  linkUrl?: string;
+  linkedEntityType?: string;
+  linkedEntityId?: EntityId;
+  createdAt: ISODateString;
+  updatedAt: ISODateString;
+}
+
 /** Equipment operational status */
 export type EquipmentStatus = "active" | "in_service" | "out_of_service" | "retired";
 
@@ -308,7 +338,8 @@ export interface AuthRole {
 }
 
 /** Module key granted to an organization member */
-export type MemberModuleKey = "core" | "service" | "inventory" | "finance" | "administration";
+export type MemberModuleKey =
+  "core" | "service" | "inventory" | "finance" | "office" | "administration";
 
 /** Authenticated user profile with tenant context */
 export interface AuthUser {

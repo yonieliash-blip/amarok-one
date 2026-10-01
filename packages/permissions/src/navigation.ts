@@ -22,6 +22,7 @@ export type NavLabelKey =
   | "inventory"
   | "purchaseOrders"
   | "parts"
+  | "tasks"
   | "accounting"
   | "reports"
   | "memberAccess";
@@ -103,6 +104,12 @@ export const NAVIGATION_ITEMS: readonly NavigationItemDefinition[] = [
     to: "/parts",
     labelKey: "parts",
     permissions: [PERMISSIONS.PARTS_READ],
+  },
+  {
+    id: "tasks",
+    to: "/tasks",
+    labelKey: "tasks",
+    permissions: [PERMISSIONS.TASKS_READ],
   },
   {
     id: "accounting",

@@ -1,7 +1,14 @@
 import { PERMISSIONS, type PermissionSlug } from "./permissions.js";
 
 /** Configurable organization module keys (CTO-approved initial set). */
-export const MODULE_KEYS = ["core", "service", "inventory", "finance", "administration"] as const;
+export const MODULE_KEYS = [
+  "core",
+  "service",
+  "inventory",
+  "finance",
+  "office",
+  "administration",
+] as const;
 
 export type ModuleKey = (typeof MODULE_KEYS)[number];
 
@@ -107,6 +114,18 @@ export const MODULE_DEFINITIONS: readonly ModuleDefinition[] = [
     },
   },
   {
+    key: "office",
+    name: "Office",
+    description: "Office tasks and document workflows",
+    actions: {
+      view: [PERMISSIONS.TASKS_READ],
+      create: [],
+      edit: [PERMISSIONS.TASKS_WRITE],
+      approve: [],
+      delete: [],
+    },
+  },
+  {
     key: "administration",
     name: "Administration",
     description: "Organization structure and user access administration",
@@ -119,7 +138,7 @@ export const MODULE_DEFINITIONS: readonly ModuleDefinition[] = [
       ],
       create: [PERMISSIONS.USERS_WRITE, PERMISSIONS.ROLES_WRITE],
       edit: [PERMISSIONS.USERS_WRITE, PERMISSIONS.ROLES_WRITE],
-      approve: [],
+      approve: [PERMISSIONS.TASKS_MANAGE],
       delete: [],
     },
   },

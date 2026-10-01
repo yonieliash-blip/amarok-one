@@ -16,6 +16,7 @@ describe("organization owner protection", () => {
       "service",
       "inventory",
       "finance",
+      "office",
       "administration",
     ]);
     expect(resolved.permissions).toContain("users:write");

@@ -41,6 +41,9 @@ export const PERMISSIONS = {
   ROLES_READ: "roles:read",
   ROLES_WRITE: "roles:write",
   REPORTS_READ: "reports:read",
+  TASKS_READ: "tasks:read",
+  TASKS_WRITE: "tasks:write",
+  TASKS_MANAGE: "tasks:manage",
 } as const;
 
 export type PermissionSlug = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -251,6 +254,21 @@ export const ALL_PERMISSIONS: readonly PermissionDefinition[] = [
     slug: PERMISSIONS.REPORTS_READ,
     name: "Read Reports",
     description: "View reports",
+  },
+  {
+    slug: PERMISSIONS.TASKS_READ,
+    name: "Read Tasks",
+    description: "View assigned tasks",
+  },
+  {
+    slug: PERMISSIONS.TASKS_WRITE,
+    name: "Write Tasks",
+    description: "Update assigned task status",
+  },
+  {
+    slug: PERMISSIONS.TASKS_MANAGE,
+    name: "Manage Tasks",
+    description: "Create, assign, and manage organization tasks",
   },
 ] as const;
 

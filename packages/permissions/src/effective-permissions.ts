@@ -39,7 +39,7 @@ export function resolveEffectivePermissions(
   if (isOwner) {
     return {
       permissions: [...TENANT_PERMISSION_SLUGS],
-      enabledModules: ["core", "service", "inventory", "finance", "administration"],
+      enabledModules: ["core", "service", "inventory", "finance", "office", "administration"],
       isOrganizationOwner: true,
     };
   }

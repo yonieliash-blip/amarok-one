@@ -43,6 +43,7 @@ export const en: TranslationMessages = {
     inventory: "Inventory",
     purchaseOrders: "Purchase Orders",
     parts: "Parts",
+    tasks: "Tasks",
     accounting: "Accounting",
     reports: "Reports",
     memberAccess: "Member access",
@@ -79,6 +80,7 @@ export const en: TranslationMessages = {
     inventory: "Inventory",
     purchaseOrders: "Purchase Orders",
     parts: "Parts",
+    tasks: "Tasks",
     accounting: "Accounting",
     reports: "Reports",
     default: "AMAROK ONE",
@@ -197,6 +199,7 @@ export const en: TranslationMessages = {
     moduleService: "Service",
     moduleInventory: "Inventory",
     moduleFinance: "Finance",
+    moduleOffice: "Office",
     moduleAdministration: "Administration",
   },
   technicians: {

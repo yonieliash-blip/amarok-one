@@ -43,6 +43,7 @@ export const he: TranslationMessages = {
     inventory: "מלאי",
     purchaseOrders: "הזמנות רכש",
     parts: "חלקים",
+    tasks: "משימות",
     accounting: "הנהלת חשבונות",
     reports: "דוחות",
     memberAccess: "גישת חברים",
@@ -79,6 +80,7 @@ export const he: TranslationMessages = {
     inventory: "מלאי",
     purchaseOrders: "הזמנות רכש",
     parts: "חלקים",
+    tasks: "משימות",
     accounting: "הנהלת חשבונות",
     reports: "דוחות",
     default: "AMAROK ONE",
@@ -197,6 +199,7 @@ export const he: TranslationMessages = {
     moduleService: "שירות",
     moduleInventory: "מלאי",
     moduleFinance: "כספים",
+    moduleOffice: "משרד",
     moduleAdministration: "ניהול",
   },
   technicians: {

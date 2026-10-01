@@ -17,7 +17,7 @@ describe("resolveEffectivePermissions", () => {
 
     expect(result.isOrganizationOwner).toBe(true);
     expect(result.permissions).toEqual(TENANT_PERMISSION_SLUGS);
-    expect(result.enabledModules).toHaveLength(5);
+    expect(result.enabledModules).toHaveLength(6);
   });
 
   it("grants service + inventory combination without role proliferation", () => {
@@ -68,5 +68,25 @@ describe("resolveEffectivePermissions", () => {
 
     expect(result.permissions).toContain(PERMISSIONS.MY_SERVICE_CALLS_READ);
     expect(result.permissions).not.toContain(PERMISSIONS.SERVICE_CALLS_READ);
+  });
+
+  it("gives office workers their own task access and service managers task management", () => {
+    const officeWorker = resolveEffectivePermissions({
+      isOrganizationOwner: false,
+      primaryRoleSlug: "service-coordinator",
+      primaryRoleIsOwner: false,
+      enabledModules: ["core", "service", "office"],
+    });
+    const manager = resolveEffectivePermissions({
+      isOrganizationOwner: false,
+      primaryRoleSlug: "service-manager",
+      primaryRoleIsOwner: false,
+      enabledModules: ["core", "service", "office", "administration"],
+    });
+
+    expect(officeWorker.permissions).toContain(PERMISSIONS.TASKS_READ);
+    expect(officeWorker.permissions).toContain(PERMISSIONS.TASKS_WRITE);
+    expect(officeWorker.permissions).not.toContain(PERMISSIONS.TASKS_MANAGE);
+    expect(manager.permissions).toContain(PERMISSIONS.TASKS_MANAGE);
   });
 });
