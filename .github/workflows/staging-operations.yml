@@ -13,6 +13,7 @@ on:
           - logs
           - database_readiness
           - restart_web
+          - deploy_api_and_migrate
 
 permissions:
   contents: read
@@ -82,6 +83,14 @@ jobs:
                 compose up -d --no-deps --force-recreate web
                 curl --fail --show-error --retry 5 --retry-all-errors \
                   https://staging.amarok-ce.com/health
+                ;;
+              deploy_api_and_migrate)
+                git fetch --no-tags origin main
+                git merge --ff-only origin/main
+                compose build --no-cache api
+                compose up -d --no-deps --force-recreate api
+                curl --fail --show-error --retry 12 --retry-all-errors \
+                  https://staging-api.amarok-ce.com/health
                 ;;
               *)
                 echo "Unsupported operation: $OPERATION" >&2
