@@ -196,6 +196,16 @@ export interface TranslationMessages {
     enabledModules: string;
     saveModules: string;
     saved: string;
+    addMember: string;
+    cancelCreate: string;
+    createMember: string;
+    memberCreated: string;
+    name: string;
+    email: string;
+    initialPassword: string;
+    role: string;
+    roleTechnician: string;
+    roleCoordinator: string;
     moduleCore: string;
     moduleService: string;
     moduleInventory: string;

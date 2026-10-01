@@ -1140,585 +1140,818 @@
     order: 0;
   }
 
-  .app-header__brand .brand-lou��8����k�w��bמשרד",
-    moduleAdministration: "ניהול",
-  },
-  technicians: {
-    eyebrow: "שירות שטח",
-    title: "טכנאים",
-    subtitle: "צוות הטכנאים של {{organization}}.",
-    loading: "טוען טכנאים…",
-    emptyTitle: "לא נמצאו טכנאים",
-    emptyMessage: "טכנאים שיוגדרו בארגון יופיעו כאן.",
-    name: "שם",
-    email: "דוא״ל",
-    status: "סטטוס",
-    active: "פעיל",
-    inactive: "מושבת",
-  },
-  attendanceReport: {
-    eyebrow: "נוכחות עובדים",
-    title: "דוח שעות חודשי",
-    subtitle: "שעות עבודה, הפסקות ופירוט יומי לפי עובד.",
-    loading: "טוען דוח נוכחות…",
-    month: "חודש",
-    emptyTitle: "אין דיווחי נוכחות בחודש זה",
-    emptyMessage: "דיווחים יופיעו לאחר שעובדים יתחילו לדווח יום עבודה.",
-    employee: "עובד",
-    days: "ימי עבודה",
-    gross: "ברוטו",
-    breaks: "הפסקות",
-    net: "נטו",
-    route: "מיקום",
-    active: "עדיין פעיל",
-    yes: "כן",
-    no: "לא",
-    approved: "מאושר",
-    pending: "ממתין לאישור",
-    approve: "אישור",
-    correct: "תיקון",
-    startTime: "שעת התחלה בפורמט מלא",
-    endTime: "שעת סיום בפורמט מלא",
-    correctionReason: "סיבת התיקון",
-    exportCsv: "ייצוא ל־Excel (CSV)",
-    exportPdf: "הפקת PDF",
-    locked: "החודש נעול לשכר",
-    open: "החודש פתוח לעריכה",
-    lock: "נעילת חודש",
-    unlock: "פתיחת חודש מחדש",
-    unlockReason: "יש להזין סיבה לפתיחת החודש מחדש",
-    viewRoute: "צפייה במסלול",
-    viewLatestRoute: "הצג מסלול אחרון",
-    noRoute: "אין נתוני GPS",
-    routeTitle: "מסלול GPS של יום העבודה",
-    routeEmpty: "לא נשמרו נקודות מסלול ביום זה.",
-    routeStart: "נקודת התחלה",
-    routeEnd: "נקודת סיום",
-    closeRoute: "סגירה",
-  },
-  customers: {
-    accountsEyebrow: "חשבונות",
-    title: "לקוחות",
-    subtitle: "ניהול חשבונות לקוח עבור {{organization}}.",
-    addCustomer: "הוספת לקוח",
-    searchLabel: "חיפוש לקוחות",
-    searchPlaceholder: "חיפוש לפי שם, מספר, דוא״ל או עיר…",
-    statusFilter: "סטטוס",
-    allStatuses: "כל הסטטוסים",
-    loading: "טוען לקוחות…",
-    loadErrorTitle: "לא ניתן לטעון לקוחות",
-    loadErrorMessage: "אירעה שגיאה בעת שליפת הלקוחות.",
-    emptyTitle: "לא נמצאו לקוחות",
-    emptyFilteredMessage: "נסו לשנות את החיפוש או את המסננים.",
-    emptyDefaultMessage: "צרו את הלקוח הראשון כדי להתחיל.",
-    countOne: "לקוח {{count}}",
-    countMany: "{{count}} לקוחות",
-    tableCustomer: "לקוח",
-    tableNumber: "מספר",
-    tableLocation: "מיקום",
-    tableStatus: "סטטוס",
-    tableContact: "יצירת קשר",
-    customerEyebrow: "לקוח",
-    backToList: "חזרה לרשימה",
-    deleteConfirm: "למחוק את {{name}}? פעולה זו מבצעת מחיקה רכה של הלקוח ואנשי הקשר שלו.",
-    deleting: "מוחק לקוח…",
-    loadCustomerError: "לא ניתן לטעון את הלקוח.",
-    deleteCustomerError: "לא ניתן למחוק את הלקוח.",
-    notFoundTitle: "הלקוח לא נמצא",
-    notFoundMessage: "ייתכן שהלקוח הוסר או שאין לך עוד גישה אליו.",
-    profileSection: "פרופיל",
-    locationSection: "מיקום",
-    notesSection: "הערות",
-    contactsSection: "אנשי קשר",
-    noNotes: "לא נרשמו הערות.",
-    noContacts: "טרם נוספו אנשי קשר.",
-    primaryContact: "ראשי",
-    legalName: "שם משפטי",
-    registrationNumber: "מספר רישום",
-    email: "דוא״ל",
-    phone: "טלפון",
-    address: "כתובת",
-    city: "עיר",
-    country: "מדינה",
-    createEyebrow: "יצירה",
-    editEyebrow: "עריכה",
-    newTitle: "לקוח חדש",
-    editTitle: "עריכת לקוח",
-    identitySection: "זיהוי",
-    contactLocationSection: "יצירת קשר ומיקום",
-    internalNotes: "הערות פנימיות",
-    name: "שם",
-    customerNumber: "מספר לקוח",
-    customerNumberPatternTitle: "אותיות גדולות, ספרות, קו תחתון או מקף",
-    status: "סטטוס",
-    saving: "שומר…",
-    saveChanges: "שמירת שינויים",
-    createCustomer: "יצירת לקוח",
-    saveSuccess: "הלקוח עודכן בהצלחה.",
-    saveError: "לא ניתן לשמור את הלקוח.",
-    loadForm: "טוען טופס…",
-    statusActive: "פעיל",
-    statusInactive: "לא פעיל",
-    statusProspect: "פוטנציאלי",
-    tabOverview: "סקירה",
-    tabContacts: "אנשי קשר",
-    tabEquipment: "ציוד",
-    tabServiceCalls: "קריאות שירות",
-    detailTabsLabel: "אזורי פרטי לקוח",
-    addContact: "הוספת איש קשר",
-    createContact: "יצירת איש קשר",
-    saveContact: "שמירת איש קשר",
-    contactName: "שם איש קשר",
-    contactJobTitle: "תפקיד",
-    setPrimaryContact: "איש קשר ראשי",
-    deleteContactConfirm: "למחוק את {{name}}?",
-    contactSaveError: "לא ניתן לשמור את איש הקשר.",
-    contactDeleteError: "לא ניתן למחוק את איש הקשר.",
-    noRelatedEquipment: "אין ציוד משויך ללקוח זה.",
-    noRelatedServiceCalls: "אין קריאות שירות משויכות ללקוח זה.",
-    sortBy: "מיון לפי",
-    sortOrder: "סדר",
-    sortAscending: "עולה",
-    sortDescending: "יורד",
-    sortCreatedAt: "תאריך יצירה",
-    sortName: "שם",
-    sortCustomerNumber: "מספר לקוח",
-    sortStatus: "סטטוס",
-    sortCity: "עיר",
-    pageSize: "פריטים בעמוד",
-    paginationLabel: "עימוד רשימת לקוחות",
-    previousPage: "הקודם",
-    nextPage: "הבא",
-    pageStatus: "עמוד {{page}} מתוך {{totalPages}}",
-  },
-  equipment: {
-    assetsEyebrow: "נכסים",
-    title: "ציוד",
-    subtitle: "ניהול מכונות, מלגזות וציוד כבד עבור {{organization}}.",
-    addEquipment: "הוספת ציוד",
-    searchLabel: "חיפוש ציוד",
-    searchPlaceholder: "חיפוש לפי שם, מספר פנימי, יצרן, דגם או מיקום…",
-    statusFilter: "סטטוס",
-    allStatuses: "כל הסטטוסים",
-    customerFilter: "לקוח",
-    allCustomers: "כל הלקוחות",
-    typeFilter: "סוג ציוד",
-    allTypes: "כל הסוגים",
-    manufacturerFilter: "יצרן",
-    manufacturerPlaceholder: "לדוגמה Toyota",
-    modelFilter: "דגם",
-    modelPlaceholder: "לדוגמה 8FGU25",
-    loading: "טוען ציוד…",
-    loadErrorTitle: "לא ניתן לטעון ציוד",
-    loadErrorMessage: "אירעה שגיאה בעת שליפת הציוד.",
-    emptyTitle: "לא נמצא ציוד",
-    emptyFilteredMessage: "נסו לשנות את החיפוש או את המסננים.",
-    emptyDefaultMessage: "הוסיפו את פריט הציוד הראשון כדי להתחיל.",
-    countOne: "פריט ציוד {{count}}",
-    countMany: "{{count}} פריטי ציוד",
-    tableName: "שם",
-    tableNumber: "מספר פנימי",
-    tableType: "סוג",
-    tableManufacturer: "יצרן / דגם",
-    tableCustomer: "לקוח",
-    tableStatus: "סטטוס",
-    equipmentEyebrow: "ציוד",
-    backToList: "חזרה לרשימה",
-    deleteConfirm: "למחוק את {{name}}? פעולה זו מבצעת מחיקה רכה של פריט הציוד.",
-    deleting: "מוחק ציוד…",
-    loadEquipmentError: "לא ניתן לטעון את הציוד.",
-    deleteEquipmentError: "לא ניתן למחוק את הציוד.",
-    notFoundTitle: "הציוד לא נמצא",
-    notFoundMessage: "ייתכן שהציוד הוסר או שאין לך עוד גישה אליו.",
-    identitySection: "זיהוי",
-    specsSection: "מפרט",
-    assignmentSection: "שיוך",
-    metricsSection: "מדדים",
-    notesSection: "הערות",
-    noNotes: "לא נרשמו הערות.",
-    name: "שם",
-    internalNumber: "מספר פנימי",
-    internalNumberPatternTitle: "אותיות גדולות, ספרות, קו תחתון או מקף",
-    serialNumber: "מספר סידורי",
-    manufacturer: "יצרן",
-    model: "דגם",
-    year: "שנת ייצור",
-    equipmentType: "סוג ציוד",
-    customer: "לקוח",
-    noCustomer: "ללא לקוח",
-    branch: "סניף",
-    noBranch: "ללא סניף",
-    status: "סטטוס",
-    engineHours: "שעות מנוע",
-    mileage: "קילומטраж",
-    registrationNumber: "מספר רישוי",
-    warrantyEndDate: "תום אחריות",
-    location: "מיקום",
-    createEyebrow: "יצירה",
-    editEyebrow: "עריכה",
-    newTitle: "ציוד חדש",
-    editTitle: "עריכת ציוד",
-    internalNotes: "הערות פנימיות",
-    saving: "שומר…",
-    saveChanges: "שמירת שינויים",
-    createEquipment: "יצירת ציוד",
-    saveSuccess: "הציוד עודכן בהצלחה.",
-    saveError: "לא ניתן לשמור את הציוד.",
-    loadForm: "טוען טופס…",
-    statusActive: "פעיל",
-    statusInService: "בטיפול",
-    statusOutOfService: "לא פעיל",
-    statusRetired: "יצא משימוש",
-    viewCustomer: "צפייה בלקוח",
-  },
-  serviceCalls: {
-    callsEyebrow: "שירות שטח",
-    myCallsEyebrow: "העבודה שלי",
-    title: "קריאות שירות",
-    myTitle: "הקריאות שלי",
-    mySubtitle: "קריאות שירות ששויכו אליך בלבד.",
-    todaySection: "היום",
-    upcomingSection: "קריאות קרובות",
-    completedSection: "קריאות שהושלמו",
-    todayEmpty: "אין קריאות מתוזמנות להיום.",
-    upcomingEmpty: "אין קריאות קרובות.",
-    completedEmpty: "אין קריאות שהושלמו.",
-    myEmptyTitle: "אין קריאות משויכות",
-    myEmptyMessage: "כשישרו אליך קריאות שירות, הן יופיעו כאן.",
-    subtitle: "ניהול קריאות שירות ותחזוקה עבור {{organization}}.",
-    addServiceCall: "קריאה חדשה",
-    searchLabel: "חיפוש קריאות",
-    searchPlaceholder: "חיפוש לפי מספר, כותרת, איש קשר או מיקום…",
-    statusFilter: "סטטוס",
-    allStatuses: "כל הסטטוסים",
-    priorityFilter: "עדיפות",
-    allPriorities: "כל העדיפויות",
-    customerFilter: "לקוח",
-    allCustomers: "כל הלקוחות",
-    equipmentFilter: "ציוד",
-    allEquipment: "כל הציוד",
-    assigneeFilter: "טכנאי",
-    allAssignees: "כל הטכנאים",
-    unassigned: "לא משויך",
-    openedFrom: "נפתח מ-",
-    openedTo: "נפתח עד",
-    loading: "טוען קריאות שירות…",
-    loadErrorTitle: "לא ניתן לטעון קריאות",
-    loadErrorMessage: "אירעה שגיאה בעת שליפת קריאות השירות.",
-    emptyTitle: "לא נמצאו קריאות",
-    emptyFilteredMessage: "נסו לשנות את החיפוש או את המסננים.",
-    emptyDefaultMessage: "צרו את קריאת השירות הראשונה כדי להתחיל.",
-    countOne: "קריאה {{count}}",
-    countMany: "{{count}} קריאות",
-    tableNumber: "מספר",
-    tableTitle: "כותרת",
-    tableCustomer: "לקוח",
-    tableEquipment: "ציוד",
-    tableAssignee: "טכנאי",
-    tableStatus: "סטטוס",
-    tablePriority: "עדיפות",
-    tableOpened: "נפתח",
-    callEyebrow: "קריאת שירות",
-    backToList: "חזרה לרשימה",
-    deleteConfirm: "למחוק את {{name}}? פעולה זו מבצעת מחיקה רכה של הקריאה.",
-    deleting: "מוחק קריאה…",
-    loadCallError: "לא ניתן לטעון את הקריאה.",
-    deleteCallError: "לא ניתן למחוק את הקריאה.",
-    notFoundTitle: "הקריאה לא נמצאה",
-    notFoundMessage: "ייתכן שהקריאה הוסרה או שאין לך עוד גישה אליה.",
-    detailsSection: "פרטים",
-    schedulingSection: "תזמון",
-    assignmentSection: "שיוך",
-    contactSection: "איש קשר",
-    notesSection: "הערות",
-    noNotes: "לא נרשמו הערות.",
-    serviceCallNumber: "מספר קריאה",
-    serviceCallNumberPatternTitle: "אותיות גדולות, ספרות, קו תחתון או מקף",
-    titleLabel: "כותרת",
-    description: "תיאור",
-    status: "סטטוס",
-    priority: "עדיפות",
-    openedAt: "נפתח בתאריך",
-    scheduledAt: "מתוזמן ל-",
-    completedAt: "הושלם בתאריך",
-    customer: "לקוח",
-    equipment: "ציוד",
-    branch: "סניף",
-    noBranch: "ללא סניף",
-    assignee: "טכנאי משויך",
-    noAssignee: "ללא שיוך",
-    contactName: "שם איש קשר",
-    contactPhone: "טלפון",
-    location: "מיקום",
-    createEyebrow: "יצירה",
-    editEyebrow: "עריכה",
-    newTitle: "קריאת שירות חדשה",
-    editTitle: "עריכת קריאת שירות",
-    internalNotes: "הערות פנימיות",
-    saving: "שומר…",
-    saveChanges: "שמירת שינויים",
-    createServiceCall: "יצירת קריאה",
-    saveSuccess: "הקריאה עודכנה בהצלחה.",
-    saveError: "לא ניתן לשמור את הקריאה.",
-    loadForm: "טוען טופס…",
-    statusOpen: "פתוח",
-    statusScheduled: "מתוזמן",
-    statusInProgress: "בטיפול",
-    statusWaitingForParts: "ממתין לחלקים",
-    statusCompleted: "הושלם",
-    statusCancelled: "בוטל",
-    priorityLow: "נמוכה",
-    priorityNormal: "רגילה",
-    priorityHigh: "גבוהה",
-    priorityUrgent: "דחופה",
-    viewCustomer: "צפייה בלקוח",
-    viewEquipment: "צפייה בציוד",
-    quickActions: "פעולות מהירות",
-    updateStatus: "עדכון סטטוס",
-    assignTechnician: "שיוך טכנאי",
-    actionSuccess: "העדכון נשמר.",
-    actionError: "לא ניתן לעדכן.",
-    selectEquipmentHint: "בחרו לקוח כדי לסנן ציוד מתאים.",
-    lifecycleNew: "חדש",
-    lifecycleWaitingAssignment: "ממתין לשיבוץ",
-    lifecycleAssigned: "שובץ",
-    lifecycleDriving: "בדרך",
-    lifecycleWorking: "בשטח — בעבודה",
-    lifecycleWaitingForParts: "ממתין לחלקים",
-    lifecycleWaitingCustomer: "ממתין ללקוח",
-    lifecycleWaitingSpecialist: "ממתין למומחה",
-    lifecycleWaitingManager: "ממתין למנהל",
-    lifecycleClosed: "נסגר",
-    lifecycleFilter: "מחזור חיים",
-    allLifecycleStates: "כל מצבי מחזור החיים",
-    lifecycleColumn: "מחזור חיים",
-    machine: "מכונה",
-    workSite: "אתר עבודה",
-    lifecycleSection: "מחזור חיים (Workflow)",
-    lifecycleActionSuccess: "מחזור החיים עודכן בהצלחה.",
-    lifecycleActionError: "לא ניתן לעדכן את מחזור החיים.",
-    lifecycleClosedHint: "קריאה זו סגורה.",
-    selectTechnician: "בחרו טכנאי",
-    transitionLifecycle: "הגדרת מצב מחזור חיים",
-    selectLifecycleState: "בחרו מצב",
-    applyLifecycleTransition: "החל מעבר",
-    closeServiceCall: "סגירת קריאה",
-    closeReason: "סיבת סגירה",
-    closeReasonPlaceholder: "הערה ליומן הביקורת (אופציונלי)",
-    closeUnavailableForCurrentState:
-      "לא ניתן לסגור את הקריאה כאשר מצב התהליך הוא {{state}}. יש להשלים את עבודת הטכנאי ולהעביר את הקריאה למצב ממתין למנהל.",
-    technicianWorkflowSection: "תהליך ביקור טכנאי",
-    technicianActiveVisit: "ביקור פעיל מס׳ {{sequence}}",
-    technicianStartDriving: "יציאה לדרך",
-    technicianStartWorking: "תחילת עבודה באתר",
-    technicianCompleteForManager: "סיום הביקור והעברה לסגירת מנהל",
-    technicianWorkflowActionSuccess: "תהליך הביקור עודכן בהצלחה.",
-    technicianWorkflowActionError: "לא ניתן לעדכן את תהליך הביקור.",
-    technicianNoActiveVisit: "אין בקריאה זו ביקור פעיל שמשויך אליך.",
-    technicianNoAvailableAction: "אין פעולת טכנאי זמינה במצב הביקור הנוכחי.",
-    technicianWorkflowHint:
-      "טכנאים יכולים לקדם רק ביקור שמשויך אליהם. שיבוץ טכנאים וסגירת הקריאה נשארים פעולות מנהל.",
-    createLifecycleHint: "קריאות חדשות נכנסות אוטומטית לתור. שיבצו טכנאים מדף פרטי הקריאה.",
-    visitsSection: "ביקורי טכנאים",
-    noVisits: "טרם נקבעו ביקורי טכנאים.",
-    visitSequence: "ביקור מס׳",
-    visitTechnician: "טכנאי",
-    visitStatus: "סטטוס",
-    visitScheduledStart: "תחילת תזמון",
-    visitDrivingStarted: "יציאה לדרך",
-    visitWorkingStarted: "תחילת עבודה",
-    visitFinished: "סיום",
-    timelineSection: "היסטוריית שירות",
-    noTimelineEvents: "טרם נרשמה היסטוריית שירות.",
-    loadingVisits: "טוען היסטוריית שירות…",
-    loadVisitsErrorTitle: "לא ניתן לטעון היסטוריית שירות",
-    loadVisitsErrorMessage: "לא הצלחנו לטעון את היסטוריית השירות לקריאה זו.",
-    historyEventCreated: "קריאת שירות נוצרה",
-    historyEventCreatedBy: "נוצרה על ידי {{name}}",
-    historyEventTechnicianDispatched: "טכנאי שובץ לקריאה",
-    historyEventAdditionalVisit: "ביקור נוסף",
-    historyEventContinuationVisit: "המשך טיפול על ידי טכנאי אחר",
-    historyEventTechnicianDeparted: "הטכנאי יצא לדרך",
-    historyEventWorkStarted: "הטכנאי התחיל עבודה בשטח",
-    historyEventVisitFinished: "ביקור הטכנאי הסתיים",
-    historyEventTechnicianName: "{{name}}",
-    historyEventClosed: "קריאת השירות נסגרה",
-    historyEventClosedBy: "נסגרה על ידי {{name}}",
-    visitStatusPlanned: "מתוכנן",
-    visitStatusAssigned: "שובץ",
-    visitStatusDriving: "בדרך",
-    visitStatusWorking: "בשטח",
-    visitStatusFinished: "הסתיים",
-    visitStatusCancelled: "בוטל",
-    visitStatusCheckedIn: "צ׳ק-אין",
-    visitStatusInProgress: "בטיפול",
-    visitStatusCompleted: "הושלם",
-    timelineWorkflowInitialized: "Workflow אותחל",
-    timelineLifecycleChanged: "מצב מחזור החיים השתנה",
-    timelineLifecycleChangedTo: "מחזור החיים השתנה ל-{{state}}",
-    timelineStateChanged: "סטטוס הקריאה עודכן",
-    timelineOperationalStatusRecorded: "סטטוס תפעולי נרשם",
-    timelineServiceCallClosed: "קריאת השירות נסגרה",
-    timelineVisitScheduled: "ביקור נקבע",
-    timelineVisitStarted: "ביקור התחיל",
-    timelineVisitDrivingStarted: "הטכנאי יצא לדרך",
-    timelineVisitWorkingStarted: "הטכנאי התחיל עבודה בשטח",
-    timelineVisitFinished: "הביקור הסתיים",
-    timelineVisitCompleted: "הביקור הושלם",
-    timelineVisitCancelled: "הביקור בוטל",
-    dashboardFilterActive: "מסונן מלוח בקרת מנהל השירות: {{bucket}}",
-    clearDashboardFilter: "נקה סינון לוח בקרה",
-  },
-  serviceManagerDashboard: {
-    eyebrow: "בקרת שירות שטח",
-    title: "לוח מנהל שירות",
-    subtitle: "תור חי עבור {{organization}}",
-    metricsSection: "סיכום תורים",
-    loading: "טוען נתוני שירות…",
-    refresh: "רענון",
-    loadErrorTitle: "לא ניתן לטעון את הלוח",
-    loadErrorMessage: "אירעה שגיאה בטעינת קריאות השירות.",
-    bucketCurrentTitle: "קריאות פעילות",
-    bucketCurrentDescription: "כל הקריאות הפעילות בתור",
-    bucketWaitingAssignmentTitle: "ממתין לשיבוץ",
-    bucketWaitingAssignmentDescription: "קריאות שדורשות שיבוץ טכנאי",
-    bucketInProgressTitle: "בטיפול",
-    bucketInProgressDescription: "שובצו, בדרך או בשטח",
-    bucketWaitingPartsTitle: "ממתין לחלקים",
-    bucketWaitingPartsDescription: "מושהה עד לקבלת חלקים",
-    bucketWaitingManagerTitle: "ממתין למנהל",
-    bucketWaitingManagerDescription: "דורש סקירה או סגירה על ידי מנהל",
-    bucketCompletedTodayTitle: "הושלמו היום",
-    bucketCompletedTodayDescription: "נסגרו מאז חצות",
-    queueCountOne: "קריאה {{count}} בתצוגה זו",
-    queueCountMany: "{{count}} קריאות בתצוגה זו",
-    viewAllServiceCalls: "רשימת קריאות מלאה",
-    searchPlaceholder: "חיפוש לפי מספר, כותרת, לקוח, טכנאי…",
-    lifecycleColumn: "מחזור חיים",
-    emptyQueueTitle: "אין קריאות בתור זה",
-    emptyQueueMessage: "נסו כרטיס סיכום אחר או שנו את המסננים.",
-  },
-  dispatch: {
-    eyebrow: "שיבוץ שירות",
-    title: "לוח שיבוץ יומי",
-    subtitle: "קריאות פתוחות, ביקורים מתוכננים והקצאת טכנאים ליום העבודה.",
-    date: "תאריך",
-    previousDay: "יום קודם",
-    nextDay: "יום הבא",
-    today: "היום",
-    refresh: "רענון",
-    loading: "טוען את לוח השיבוץ…",
-    loadError: "לא ניתן לטעון את לוח השיבוץ.",
-    unassigned: "ממתין לשיבוץ",
-    noUnassigned: "אין קריאות פתוחות שממתינות לשיבוץ.",
-    noVisits: "אין ביקורים מתוכננים ליום זה.",
-    technician: "טכנאי",
-    scheduleTime: "שעת התחלה",
-    assign: "שיבוץ",
-    assigning: "משבץ…",
-    assignmentSuccess: "הקריאה שובצה בהצלחה.",
-    assignmentError: "לא ניתן לשבץ את הקריאה.",
-    viewServiceCall: "פתיחת קריאת שירות",
-    plannedVisit: "ביקור מתוכנן",
-    unassignedHint: "השיבוץ יוצר ביקור חדש ומתועד ביומן הביקורים של הקריאה.",
-    assignmentPermissionHint: "לצפייה בלבד — נדרשת הרשאת שיבוץ קריאות כדי להקצות טכנאי.",
-  },
-  managementDashboard: {
-    title: "לוח בקרה",
-    subtitle: "תמונת מצב עדכנית של השירות והתפעול",
-    newServiceCall: "פתיחת קריאת שירות",
-    refresh: "רענון",
-    loading: "טוען את לוח הבקרה…",
-    loadError: "לא ניתן לטעון כרגע את נתוני לוח הבקרה.",
-    openCallsTitle: "קריאות פתוחות",
-    openCallsNote: "קריאות פעילות בתור",
-    inProgressTitle: "בטיפול בשטח",
-    inProgressNote: "שובצו, בדרך או באתר",
-    todayTitle: "משימות להיום",
-    todayNote: "קריאות מתוזמנות להיום",
-    waitingManagerTitle: "ממתין למנהל",
-    waitingManagerNote: "דורש בדיקה או סגירה",
-    recentCallsTitle: "קריאות שירות אחרונות",
-    viewAll: "הצג הכל",
-    callNumber: "#",
-    customer: "לקוח",
-    subject: "נושא תקלה",
-    status: "סטטוס",
-    date: "תאריך ושעה",
-    noCalls: "אין עדיין קריאות שירות להצגה.",
-    overviewTitle: "תמונת מצב היום",
-    totalCalls: "סה״כ קריאות",
-    partsTitle: "ספקים וחלפים",
-    allParts: "לכל החלפים",
-    part: "חלף",
-    category: "קטגוריה",
-    partNumber: "מק״ט",
-    noParts: "עדיין לא נוספו חלפים לקטלוג.",
-  },
-  unauthorized: {
-    message: "אין לך הרשאה לצפות בדף זה. פנה למנהל המערכת אם אתה סבור שמדובר בטעות.",
-    backHome: "חזרה לדף הבית",
-  },
-  userMenu: {
-    fullName: "שם מלא",
-    email: "דוא״ל",
-    company: "חברה",
-    activeRole: "תפקיד פעיל",
-    switchRole: "החלפת תפקיד",
-    switchingRole: "מחליף תפקיד…",
-  },
-  modules: {
-    comingSoonMessage: "מודול זה יהיה זמין בקרוב. בינתיים ניתן לחזור לתפריט הראשי.",
-  },
-  permissions: {
-    "dashboard:read": "צפייה בלוח בקרה",
-    "organizations:read": "צפייה בארגונים",
-    "organizations:write": "ניהול ארגונים",
-    "companies:read": "צפייה בחברות",
-    "companies:write": "ניהול חברות",
-    "branches:read": "צפייה בסניפים",
-    "branches:write": "ניהול סניפים",
-    "customers:read": "צפייה בלקוחות",
-    "customers:write": "ניהול לקוחות",
-    "equipment:read": "צפייה בציוד",
-    "equipment:write": "ניהול ציוד",
-    "service_calls:read": "צפייה בכל קריאות השירות",
-    "service_calls:write": "ניהול קריאות שירות",
-    "my_service_calls:read": "צפייה בקריאות שירות משויכות",
-    "my_equipment:read": "צפייה בציוד משויך",
-    "my_schedule:read": "צפייה בלוח אישי",
-    "technicians:read": "צפייה בטכנאים",
-    "technicians:write": "ניהול טכנאים",
-    "attendance:read": "צפייה בנוכחות",
-    "attendance:write": "תיקון ואישור נוכחות",
-    "my_attendance:read": "צפייה בנוכחות האישית",
-    "my_attendance:write": "דיווח נוכחות אישי",
-    "calendar:read": "צפייה ביומן",
-    "inventory:read": "צפייה במלאי",
-    "inventory:write": "ניהול מלאי",
-    "purchase_orders:read": "צפייה בהזמנות רכש",
-    "purchase_orders:write": "ניהול הזמנות רכש",
-    "parts:read": "צפייה בחלקים",
-    "parts:write": "ניהול חלקים",
-    "accounting:read": "צפייה בהנהלת חשבונות",
-    "accounting:write": "ניהול הנהלת חשבונות",
-    "users:read": "צפייה במשתמשים",
-    "users:write": "ניהול משתמשים",
-    "roles:read": "צפייה בתפקידים",
-    "roles:write": "ניהול תפקידים",
-    "reports:read": "צפייה בדוחות",
-  },
-  apiErrors: {
-    UNAUTHORIZED: "דוא״ל או סיסמה שגויים",
-    FORBIDDEN: "אין לך הרשאה לבצע פעולה זו",
-    NOT_FOUND: "המשאב המבוקש לא נמצא",
-    CONFLICT: "רשומה זו כבר קיימת או מתנגשת עם נתונים קיימים",
-    VALIDATION_ERROR: "חלק מהשדות אינם תקינים. בדקו ונסו שוב.",
-    REQUEST_FAILED: "הבקשה נכשלה. נסו שוב.",
-    INTERNAL_ERROR: "אירעה שגיאת שרת בלתי צפויה",
-  },
-  validation: {
-    customerNameRequired: "יש למלא שם לקוח",
-    emailInvalid: "יש להזין כתובת דוא״ל תקינה",
-  },
-};
+  .app-header__brand .brand-logo__image {
+    width: 7.5rem;
+  }
+
+  .app-header__navigation,
+  .app-header__end {
+    display: none;
+  }
+
+  .app-header__start {
+    order: 1;
+  }
+
+  .app-header__menu-button {
+    display: inline-flex;
+    border: 0;
+    background: transparent;
+    color: #fff;
+  }
+
+  .mobile-navigation {
+    position: fixed;
+    inset-inline: 0;
+    inset-block-end: 0;
+    z-index: var(--ds-z-sticky);
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    min-height: 4.75rem;
+    padding: var(--ds-space-1) var(--ds-space-2) env(safe-area-inset-bottom);
+    border-top: 1px solid var(--ds-color-border);
+    background: rgba(255, 255, 255, 0.97);
+    box-shadow: 0 -8px 20px rgba(17, 27, 75, 0.08);
+  }
+
+  .mobile-navigation__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ds-space-1);
+    min-width: 0;
+    padding: var(--ds-space-1);
+    border: 0;
+    border-radius: var(--ds-radius-md);
+    background: transparent;
+    color: var(--ds-color-text-muted);
+    font: inherit;
+    font-size: 0.6875rem;
+    line-height: 1.1;
+    cursor: pointer;
+  }
+
+  .mobile-navigation__item span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-navigation__item--active {
+    color: var(--ds-color-warning-on);
+  }
+
+  .mobile-navigation__item:focus-visible {
+    outline: var(--ds-focus-ring);
+    outline-offset: -2px;
+  }
+
+  .dashboard__stats,
+  .dashboard__stats--six {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ds-space-3);
+  }
+
+  .dashboard__stat-card {
+    min-height: 8.5rem;
+    padding: var(--ds-space-4);
+  }
+
+  .dashboard__stat-value {
+    font-size: 2rem;
+  }
+
+  .dashboard__hero {
+    gap: var(--ds-space-4);
+  }
+
+  .service-manager-dashboard__hero-actions {
+    width: 100%;
+  }
+
+  .service-manager-dashboard__hero-actions > * {
+    flex: 1;
+  }
+
+  .service-manager-dashboard__hero-actions .amarok-button {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .service-manager-dashboard__workspace {
+    padding: var(--ds-space-4);
+  }
+}
+
+/* Management dashboard — approved operational dashboard layout. */
+.management-dashboard {
+  display: grid;
+  gap: var(--ds-space-6);
+}
+
+.management-dashboard__header,
+.management-panel__header,
+.management-dashboard__actions {
+  display: flex;
+  align-items: center;
+}
+
+.management-dashboard__header {
+  justify-content: space-between;
+  gap: var(--ds-space-5);
+}
+
+.management-dashboard__title {
+  margin: 0;
+  color: var(--ds-color-text);
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  line-height: 1.15;
+}
+
+.management-dashboard__subtitle {
+  margin: var(--ds-space-2) 0 0;
+  color: var(--ds-color-text-muted);
+}
+
+.management-dashboard__actions {
+  gap: var(--ds-space-3);
+}
+
+.management-dashboard__actions .amarok-button {
+  min-height: 2.8rem;
+  border-radius: var(--ds-radius-lg);
+}
+
+.management-dashboard__notice,
+.management-panel__empty {
+  margin: 0;
+  padding: var(--ds-space-6);
+  color: var(--ds-color-text-muted);
+  text-align: center;
+}
+
+.management-dashboard__notice {
+  border: 1px solid var(--ds-color-error);
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-color-error-muted);
+  color: var(--ds-color-error-on);
+}
+
+.management-dashboard__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--ds-space-4);
+}
+
+.management-metric {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-4);
+  min-height: 8.5rem;
+  padding: var(--ds-card-padding);
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-xl);
+  background: var(--ds-color-bg-surface);
+  box-shadow: 0 8px 20px rgba(17, 27, 75, 0.04);
+}
+
+.management-metric__icon {
+  display: grid;
+  flex: 0 0 auto;
+  width: 3.35rem;
+  height: 3.35rem;
+  place-items: center;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 0.4rem rgba(255, 255, 255, 0.34);
+}
+
+.management-metric--open .management-metric__icon {
+  background: var(--ds-color-error-muted);
+  color: var(--ds-color-error);
+}
+.management-metric--inProgress .management-metric__icon {
+  background: var(--ds-color-info-muted);
+  color: var(--ds-color-info);
+}
+.management-metric--today .management-metric__icon {
+  background: var(--ds-color-success-muted);
+  color: var(--ds-color-success);
+}
+.management-metric--waitingManager .management-metric__icon {
+  background: var(--ds-color-warning-muted);
+  color: var(--ds-color-warning);
+}
+
+.management-metric__label,
+.management-metric__value,
+.management-metric__note {
+  margin: 0;
+}
+
+.management-metric__label {
+  color: var(--ds-color-text);
+  font-weight: var(--ds-font-weight-bold);
+}
+
+.management-metric__value {
+  margin-top: var(--ds-space-1);
+  color: var(--ds-color-text);
+  font-size: 2rem;
+  font-weight: var(--ds-font-weight-bold);
+  line-height: 1;
+}
+
+.management-metric__note {
+  margin-top: var(--ds-space-2);
+  color: var(--ds-color-text-muted);
+  font-size: var(--ds-text-body-sm-size);
+}
+
+.management-metric__spark {
+  display: flex;
+  align-items: end;
+  align-self: end;
+  gap: 0.22rem;
+  margin-inline-start: auto;
+  margin-block-end: var(--ds-space-1);
+}
+
+.management-metric__spark i {
+  display: block;
+  width: 0.28rem;
+  border-radius: var(--ds-radius-full);
+  background: currentColor;
+  opacity: 0.88;
+}
+
+.management-metric__spark i:nth-child(1) {
+  height: 0.75rem;
+}
+.management-metric__spark i:nth-child(2) {
+  height: 1.2rem;
+}
+.management-metric__spark i:nth-child(3) {
+  height: 1.7rem;
+}
+
+.management-metric--open .management-metric__spark {
+  color: var(--ds-color-error);
+}
+.management-metric--inProgress .management-metric__spark {
+  color: var(--ds-color-info);
+}
+.management-metric--today .management-metric__spark {
+  color: var(--ds-color-success);
+}
+.management-metric--waitingManager .management-metric__spark {
+  color: var(--ds-color-warning);
+}
+
+.management-dashboard__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(20rem, 1fr);
+  gap: var(--ds-space-5);
+  direction: ltr;
+}
+
+.management-dashboard__grid > * {
+  direction: rtl;
+}
+
+.management-dashboard__aside {
+  display: grid;
+  align-content: start;
+  gap: var(--ds-space-5);
+}
+
+.management-panel {
+  overflow: hidden;
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-xl);
+  background: var(--ds-color-bg-surface);
+  box-shadow: 0 8px 20px rgba(17, 27, 75, 0.04);
+}
+
+.management-panel--calls {
+  min-height: 24rem;
+}
+
+.management-panel__header {
+  justify-content: space-between;
+  min-height: 4.25rem;
+  padding: 0 var(--ds-card-padding);
+  border-bottom: 1px solid var(--ds-color-border-subtle);
+}
+
+.management-panel__header h3 {
+  margin: 0;
+  color: var(--ds-color-text);
+  font-size: var(--ds-text-heading-sm-size);
+}
+
+.management-panel__header a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-1);
+  color: var(--ds-color-info-on);
+  font-weight: var(--ds-font-weight-bold);
+  text-decoration: none;
+}
+
+.management-dashboard__table-wrap {
+  overflow-x: auto;
+}
+
+.management-dashboard__table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--ds-color-text);
+  font-size: var(--ds-text-body-sm-size);
+}
+
+.management-dashboard__table th,
+.management-dashboard__table td {
+  padding: var(--ds-space-4) var(--ds-space-5);
+  border-bottom: 1px solid var(--ds-color-border-subtle);
+  text-align: start;
+  white-space: nowrap;
+}
+
+.management-dashboard__table th {
+  color: var(--ds-color-text-muted);
+  background: var(--ds-color-bg-subtle);
+  font-weight: var(--ds-font-weight-bold);
+}
+
+.management-dashboard__table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.management-dashboard__table a {
+  color: var(--ds-color-info-on);
+  font-weight: var(--ds-font-weight-bold);
+  text-decoration: none;
+}
+
+.management-dashboard__table--compact td:first-child {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+}
+
+.management-overview {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: var(--ds-space-5);
+  padding: var(--ds-space-5);
+}
+
+.management-overview__donut {
+  display: grid;
+  width: 7.5rem;
+  height: 7.5rem;
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--ds-color-info) 0deg 140deg,
+    var(--ds-color-success) 140deg 222deg,
+    var(--ds-color-warning) 222deg 298deg,
+    var(--ds-color-error) 298deg 360deg
+  );
+  box-shadow: 0 8px 18px rgba(33, 150, 243, 0.16);
+}
+
+.management-overview__total {
+  display: grid;
+  width: 5.65rem;
+  height: 5.65rem;
+  place-content: center;
+  text-align: center;
+  border-radius: 50%;
+  background: var(--ds-color-bg-surface);
+  box-shadow: 0 0 0 0.22rem rgba(255, 255, 255, 0.74);
+}
+
+.management-overview__total strong {
+  color: var(--ds-color-text);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.management-overview__total span {
+  margin-top: var(--ds-space-1);
+  color: var(--ds-color-text-muted);
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.management-overview__list {
+  display: grid;
+  gap: var(--ds-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.management-overview__list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--ds-space-2);
+  color: var(--ds-color-text-muted);
+  font-size: var(--ds-text-body-sm-size);
+}
+
+.management-overview__list strong {
+  color: var(--ds-color-text);
+}
+
+.management-overview__dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--ds-color-info);
+}
+
+.management-overview__item--open .management-overview__dot {
+  background: var(--ds-color-error);
+}
+
+.management-overview__item--inProgress .management-overview__dot {
+  background: var(--ds-color-info);
+}
+
+.management-overview__item--today .management-overview__dot {
+  background: var(--ds-color-success);
+}
+
+.management-overview__item--waitingManager .management-overview__dot {
+  background: var(--ds-color-warning);
+}
+
+@media (max-width: 960px) {
+  .management-dashboard__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .management-dashboard__grid {
+    grid-template-columns: 1fr;
+    direction: rtl;
+  }
+}
+
+@media (max-width: 768px) {
+  .management-dashboard {
+    gap: var(--ds-space-5);
+  }
+  .management-dashboard__header {
+    align-items: flex-start;
+  }
+  .management-dashboard__actions .customers-page__action-link .amarok-button {
+    min-width: auto;
+  }
+  .management-metric {
+    min-height: 8rem;
+    padding: var(--ds-space-4);
+    gap: var(--ds-space-3);
+  }
+  .management-metric__icon {
+    width: 2.85rem;
+    height: 2.85rem;
+  }
+  .management-metric__value {
+    font-size: 1.75rem;
+  }
+  .management-metric__note {
+    display: none;
+  }
+  .management-overview {
+    grid-template-columns: 6.25rem minmax(0, 1fr);
+    padding: var(--ds-space-4);
+  }
+  .management-overview__donut {
+    width: 6.25rem;
+    height: 6.25rem;
+  }
+  .management-overview__total {
+    width: 4.7rem;
+    height: 4.7rem;
+  }
+  .management-panel__header {
+    padding-inline: var(--ds-space-4);
+  }
+  .management-dashboard__table th,
+  .management-dashboard__table td {
+    padding: var(--ds-space-3) var(--ds-space-4);
+  }
+  .management-panel--calls .management-dashboard__table th:nth-child(2),
+  .management-panel--calls .management-dashboard__table td:nth-child(2),
+  .management-panel--calls .management-dashboard__table th:nth-child(5),
+  .management-panel--calls .management-dashboard__table td:nth-child(5) {
+    display: none;
+  }
+}
+
+/* Daily dispatch board */
+.dispatch-board {
+  display: grid;
+  gap: var(--ds-section-gap);
+}
+
+.dispatch-board__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ds-space-5);
+}
+
+.dispatch-board__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: flex-end;
+  gap: var(--ds-space-2);
+}
+
+.dispatch-board__date-field,
+.dispatch-call-card__assignment label {
+  display: grid;
+  gap: var(--ds-space-1);
+  color: var(--ds-color-text-muted);
+  font-size: var(--ds-text-caption-size);
+  font-weight: var(--ds-font-weight-bold);
+}
+
+.dispatch-board__date-field input,
+.dispatch-call-card__assignment input,
+.dispatch-call-card__assignment select {
+  min-height: 2.5rem;
+  padding: var(--ds-space-2) var(--ds-space-3);
+  color: var(--ds-color-text);
+  background: var(--ds-color-bg-base);
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-md);
+  font: inherit;
+}
+
+.dispatch-board__queue {
+  padding: var(--ds-card-padding);
+  background: var(--ds-color-bg-surface);
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-lg);
+}
+
+.dispatch-board__section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-4);
+  margin-bottom: var(--ds-space-4);
+}
+
+.dispatch-board__section-heading h3,
+.dispatch-technician-column__header h3,
+.dispatch-call-card h4 {
+  margin: 0;
+  color: var(--ds-color-text);
+}
+
+.dispatch-board__section-heading p,
+.dispatch-technician-column__header p,
+.dispatch-call-card p {
+  margin: var(--ds-space-1) 0 0;
+  color: var(--ds-color-text-muted);
+  font-size: var(--ds-text-body-sm-size);
+}
+
+.dispatch-board__section-heading > strong {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  color: var(--ds-color-primary-on);
+  background: var(--ds-color-primary);
+  border-radius: var(--ds-radius-full);
+}
+
+.dispatch-board__queue-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  gap: var(--ds-space-4);
+}
+
+.dispatch-call-card {
+  display: grid;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-4);
+  background: var(--ds-color-bg-base);
+  border: 1px solid var(--ds-color-border-subtle);
+  border-radius: var(--ds-radius-lg);
+}
+
+.dispatch-call-card__topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-2);
+}
+
+.dispatch-call-card__topline a,
+.dispatch-visit strong {
+  color: var(--ds-color-info-on);
+  font-weight: var(--ds-font-weight-bold);
+  text-decoration: none;
+}
+
+.dispatch-call-card__location {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-1);
+}
+
+.dispatch-call-card__assignment {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 7rem auto;
+  align-items: end;
+  gap: var(--ds-space-2);
+}
+
+.dispatch-call-card__assignment .amarok-button {
+  min-height: 2.5rem;
+}
+
+.dispatch-board__notice,
+.dispatch-board__permission {
+  margin: 0;
+  padding: var(--ds-space-3) var(--ds-space-4);
+  color: var(--ds-color-success-on);
+  background: var(--ds-color-success-muted);
+  border: 1px solid var(--ds-color-success);
+  border-radius: var(--ds-radius-md);
+}
+
+.dispatch-board__notice--error {
+  color: var(--ds-color-error-on);
+  background: var(--ds-color-error-muted);
+  border-color: var(--ds-color-error);
+}
+
+.dispatch-board__permission {
+  margin-top: var(--ds-space-4);
+  color: var(--ds-color-warning-on);
+  background: var(--ds-color-warning-muted);
+  border-color: var(--ds-color-warning);
+}
+
+.dispatch-board__schedule {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: var(--ds-space-4);
+}
+
+.dispatch-technician-column {
+  min-width: 0;
+}
+
+.dispatch-technician-column__header {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+  padding-bottom: var(--ds-space-4);
+  border-bottom: 1px solid var(--ds-color-border-subtle);
+}
+
+.dispatch-technician-column__header > svg {
+  color: var(--ds-color-primary);
+}
+
+.dispatch-technician-column__visits {
+  display: grid;
+  gap: var(--ds-space-2);
+  margin-top: var(--ds-space-4);
+}
+
+.dispatch-visit {
+  display: grid;
+  grid-template-columns: 4.75rem minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-3);
+  color: var(--ds-color-text);
+  background: var(--ds-color-bg-base);
+  border: 1px solid var(--ds-color-border-subtle);
+  border-radius: var(--ds-radius-md);
+  text-decoration: none;
+}
+
+.dispatch-visit:hover {
+  background: var(--ds-color-bg-hover);
+  border-color: var(--ds-color-border);
+}
+
+.dispatch-visit__time {
+  color: var(--ds-color-primary);
+  font-size: var(--ds-text-caption-size);
+  font-weight: var(--ds-font-weight-bold);
+}
+
+.dispatch-visit span,
+.dispatch-visit small {
+  display: block;
+  margin-top: var(--ds-space-1);
+  color: var(--ds-color-text-muted);
+  font-size: var(--ds-text-body-sm-size);
+}
+
+.dispatch-board__empty {
+  margin: 0;
+  padding: var(--ds-space-4) 0;
+  color: var(--ds-color-text-muted);
+  font-size: var(--ds-text-body-sm-size);
+}
+
+.member-access__create {
+  display: grid;
+  gap: var(--ds-space-4);
+  margin-bottom: var(--ds-section-gap);
+  padding: var(--ds-card-padding);
+  background: var(--ds-color-bg-surface);
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-lg);
+}
+
+.member-access__create h3 {
+  margin: 0;
+  font-size: var(--ds-text-h3-size);
+}
+
+.member-access__create-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ds-space-4);
+}
+
+.member-access__create label {
+  display: grid;
+  gap: var(--ds-field-gap);
+  color: var(--ds-color-text-muted);
+}
+.member-access__create input,
+.member-access__create select {
+  min-height: 2.75rem;
+}
+
+@media (max-width: 768px) {
+  .member-access__create-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .dispatch-board__header {
+    display: grid;
+  }
+
+  .dispatch-board__toolbar {
+    justify-content: flex-start;
+  }
+
+  .dispatch-call-card__assignment {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .dispatch-call-card__assignment .amarok-button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .dispatch-board__toolbar .amarok-button {
+    min-width: 2.75rem;
+  }
+
+  .dispatch-board__toolbar .amarok-button:not(:has(svg:only-child)) {
+    flex: 1;
+  }
+
+  .dispatch-board__date-field {
+    width: 100%;
+  }
+
+  .dispatch-board__date-field input {
+    width: 100%;
+  }
+
+  .dispatch-visit {
+    grid-template-columns: 1fr auto;
+  }
+
+  .dispatch-visit__time {
+    grid-column: 1 / -1;
+  }
+}

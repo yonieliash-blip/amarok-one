@@ -8,16 +8,21 @@ import { forbidden, notFound, badRequest } from "../../lib/errors.js";
 import { activeOnly } from "../../lib/mappers.js";
 import { prisma } from "../../lib/prisma.js";
 import { writeAuditLog } from "../../lib/audit.js";
+import { hashPassword } from "../../lib/password.js";
 import {
   bumpMemberPermissionsVersion,
   countOrganizationOwners,
+  loadOrganizationMember,
   loadOrganizationMemberById,
   memberInclude,
   replaceMemberModuleAccess,
   resolveMemberAuthorization,
   getEnabledModuleKeys,
 } from "../../lib/member-access.js";
-import type { UpdateMemberModuleAccessInput } from "./access.schemas.js";
+import type {
+  CreateOrganizationMemberInput,
+  UpdateMemberModuleAccessInput,
+} from "./access.schemas.js";
 
 function assertActorCanManageTarget(
   actorMember: Awaited<ReturnType<typeof loadOrganizationMemberById>>,
@@ -43,6 +48,78 @@ function assertActorCanManageTarget(
 }
 
 export function createAccessService() {
+  async function createMember(
+    organizationId: string,
+    actorUserId: string,
+    input: CreateOrganizationMemberInput,
+  ) {
+    const actor = await loadOrganizationMember(organizationId, actorUserId);
+    if (!actor || (!actor.isOrganizationOwner && !actor.primaryRole.isOwner)) {
+      throw forbidden("Only the organization owner can create organization members");
+    }
+
+    const email = input.email.toLowerCase();
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      throw badRequest("A user with this email already exists", { field: "email" });
+    }
+
+    const role = await prisma.role.findFirst({
+      where: { organizationId, slug: input.primaryRoleSlug, ...activeOnly },
+    });
+    if (!role)
+      throw badRequest("Selected staff role is not available", { field: "primaryRoleSlug" });
+
+    const passwordHash = await hashPassword(input.initialPassword);
+    const member = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: { displayName: input.displayName, email, passwordHash },
+      });
+      const created = await tx.organizationMember.create({
+        data: {
+          organizationId,
+          userId: user.id,
+          primaryRoleId: role.id,
+          moduleAccess: {
+            create: input.enabledModules.map((moduleKey) => ({ organizationId, moduleKey })),
+          },
+        },
+        include: memberInclude,
+      });
+      await tx.userRole.create({ data: { organizationId, userId: user.id, roleId: role.id } });
+      return created;
+    });
+
+    await writeAuditLog({
+      organizationId,
+      actorId: actorUserId,
+      action: "member.created",
+      entityType: "OrganizationMember",
+      entityId: member.id,
+      metadata: {
+        targetUserId: member.userId,
+        roleSlug: role.slug,
+        enabledModules: input.enabledModules,
+      },
+    });
+
+    const resolved = resolveMemberAuthorization(member);
+    return {
+      id: member.id,
+      userId: member.userId,
+      displayName: member.user.displayName,
+      email: member.user.email,
+      primaryRole: {
+        id: member.primaryRole.id,
+        slug: member.primaryRole.slug,
+        name: member.primaryRole.name,
+      },
+      isOrganizationOwner: member.isOrganizationOwner,
+      enabledModules: resolved.enabledModules,
+      permissionsVersion: member.permissionsVersion,
+    };
+  }
+
   async function listMembers(organizationId: string) {
     const members = await prisma.organizationMember.findMany({
       where: {
@@ -183,6 +260,7 @@ export function createAccessService() {
   }
 
   return {
+    createMember,
     listMembers,
     getMemberAccess,
     updateMemberModuleAccess,

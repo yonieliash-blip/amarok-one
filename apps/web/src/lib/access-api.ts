@@ -24,6 +24,26 @@ export interface MemberAccessDetail extends MemberAccessSummary {
   }>;
 }
 
+export interface CreateMemberInput {
+  displayName: string;
+  email: string;
+  initialPassword: string;
+  primaryRoleSlug: "technician" | "service-coordinator";
+  enabledModules: MemberModuleKey[];
+}
+
+export async function createMemberRequest(
+  organizationId: string,
+  accessToken: string,
+  input: CreateMemberInput,
+): Promise<MemberAccessSummary> {
+  const response = await apiRequest<MemberAccessSummary>(
+    `/organizations/${organizationId}/access/members`,
+    { method: "POST", accessToken, body: JSON.stringify(input) },
+  );
+  return response.data;
+}
+
 export async function listMemberAccessRequest(
   organizationId: string,
   accessToken: string,
