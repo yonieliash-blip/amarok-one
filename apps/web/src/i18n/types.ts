@@ -235,6 +235,19 @@ export interface TranslationMessages {
     empty: string;
     visit: string;
   };
+  myEquipmentPage: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    loading: string;
+    loadError: string;
+    noVanTitle: string;
+    noVanMessage: string;
+    empty: string;
+    category: string;
+    partNumber: string;
+    quantity: string;
+  };
   technicians: {
     eyebrow: string;
     title: string;

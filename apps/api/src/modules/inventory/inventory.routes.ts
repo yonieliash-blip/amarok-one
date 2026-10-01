@@ -9,11 +9,23 @@ import { addInventoryItemSchema, createInventoryLocationSchema } from "./invento
 import {
   addInventoryItem,
   createInventoryLocation,
+  getMyVanInventory,
   listInventoryOverview,
 } from "./inventory.service.js";
 
 export const inventoryRoutes = new Hono()
   .use("*", tenantGuard)
+  .get(
+    "/my-van",
+    requirePermission("my_equipment:read"),
+    zValidator("param", organizationIdParamSchema),
+    async (context) => {
+      const { organizationId } = context.req.valid("param");
+      return context.json(
+        createApiResponse(await getMyVanInventory(organizationId, getAuth(context).user.sub)),
+      );
+    },
+  )
   .get(
     "/",
     requirePermission("inventory:read"),

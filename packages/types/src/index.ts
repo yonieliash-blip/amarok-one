@@ -484,6 +484,11 @@ export interface InventoryOverview {
   warehouses: InventoryLocationDetail[];
 }
 
+/** The service-van stock assigned to the authenticated field user. */
+export interface MyVanInventory {
+  van?: InventoryLocationDetail;
+}
+
 export interface WorkReportPartUsage {
   id: EntityId;
   inventoryItemId: EntityId;
