@@ -72,6 +72,52 @@ describe("buildServiceCallHistoryTimeline", () => {
     );
   });
 
+  it("records every reschedule with the selected technician", () => {
+    const events = buildServiceCallHistoryTimeline(
+      serviceCall,
+      lifecycle({
+        visits: [
+          {
+            id: "visit-1",
+            organizationId: "org-1",
+            serviceCallId: "sc-1",
+            technicianId: "tech-2",
+            technician: { id: "tech-2", email: "tech2@demo", displayName: "Technician Two" },
+            sequence: 1,
+            status: "assigned",
+            createdAt: "2026-07-16T08:00:00.000Z",
+            updatedAt: "2026-07-16T09:00:00.000Z",
+          },
+        ],
+        timeline: [
+          {
+            id: "scheduled-1",
+            type: "visit.scheduled",
+            sequence: 2,
+            occurredAt: "2026-07-16T08:05:00.000Z",
+            payload: { visitId: "visit-1" },
+          },
+          {
+            id: "rescheduled-1",
+            type: "visit.rescheduled",
+            sequence: 3,
+            occurredAt: "2026-07-16T08:30:00.000Z",
+            payload: { visitId: "visit-1", assignedTechnicianId: "tech-2" },
+          },
+        ],
+      }),
+      new Map([["tech-2", "Technician Two"]]),
+    );
+
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        id: "rescheduled-1",
+        type: "visit_rescheduled",
+        technicianName: "Technician Two",
+      }),
+    );
+  });
+
   it("marks later visits from another technician as continuation", () => {
     const events = buildServiceCallHistoryTimeline(
       serviceCall,

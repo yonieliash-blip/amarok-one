@@ -9,6 +9,7 @@ export type WorkflowCommandType =
   | "RecordOperationalStatusChange"
   | "ScheduleVisit"
   | "AssignTechnicianToVisit"
+  | "RescheduleVisit"
   | "TransitionServiceCallLifecycle"
   | "CloseServiceCall"
   | "StartVisit"

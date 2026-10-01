@@ -13,6 +13,7 @@ export type WorkflowEventType =
   | "service_call.lifecycle_changed"
   | "service_call.closed"
   | "visit.scheduled"
+  | "visit.rescheduled"
   | "visit.started"
   | "visit.driving_started"
   | "visit.working_started"

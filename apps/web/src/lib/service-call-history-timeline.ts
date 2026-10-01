@@ -10,6 +10,7 @@ export type ServiceCallHistoryEventType =
   | "created"
   | "technician_dispatched"
   | "additional_visit"
+  | "visit_rescheduled"
   | "technician_departed"
   | "work_started"
   | "visit_finished"
@@ -106,6 +107,7 @@ export function buildServiceCallHistoryTimeline(
       visit.drivingStartedAt,
       technicianName,
     );
+    addVisitRescheduledEvents(events, lifecycle.timeline, visit.id, actorNames);
     addVisitMilestone(
       events,
       lifecycle.timeline,
@@ -151,6 +153,27 @@ export function buildServiceCallHistoryTimeline(
       const sequenceDifference = left.sequence - right.sequence;
       return sequenceDifference !== 0 ? sequenceDifference : left.id.localeCompare(right.id);
     });
+}
+
+function addVisitRescheduledEvents(
+  events: ServiceCallHistoryEvent[],
+  timeline: ServiceCallTimelineEvent[],
+  visitId: string,
+  actorNames: Map<string, string>,
+): void {
+  for (const event of timeline) {
+    if (event.type !== "visit.rescheduled" || event.payload.visitId !== visitId) {
+      continue;
+    }
+    const technicianId = event.payload.assignedTechnicianId;
+    events.push({
+      id: event.id,
+      type: "visit_rescheduled",
+      occurredAt: event.occurredAt,
+      sequence: event.sequence,
+      technicianName: typeof technicianId === "string" ? actorNames.get(technicianId) : undefined,
+    });
+  }
 }
 
 function addVisitMilestone(

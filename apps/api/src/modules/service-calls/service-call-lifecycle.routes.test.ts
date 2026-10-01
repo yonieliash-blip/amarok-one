@@ -44,12 +44,14 @@ function createTestApp(input: {
     input.assertAssignedServiceCallAccess ?? vi.fn().mockResolvedValue(undefined);
   const startVisitWorking = vi.fn().mockResolvedValue(lifecycleView);
   const finishVisit = vi.fn().mockResolvedValue(lifecycleView);
+  const rescheduleVisit = vi.fn().mockResolvedValue(lifecycleView);
   const getTechnicianCurrentTask = vi.fn().mockResolvedValue(currentTask);
   const service = {
     getServiceCallLifecycle,
     assertAssignedServiceCallAccess,
     startVisitWorking,
     finishVisit,
+    rescheduleVisit,
     getTechnicianCurrentTask,
   } as unknown as ServiceCallService;
 
@@ -90,6 +92,7 @@ function createTestApp(input: {
     assertAssignedServiceCallAccess,
     startVisitWorking,
     finishVisit,
+    rescheduleVisit,
     getTechnicianCurrentTask,
     user,
   };
@@ -129,6 +132,83 @@ describe("technician current task route", () => {
 function lifecycleUrl(targetOrganizationId = organizationId): string {
   return `/organizations/${targetOrganizationId}/service-calls/${serviceCallId}/lifecycle`;
 }
+
+function rescheduleUrl(targetOrganizationId = organizationId): string {
+  return `/organizations/${targetOrganizationId}/service-calls/${serviceCallId}/visits/${visitId}/reschedule`;
+}
+
+describe("planned visit rescheduling route authorization", () => {
+  const payload = {
+    technicianId: "77777777-7777-4777-8777-777777777777",
+    scheduledStart: "2026-08-04T09:30:00.000Z",
+  };
+
+  it("allows a service-call dispatcher to update an unstarted visit", async () => {
+    const { app, rescheduleVisit, user } = createTestApp({
+      permissions: [PERMISSIONS.SERVICE_CALLS_ASSIGN],
+    });
+
+    const response = await app.request(rescheduleUrl(), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    expect(response.status).toBe(200);
+    expect(rescheduleVisit).toHaveBeenCalledWith(
+      organizationId,
+      serviceCallId,
+      visitId,
+      payload,
+      user.sub,
+    );
+  });
+
+  it("denies a technician without dispatch permission", async () => {
+    const { app, rescheduleVisit } = createTestApp({
+      permissions: [PERMISSIONS.MY_SERVICE_CALLS_WRITE],
+    });
+
+    const response = await app.request(rescheduleUrl(), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    expect(response.status).toBe(403);
+    expect(rescheduleVisit).not.toHaveBeenCalled();
+  });
+
+  it("denies a cross-tenant reschedule before invoking the service", async () => {
+    const { app, rescheduleVisit } = createTestApp({
+      permissions: [PERMISSIONS.SERVICE_CALLS_ASSIGN],
+    });
+
+    const response = await app.request(rescheduleUrl(otherOrganizationId), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    expect(response.status).toBe(403);
+    expect(rescheduleVisit).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed reschedule input before invoking the service", async () => {
+    const { app, rescheduleVisit } = createTestApp({
+      permissions: [PERMISSIONS.SERVICE_CALLS_ASSIGN],
+    });
+
+    const response = await app.request(rescheduleUrl(), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ technicianId: payload.technicianId }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(rescheduleVisit).not.toHaveBeenCalled();
+  });
+});
 
 describe("service call activity timeline route authorization", () => {
   it("allows a tenant service-call reader to load lifecycle history", async () => {

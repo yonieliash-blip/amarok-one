@@ -12,7 +12,11 @@ import { ServiceCallPriorityBadge } from "../../components/ServiceCallPriorityBa
 import { formatDate, formatDateTime } from "../../i18n/format";
 import { useTranslation } from "../../i18n/useTranslation";
 import { getApiErrorMessage } from "../../lib/auth-errors";
-import { assignTechnicianRequest, getDispatchBoardRequest } from "../../lib/service-calls-api";
+import {
+  assignTechnicianRequest,
+  getDispatchBoardRequest,
+  rescheduleServiceCallVisitRequest,
+} from "../../lib/service-calls-api";
 
 const EMPTY_BOARD: DispatchBoard = {
   scheduledFrom: "",
@@ -48,6 +52,13 @@ function callLocation(call: ServiceCall): string | undefined {
   return call.customerSite?.name ?? call.location ?? call.customer?.name;
 }
 
+function timeInputValue(value: string | undefined): string {
+  if (!value) return "08:00";
+  const date = new Date(value);
+  if (Number.isNaN(date.valueOf())) return "08:00";
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
 export function DispatchBoardPage() {
   const { user, accessToken } = useAuth();
   const { t, locale } = useTranslation();
@@ -60,6 +71,9 @@ export function DispatchBoardPage() {
   const [technicianByCall, setTechnicianByCall] = useState<Record<string, string>>({});
   const [timeByCall, setTimeByCall] = useState<Record<string, string>>({});
   const [assigningCallId, setAssigningCallId] = useState<string | null>(null);
+  const [technicianByVisit, setTechnicianByVisit] = useState<Record<string, string>>({});
+  const [timeByVisit, setTimeByVisit] = useState<Record<string, string>>({});
+  const [reschedulingVisitId, setReschedulingVisitId] = useState<string | null>(null);
 
   const canAssign = user ? canAssignServiceCalls(extractPermissionSlugs(user.permissions)) : false;
 
@@ -92,6 +106,20 @@ export function DispatchBoardPage() {
           const next = { ...current };
           for (const call of nextBoard.unassignedServiceCalls) {
             next[call.id] ??= "08:00";
+          }
+          return next;
+        });
+        setTechnicianByVisit((current) => {
+          const next = { ...current };
+          for (const assignment of nextBoard.assignments) {
+            next[assignment.visit.id] ??= assignment.visit.technicianId;
+          }
+          return next;
+        });
+        setTimeByVisit((current) => {
+          const next = { ...current };
+          for (const assignment of nextBoard.assignments) {
+            next[assignment.visit.id] ??= timeInputValue(assignment.visit.scheduledStart);
           }
           return next;
         });
@@ -140,6 +168,36 @@ export function DispatchBoardPage() {
       setError(getApiErrorMessage(cause, t("dispatch", "assignmentError")));
     } finally {
       setAssigningCallId(null);
+    }
+  }
+
+  async function reschedule(assignment: DispatchBoard["assignments"][number]): Promise<void> {
+    if (!user || !accessToken) return;
+    const { visit, serviceCall } = assignment;
+    const technicianId = technicianByVisit[visit.id];
+    const time = timeByVisit[visit.id];
+    if (!technicianId || !time) return;
+
+    const scheduledStart = new Date(`${selectedDate}T${time}:00`);
+    if (Number.isNaN(scheduledStart.valueOf())) return;
+
+    setReschedulingVisitId(visit.id);
+    setNotice(null);
+    setError(null);
+    try {
+      await rescheduleServiceCallVisitRequest(
+        user.organization.id,
+        serviceCall.id,
+        visit.id,
+        accessToken,
+        { technicianId, scheduledStart: scheduledStart.toISOString() },
+      );
+      setNotice(t("dispatch", "rescheduleSuccess"));
+      setReloadToken((value) => value + 1);
+    } catch (cause) {
+      setError(getApiErrorMessage(cause, t("dispatch", "rescheduleError")));
+    } finally {
+      setReschedulingVisitId(null);
     }
   }
 
@@ -300,25 +358,84 @@ export function DispatchBoardPage() {
                   <p className="dispatch-board__empty">{t("dispatch", "noVisits")}</p>
                 ) : (
                   <div className="dispatch-technician-column__visits">
-                    {assignments.map(({ visit, serviceCall }) => (
-                      <Link
-                        key={visit.id}
-                        to={`/service-calls/${serviceCall.id}`}
-                        className="dispatch-visit"
-                      >
-                        <div className="dispatch-visit__time">
-                          {visit.scheduledStart
-                            ? formatDateTime(visit.scheduledStart, locale)
-                            : "—"}
-                        </div>
-                        <div>
-                          <strong>{serviceCall.serviceCallNumber}</strong>
-                          <span>{serviceCall.title}</span>
-                          <small>{serviceCall.customer?.name ?? "—"}</small>
-                        </div>
-                        <ServiceCallLifecycleBadge lifecycleState={serviceCall.lifecycleState} />
-                      </Link>
-                    ))}
+                    {assignments.map((assignment) => {
+                      const { visit, serviceCall } = assignment;
+                      const canReschedule =
+                        canAssign && (visit.status === "assigned" || visit.status === "planned");
+                      return (
+                        <article key={visit.id} className="dispatch-visit">
+                          <Link
+                            to={`/service-calls/${serviceCall.id}`}
+                            className="dispatch-visit__summary"
+                          >
+                            <div className="dispatch-visit__time">
+                              {visit.scheduledStart
+                                ? formatDateTime(visit.scheduledStart, locale)
+                                : "—"}
+                            </div>
+                            <div>
+                              <strong>{serviceCall.serviceCallNumber}</strong>
+                              <span>{serviceCall.title}</span>
+                              <small>{serviceCall.customer?.name ?? "—"}</small>
+                            </div>
+                            <ServiceCallLifecycleBadge
+                              lifecycleState={serviceCall.lifecycleState}
+                            />
+                          </Link>
+                          {canReschedule ? (
+                            <div className="dispatch-visit__reschedule">
+                              <label>
+                                <span>{t("dispatch", "technician")}</span>
+                                <select
+                                  value={technicianByVisit[visit.id] ?? visit.technicianId}
+                                  onChange={(event) =>
+                                    setTechnicianByVisit((current) => ({
+                                      ...current,
+                                      [visit.id]: event.target.value,
+                                    }))
+                                  }
+                                  disabled={reschedulingVisitId === visit.id}
+                                >
+                                  {board.technicians.map((candidate) => (
+                                    <option key={candidate.id} value={candidate.id}>
+                                      {candidate.displayName}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label>
+                                <span>{t("dispatch", "scheduleTime")}</span>
+                                <input
+                                  type="time"
+                                  value={
+                                    timeByVisit[visit.id] ?? timeInputValue(visit.scheduledStart)
+                                  }
+                                  onChange={(event) =>
+                                    setTimeByVisit((current) => ({
+                                      ...current,
+                                      [visit.id]: event.target.value,
+                                    }))
+                                  }
+                                  disabled={reschedulingVisitId === visit.id}
+                                />
+                              </label>
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={() => void reschedule(assignment)}
+                                disabled={
+                                  !technicianByVisit[visit.id] || reschedulingVisitId === visit.id
+                                }
+                              >
+                                {reschedulingVisitId === visit.id
+                                  ? t("dispatch", "rescheduling")
+                                  : t("dispatch", "reschedule")}
+                              </Button>
+                            </div>
+                          ) : null}
+                        </article>
+                      );
+                    })}
                   </div>
                 )}
               </Card>

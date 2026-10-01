@@ -23,6 +23,7 @@ import {
   assignTechnicianSchema,
   closeServiceCallSchema,
   finishVisitSchema,
+  rescheduleVisitSchema,
   saveWorkReportSchema,
   transitionLifecycleSchema,
   visitIdParamSchema,
@@ -255,6 +256,24 @@ export function createServiceCallRoutes(serviceCallService: ServiceCallService):
         const view = await serviceCallService.transitionServiceCallLifecycle(
           organizationId,
           serviceCallId,
+          body,
+          actorId(context),
+        );
+        return context.json(createApiResponse(view));
+      },
+    )
+    .post(
+      "/:serviceCallId/visits/:visitId/reschedule",
+      requirePermission("service_calls:assign"),
+      zValidator("param", visitIdParamSchema),
+      zValidator("json", rescheduleVisitSchema),
+      async (context) => {
+        const { organizationId, serviceCallId, visitId } = context.req.valid("param");
+        const body = context.req.valid("json");
+        const view = await serviceCallService.rescheduleVisit(
+          organizationId,
+          serviceCallId,
+          visitId,
           body,
           actorId(context),
         );

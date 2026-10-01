@@ -77,6 +77,65 @@ describe("WorkflowEngine lifecycle", () => {
     expect(events.some((event) => event.type === "visit.scheduled")).toBe(true);
     expect(events.some((event) => event.type === "service_call.lifecycle_changed")).toBe(true);
   });
+
+  it("reschedules an assigned visit without creating another visit", () => {
+    const engine = new WorkflowEngine();
+    const clock = testClock();
+    const ids = testIds();
+    const init = WorkflowCommand.create({
+      id: asWorkflowCommandId("33333333-3333-3333-3333-333333333333"),
+      organizationId: orgId,
+      aggregateId: callId,
+      type: "InitializeServiceCallWorkflow",
+      payload: { externalServiceCallId: callId, initialLifecycleKey: "waiting_assignment" },
+      issuedAt: "2026-07-28T12:00:00.000Z",
+    });
+    let { aggregate } = engine.execute(null, init, clock, ids);
+    const assign = WorkflowCommand.create({
+      id: asWorkflowCommandId("55555555-5555-5555-5555-555555555555"),
+      organizationId: orgId,
+      aggregateId: callId,
+      type: "AssignTechnicianToVisit",
+      payload: {
+        visitId: "66666666-6666-6666-6666-666666666666",
+        technicianId: "77777777-7777-7777-7777-777777777777",
+        scheduledStart: "2026-07-29T08:00:00.000Z",
+      },
+      issuedAt: "2026-07-28T12:00:01.000Z",
+    });
+    ({ aggregate } = engine.execute(aggregate, assign, clock, ids));
+
+    const reschedule = WorkflowCommand.create({
+      id: asWorkflowCommandId("88888888-8888-8888-8888-888888888888"),
+      organizationId: orgId,
+      aggregateId: callId,
+      type: "RescheduleVisit",
+      payload: {
+        visitId: "66666666-6666-6666-6666-666666666666",
+        technicianId: "99999999-9999-9999-9999-999999999999",
+        scheduledStart: "2026-07-29T10:30:00.000Z",
+      },
+      issuedAt: "2026-07-28T12:00:02.000Z",
+    });
+    const { aggregate: rescheduled, events } = engine.execute(aggregate, reschedule, clock, ids);
+
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      type: "visit.rescheduled",
+      payload: {
+        visitId: "66666666-6666-6666-6666-666666666666",
+        assignedTechnicianId: "99999999-9999-9999-9999-999999999999",
+        scheduledStart: "2026-07-29T10:30:00.000Z",
+      },
+    });
+    expect(rescheduled.visits).toEqual([
+      expect.objectContaining({
+        id: "66666666-6666-6666-6666-666666666666",
+        assignedTechnicianId: "99999999-9999-9999-9999-999999999999",
+        scheduledStart: "2026-07-29T10:30:00.000Z",
+      }),
+    ]);
+  });
 });
 
 describe("WorkflowEngine", () => {

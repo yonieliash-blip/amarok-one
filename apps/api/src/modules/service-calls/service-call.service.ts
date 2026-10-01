@@ -1030,6 +1030,7 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
     softDeleteServiceCall,
     getServiceCallLifecycle: lifecycle.getServiceCallLifecycle,
     assignTechnician: lifecycle.assignTechnician,
+    rescheduleVisit: lifecycle.rescheduleVisit,
     transitionServiceCallLifecycle: lifecycle.transitionLifecycle,
     closeServiceCallLifecycle: lifecycle.closeServiceCall,
     startVisitDriving: lifecycle.startVisitDriving,

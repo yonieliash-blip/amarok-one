@@ -21,6 +21,12 @@ export const assignTechnicianSchema = z.object({
   notes: z.string().max(4000).optional(),
 });
 
+export const rescheduleVisitSchema = z.object({
+  technicianId: z.string().uuid(),
+  scheduledStart: z.string().datetime(),
+  scheduledEnd: z.string().datetime().optional(),
+});
+
 export const transitionLifecycleSchema = z.object({
   toLifecycleState: lifecycleStateSchema.refine((value) => value !== "new" && value !== "closed", {
     message: "Use create flow for new service calls and POST /lifecycle/close to close",
@@ -68,6 +74,7 @@ export const visitIdParamSchema = z.object({
 });
 
 export type AssignTechnicianInput = z.infer<typeof assignTechnicianSchema>;
+export type RescheduleVisitInput = z.infer<typeof rescheduleVisitSchema>;
 export type TransitionLifecycleInput = z.infer<typeof transitionLifecycleSchema>;
 export type FinishVisitInput = z.infer<typeof finishVisitSchema>;
 export type SaveWorkReportInput = z.infer<typeof saveWorkReportSchema>;

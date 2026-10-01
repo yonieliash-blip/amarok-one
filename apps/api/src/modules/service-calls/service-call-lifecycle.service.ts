@@ -31,6 +31,7 @@ import {
 import type {
   AssignTechnicianInput,
   FinishVisitInput,
+  RescheduleVisitInput,
   TransitionLifecycleInput,
 } from "./service-call-lifecycle.schemas.js";
 import { projectServiceCallFromWorkflow } from "./service-call-workflow-projection.js";
@@ -322,6 +323,54 @@ export function createServiceCallLifecycleService(deps: ServiceCallLifecycleServ
     }
   }
 
+  async function rescheduleVisit(
+    organizationId: string,
+    serviceCallId: string,
+    visitId: string,
+    input: RescheduleVisitInput,
+    actorId: string,
+  ): Promise<ServiceCallLifecycleView> {
+    await assertServiceCallExists(organizationId, serviceCallId);
+    await assertAssignableUser(organizationId, input.technicianId);
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        await dispatchAndProject(
+          tx,
+          organizationId,
+          serviceCallId,
+          "RescheduleVisit",
+          {
+            visitId,
+            technicianId: input.technicianId,
+            scheduledStart: input.scheduledStart,
+            scheduledEnd: input.scheduledEnd,
+          },
+          actorId,
+          `lifecycle:reschedule:${visitId}:${input.technicianId}:${input.scheduledStart}`,
+        );
+      });
+
+      await writeAuditLog({
+        organizationId,
+        actorId,
+        action: "service_call.visit_rescheduled",
+        entityType: "ServiceCall",
+        entityId: serviceCallId,
+        metadata: {
+          visitId,
+          technicianId: input.technicianId,
+          scheduledStart: input.scheduledStart,
+          scheduledEnd: input.scheduledEnd,
+        },
+      });
+
+      return getServiceCallLifecycle(organizationId, serviceCallId);
+    } catch (error) {
+      throw mapWorkflowError(error);
+    }
+  }
+
   async function closeServiceCall(
     organizationId: string,
     serviceCallId: string,
@@ -489,6 +538,7 @@ export function createServiceCallLifecycleService(deps: ServiceCallLifecycleServ
     enqueueAfterCreate,
     getServiceCallLifecycle,
     assignTechnician,
+    rescheduleVisit,
     transitionLifecycle,
     closeServiceCall,
     startVisitDriving,
