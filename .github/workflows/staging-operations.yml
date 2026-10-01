@@ -140,8 +140,7 @@ jobs:
                   test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM pg_indexes WHERE schemaname = \$\$public\$\$ AND indexname IN (\$\$customer_sites_customerId_name_active_key\$\$, \$\$customer_contacts_customerSiteId_idx\$\$);")" = "0"
                 '
                 compose build --no-cache api
-                compose run --rm --no-deps --entrypoint sh api -ec \
-                  'prisma migrate deploy --schema=./prisma/schema.prisma'
+                compose run --rm --no-deps --entrypoint sh api -ec 'prisma migrate deploy --schema=./prisma/schema.prisma'
                 compose exec -T postgres sh -ec '
                   set -eu
                   test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM \"_prisma_migrations\" WHERE migration_name = \$\$20261001033000_tasks_module\$\$ AND finished_at IS NOT NULL AND rolled_back_at IS NULL;")" = "1"
@@ -159,18 +158,18 @@ jobs:
                 test -f apps/api/prisma/migrations/20261001110000_customer_sites_missing_indexes/migration.sql
                 compose exec -T postgres sh -ec '
                   set -eu
-                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM \"_prisma_migrations\" WHERE migration_name = \$\$\$\$20261001033000_tasks_module\$\$\$\$ AND finished_at IS NOT NULL AND rolled_back_at IS NULL;")" = "1"
-                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM \"_prisma_migrations\" WHERE migration_name = \$\$\$\$20261001110000_customer_sites_missing_indexes\$\$\$\$ AND finished_at IS NOT NULL AND rolled_back_at IS NULL;")" = "0"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM \"_prisma_migrations\" WHERE migration_name = \$\$20261001033000_tasks_module\$\$ AND finished_at IS NOT NULL AND rolled_back_at IS NULL;")" = "1"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM \"_prisma_migrations\" WHERE migration_name = \$\$20261001110000_customer_sites_missing_indexes\$\$ AND finished_at IS NOT NULL AND rolled_back_at IS NULL;")" = "0"
                   test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM (SELECT 1 FROM customer_sites WHERE \"deletedAt\" IS NULL GROUP BY \"customerId\", \"name\" HAVING COUNT(*) > 1) AS duplicates;")" = "0"
-                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM pg_indexes WHERE schemaname = \$\$\$\$public\$\$\$\$ AND indexname IN (\$\$\$\$customer_sites_customerId_name_active_key\$\$\$\$, \$\$\$\$customer_contacts_customerSiteId_idx\$\$\$\$);")" = "0"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM pg_indexes WHERE schemaname = \$\$public\$\$ AND indexname IN (\$\$customer_sites_customerId_name_active_key\$\$, \$\$customer_contacts_customerSiteId_idx\$\$);")" = "0"
                 '
                 compose build --no-cache api
                 compose run --rm --no-deps --entrypoint sh api -ec \
                   'prisma migrate deploy --schema=./prisma/schema.prisma'
                 compose exec -T postgres sh -ec '
                   set -eu
-                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM \"_prisma_migrations\" WHERE migration_name = \$\$\$\$20261001110000_customer_sites_missing_indexes\$\$\$\$ AND finished_at IS NOT NULL AND rolled_back_at IS NULL;")" = "1"
-                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM pg_indexes WHERE schemaname = \$\$\$\$public\$\$\$\$ AND indexname IN (\$\$\$\$customer_sites_customerId_name_active_key\$\$\$\$, \$\$\$\$customer_contacts_customerSiteId_idx\$\$\$\$);")" = "2"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM \"_prisma_migrations\" WHERE migration_name = \$\$20261001110000_customer_sites_missing_indexes\$\$ AND finished_at IS NOT NULL AND rolled_back_at IS NULL;")" = "1"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM pg_indexes WHERE schemaname = \$\$public\$\$ AND indexname IN (\$\$customer_sites_customerId_name_active_key\$\$, \$\$customer_contacts_customerSiteId_idx\$\$);")" = "2"
                 '
                 ;;
               restart_web)
