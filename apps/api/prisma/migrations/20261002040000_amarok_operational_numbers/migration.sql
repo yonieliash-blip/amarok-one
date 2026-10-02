@@ -16,6 +16,13 @@ CREATE UNIQUE INDEX "organization_number_sequences_organizationId_scope_key"
 CREATE INDEX "organization_number_sequences_organizationId_idx"
   ON "organization_number_sequences"("organizationId");
 
+-- Soft-deleted customers are retained for audit history. Their legacy code must
+-- not prevent an active customer from receiving its deterministic AM-CU value.
+DROP INDEX "customers_organizationId_customerNumber_key";
+CREATE UNIQUE INDEX "customers_organizationId_customerNumber_active_key"
+  ON "customers"("organizationId", "customerNumber")
+  WHERE "deletedAt" IS NULL;
+
 -- Existing customer numbers can already occupy a future AM-CU value. Move the
 -- active rows to a UUID-derived namespace first so the final deterministic
 -- numbering does not violate the tenant-scoped unique index while it is updated.

@@ -481,7 +481,9 @@ model Customer {
   equipment    Equipment[]
   serviceCalls ServiceCall[]
 
-  @@unique([organizationId, customerNumber])
+  // The database enforces this as a partial unique index for active rows only.
+  // Soft-deleted historical customers keep their original number for auditability.
+  @@index([organizationId, customerNumber], map: "customers_organizationId_customerNumber_active_key")
   @@unique([organizationId, morningClientId])
   @@index([organizationId])
   @@index([organizationId, deletedAt])
