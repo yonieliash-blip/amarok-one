@@ -15,6 +15,7 @@
 
 html {
   direction: rtl;
+  overflow-x: clip;
 }
 
 html,
@@ -30,6 +31,12 @@ body {
   color: var(--amarok-text);
   line-height: 1.5;
   text-align: start;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+}
+
+#root {
+  overflow-x: clip;
 }
 
 button,
@@ -446,6 +453,33 @@ a {
   align-items: end;
   gap: 0.75rem;
   margin: 1rem 0;
+}
+
+.member-access__display-name-editor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.member-access__display-name-field {
+  display: grid;
+  flex: 1 1 14rem;
+  gap: 0.375rem;
+  color: var(--amarok-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.member-access__display-name-field input {
+  min-height: 2.75rem;
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--amarok-border);
+  border-radius: var(--amarok-radius);
+  background: var(--amarok-bg);
+  color: var(--amarok-text);
 }
 
 .member-access__birthday-field {

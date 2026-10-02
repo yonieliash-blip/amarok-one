@@ -12,6 +12,7 @@ const PRIMARY_NAV_ITEM_IDS = new Set([
   "equipment",
   "technicians",
   "reports",
+  "member-access",
 ]);
 
 interface HeaderProps {

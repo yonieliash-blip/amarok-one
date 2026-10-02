@@ -32,7 +32,7 @@ export function MobileNavigation({ onOpenMenu }: MobileNavigationProps) {
         onClick={onOpenMenu}
       >
         <MoreHorizontal aria-hidden="true" size={23} />
-        <span>{t("common", "toggleNavigation")}</span>
+        <span>{t("common", "menu")}</span>
       </button>
       {primaryItems.map((item) => (
         <NavLink

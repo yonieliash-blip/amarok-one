@@ -5,9 +5,10 @@ const organizationId = "11111111-1111-4111-8111-111111111111";
 const ownerUserId = "22222222-2222-4222-8222-222222222222";
 const technicianMemberId = "33333333-3333-4333-8333-333333333333";
 
-const { findFirst, update, loadOrganizationMember, writeAuditLog } = vi.hoisted(() => ({
+const { findFirst, update, userUpdate, loadOrganizationMember, writeAuditLog } = vi.hoisted(() => ({
   findFirst: vi.fn(),
   update: vi.fn(),
+  userUpdate: vi.fn(),
   loadOrganizationMember: vi.fn(),
   writeAuditLog: vi.fn(),
 }));
@@ -15,6 +16,7 @@ const { findFirst, update, loadOrganizationMember, writeAuditLog } = vi.hoisted(
 vi.mock("../../lib/prisma.js", () => ({
   prisma: {
     organizationMember: { findFirst, update },
+    user: { update: userUpdate },
   },
 }));
 
@@ -46,6 +48,7 @@ const technicianMember = {
   status: "ACTIVE",
   permissionsVersion: 4,
   primaryRole: { isOwner: false, slug: "technician" },
+  user: { displayName: "Daniel Eliash" },
 };
 
 describe("access.service member status", () => {
@@ -96,5 +99,30 @@ describe("access.service member status", () => {
 
     expect(update).not.toHaveBeenCalled();
     expect(writeAuditLog).not.toHaveBeenCalled();
+  });
+
+  it("updates an employee display name and audits the change", async () => {
+    findFirst.mockResolvedValue(technicianMember);
+    userUpdate.mockResolvedValue({ displayName: "דניאל אליאש" });
+
+    const result = await createAccessService().updateMemberDisplayName(
+      organizationId,
+      technicianMemberId,
+      ownerUserId,
+      { displayName: "דניאל אליאש" },
+    );
+
+    expect(result).toEqual({ id: technicianMemberId, displayName: "דניאל אליאש" });
+    expect(userUpdate).toHaveBeenCalledWith({
+      where: { id: technicianMember.userId },
+      data: { displayName: "דניאל אליאש" },
+      select: { displayName: true },
+    });
+    expect(writeAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "member.display_name_updated",
+        entityId: technicianMemberId,
+      }),
+    );
   });
 });
