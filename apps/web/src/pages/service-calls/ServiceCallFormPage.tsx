@@ -68,6 +68,7 @@ export function ServiceCallFormPage() {
   const [openedAtInput, setOpenedAtInput] = useState("");
   const [scheduledAtInput, setScheduledAtInput] = useState("");
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customerSearch, setCustomerSearch] = useState("");
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [customerSites, setCustomerSites] = useState<CustomerSite[]>([]);
   const [contacts, setContacts] = useState<CustomerContact[]>([]);
@@ -89,6 +90,18 @@ export function ServiceCallFormPage() {
           : !item.customerSiteId || item.customerSiteId === form.customerSiteId),
     );
   }, [equipment, form.customerId, form.customerSiteId]);
+
+  const matchingCustomers = useMemo(() => {
+    const query = customerSearch.trim().toLocaleLowerCase("he");
+    if (!query) return customers.slice(0, 12);
+    return customers
+      .filter((customer) =>
+        [customer.name, customer.customerNumber, customer.legalName]
+          .filter(Boolean)
+          .some((value) => value!.toLocaleLowerCase("he").includes(query)),
+      )
+      .slice(0, 12);
+  }, [customerSearch, customers]);
 
   const compatibleContacts = useMemo(
     () =>
@@ -133,6 +146,25 @@ export function ServiceCallFormPage() {
       cancelled = true;
     };
   }, [user, accessToken]);
+
+  useEffect(() => {
+    if (!user || !accessToken || customerSearch.trim().length < 2) return;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void listCustomersRequest(user.organization.id, accessToken, {
+        pageSize: 25,
+        search: customerSearch.trim(),
+      })
+        .then((result) => {
+          if (!cancelled) setCustomers(result.data);
+        })
+        .catch(() => undefined);
+    }, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [accessToken, customerSearch, user]);
 
   useEffect(() => {
     let cancelled = false;
@@ -224,6 +256,16 @@ export function ServiceCallFormPage() {
     value: ServiceCallFormValues[K],
   ): void {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function selectCustomer(customer: Customer): void {
+    updateField("customerId", customer.id);
+    updateField("customerSiteId", "");
+    updateField("equipmentId", "");
+    updateField("contactName", "");
+    updateField("contactPhone", "");
+    setSelectedContactId("");
+    setCustomerSearch(customer.name);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
@@ -369,27 +411,57 @@ export function ServiceCallFormPage() {
               <span>
                 {t("serviceCalls", "customer")} {t("common", "requiredMark")}
               </span>
-              <select
-                required
-                value={form.customerId}
-                onChange={(event) => {
-                  updateField("customerId", event.target.value);
-                  updateField("customerSiteId", "");
-                  updateField("equipmentId", "");
-                  updateField("contactName", "");
-                  updateField("contactPhone", "");
-                  setSelectedContactId("");
-                }}
-              >
-                <option value="" disabled>
-                  —
-                </option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.name}
-                  </option>
-                ))}
-              </select>
+              <div className="service-call-customer-picker">
+                <input
+                  required
+                  type="search"
+                  value={customerSearch}
+                  placeholder={t("serviceCalls", "customerSearchPlaceholder")}
+                  onChange={(event) => {
+                    const nextSearch = event.target.value;
+                    setCustomerSearch(nextSearch);
+                    if (form.customerId) {
+                      updateField("customerId", "");
+                      updateField("customerSiteId", "");
+                      updateField("equipmentId", "");
+                      updateField("contactName", "");
+                      updateField("contactPhone", "");
+                      setSelectedContactId("");
+                    }
+                  }}
+                  aria-autocomplete="list"
+                  aria-controls="customer-search-results"
+                />
+                <div
+                  id="customer-search-results"
+                  className="service-call-customer-picker__results"
+                  role="listbox"
+                >
+                  {matchingCustomers.length ? (
+                    matchingCustomers.map((customer) => (
+                      <button
+                        key={customer.id}
+                        type="button"
+                        role="option"
+                        aria-selected={form.customerId === customer.id}
+                        className={
+                          form.customerId === customer.id
+                            ? "service-call-customer-picker__option service-call-customer-picker__option--selected"
+                            : "service-call-customer-picker__option"
+                        }
+                        onClick={() => selectCustomer(customer)}
+                      >
+                        <strong>{customer.name}</strong>
+                        <span dir="ltr">{customer.customerNumber}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="service-call-customer-picker__empty">
+                      {t("serviceCalls", "customerSearchEmpty")}
+                    </p>
+                  )}
+                </div>
+              </div>
             </label>
             <label className="customer-form__field">
               <span>אתר</span>

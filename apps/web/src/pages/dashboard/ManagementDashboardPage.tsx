@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ClipboardList,
   Clock3,
+  MessageCircle,
   Package,
   Plus,
   RefreshCw,
@@ -29,13 +30,15 @@ import {
   startOfLocalDay,
 } from "../../lib/service-manager-dashboard";
 import { hasServiceCallsWrite } from "../../lib/service-calls-api";
+import { getUnreadMessageCountRequest } from "../../lib/messages-api";
 
 type PageStatus = "loading" | "ready" | "error";
 
 interface Metric {
-  id: "open" | "inProgress" | "today" | "waitingManager";
-  titleKey: "openCallsTitle" | "inProgressTitle" | "todayTitle" | "waitingManagerTitle";
-  noteKey: "openCallsNote" | "inProgressNote" | "todayNote" | "waitingManagerNote";
+  id: "open" | "inProgress" | "today" | "waitingManager" | "messages";
+  titleKey:
+    "openCallsTitle" | "inProgressTitle" | "todayTitle" | "waitingManagerTitle" | "messagesTitle";
+  noteKey: "openCallsNote" | "inProgressNote" | "todayNote" | "waitingManagerNote" | "messagesNote";
   icon: LucideIcon;
   value: number;
 }
@@ -64,6 +67,7 @@ export function ManagementDashboardPage() {
   const [status, setStatus] = useState<PageStatus>("loading");
   const [calls, setCalls] = useState<ServiceCall[]>([]);
   const [parts, setParts] = useState<CatalogPart[]>([]);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
@@ -80,13 +84,15 @@ export function ManagementDashboardPage() {
       setError(null);
 
       try {
-        const [nextCalls, partGroups] = await Promise.all([
+        const [nextCalls, partGroups, nextUnreadMessages] = await Promise.all([
           fetchAllServiceCalls(user.organization.id, accessToken),
           listPartsCatalogRequest(user.organization.id, accessToken).catch(() => []),
+          getUnreadMessageCountRequest(user.organization.id, accessToken).catch(() => 0),
         ]);
         if (cancelled) return;
         setCalls(nextCalls);
         setParts(flattenParts(partGroups));
+        setUnreadMessages(nextUnreadMessages);
         setStatus("ready");
       } catch (cause) {
         if (cancelled) return;
@@ -131,9 +137,25 @@ export function ManagementDashboardPage() {
         icon: Clock3,
         value: calls.filter(isWaitingForManager).length,
       },
+      {
+        id: "messages",
+        titleKey: "messagesTitle",
+        noteKey: "messagesNote",
+        icon: MessageCircle,
+        value: unreadMessages,
+      },
     ],
-    [calls, todayEnd, todayStart],
+    [calls, todayEnd, todayStart, unreadMessages],
   );
+
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    const displayName = user?.displayName ?? "";
+    const name = displayName.trim().split(/\s+/)[0] || displayName;
+    if (hour < 12) return t("managementDashboard", "greetingMorning", { name });
+    if (hour < 18) return t("managementDashboard", "greetingAfternoon", { name });
+    return t("managementDashboard", "greetingEvening", { name });
+  }, [t, user?.displayName]);
 
   const recentCalls = useMemo(
     () =>
@@ -155,6 +177,7 @@ export function ManagementDashboardPage() {
           <h2 className="management-dashboard__title">{t("managementDashboard", "title")}</h2>
           <p className="management-dashboard__subtitle">{t("managementDashboard", "subtitle")}</p>
         </div>
+        <div className="management-dashboard__greeting">{greeting}</div>
         <div className="management-dashboard__actions">
           {canWrite ? (
             <Link to="/service-calls/new" className="customers-page__action-link">
@@ -187,7 +210,7 @@ export function ManagementDashboardPage() {
           >
             {metrics.map((metric) => {
               const Icon = metric.icon;
-              return (
+              const card = (
                 <article
                   key={metric.id}
                   className={`management-metric management-metric--${metric.id}`}
@@ -210,6 +233,13 @@ export function ManagementDashboardPage() {
                     <i />
                   </span>
                 </article>
+              );
+              return metric.id === "messages" ? (
+                <Link key={metric.id} to="/messages" className="management-metric__link">
+                  {card}
+                </Link>
+              ) : (
+                <div key={metric.id}>{card}</div>
               );
             })}
           </section>

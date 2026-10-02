@@ -18,11 +18,14 @@ import { partsRoutes } from "./modules/parts/parts.routes.js";
 import { technicianRoutes } from "./modules/technicians/technician.routes.js";
 import { attendanceRoutes } from "./modules/attendance/attendance.routes.js";
 import { tasksRoutes } from "./modules/tasks/task.routes.js";
+import { createMessagesRoutes } from "./modules/messages/messages.routes.js";
+import type { MessagesService } from "./modules/messages/messages.service.js";
 
 export function createApiRoutes(
   serviceCallService: ServiceCallService,
   accessService: AccessService,
   morningCustomerSyncService: MorningCustomerSyncService,
+  messagesService: MessagesService,
 ): Hono {
   const protectedRoutes = new Hono()
     .use("*", jwtGuard)
@@ -42,6 +45,7 @@ export function createApiRoutes(
     .route("/organizations/:organizationId/inventory", inventoryRoutes)
     .route("/organizations/:organizationId/parts", partsRoutes)
     .route("/organizations/:organizationId/tasks", tasksRoutes)
+    .route("/organizations/:organizationId/messages", createMessagesRoutes(messagesService))
     .route(
       "/organizations/:organizationId/service-calls",
       createServiceCallRoutes(serviceCallService),

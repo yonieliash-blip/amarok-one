@@ -14,6 +14,12 @@ export const updateMemberStatusSchema = z.object({
   status: z.enum(["ACTIVE", "SUSPENDED"]),
 });
 
+const birthDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+export const updateMemberBirthDateSchema = z.object({
+  birthDate: birthDateSchema.nullable(),
+});
+
 /** New staff accounts are deliberately limited to the two operational roles. */
 export const createOrganizationMemberSchema = z.object({
   displayName: z.string().trim().min(2).max(120),
@@ -21,8 +27,10 @@ export const createOrganizationMemberSchema = z.object({
   initialPassword: z.string().min(12).max(128),
   primaryRoleSlug: z.enum(["technician", "service-coordinator"]),
   enabledModules: z.array(z.enum(MODULE_KEYS)).min(1, "At least one module must be enabled"),
+  birthDate: birthDateSchema.optional(),
 });
 
 export type UpdateMemberModuleAccessInput = z.infer<typeof updateMemberModuleAccessSchema>;
 export type UpdateMemberStatusInput = z.infer<typeof updateMemberStatusSchema>;
+export type UpdateMemberBirthDateInput = z.infer<typeof updateMemberBirthDateSchema>;
 export type CreateOrganizationMemberInput = z.infer<typeof createOrganizationMemberSchema>;

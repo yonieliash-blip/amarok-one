@@ -58,6 +58,7 @@ function resolvePageTitle(pathname: string, t: ReturnType<typeof useTranslation>
   if (pathname === "/purchase-orders") return t("titles", "purchaseOrders");
   if (pathname === "/parts") return t("titles", "parts");
   if (pathname === "/tasks") return t("titles", "tasks");
+  if (pathname === "/messages") return t("titles", "messages");
   if (pathname === "/accounting") return t("titles", "accounting");
   if (pathname === "/reports") return t("titles", "reports");
   if (pathname === "/unauthorized") return t("auth", "accessDenied");

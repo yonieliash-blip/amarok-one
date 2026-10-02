@@ -10,6 +10,7 @@ import {
   createOrganizationMemberSchema,
   memberIdParamSchema,
   updateMemberModuleAccessSchema,
+  updateMemberBirthDateSchema,
   updateMemberStatusSchema,
 } from "./access.schemas.js";
 
@@ -67,6 +68,26 @@ export function createAccessRoutes(accessService: AccessService): Hono {
         return context.json(
           createApiResponse(
             await accessService.updateMemberStatus(
+              organizationId,
+              memberId,
+              auth.user.sub,
+              context.req.valid("json"),
+            ),
+          ),
+        );
+      },
+    )
+    .patch(
+      "/members/:memberId/birth-date",
+      requirePermission("users:write"),
+      zValidator("param", memberIdParamSchema),
+      zValidator("json", updateMemberBirthDateSchema),
+      async (context) => {
+        const { organizationId, memberId } = context.req.valid("param");
+        const auth = getAuth(context);
+        return context.json(
+          createApiResponse(
+            await accessService.updateMemberBirthDate(
               organizationId,
               memberId,
               auth.user.sub,

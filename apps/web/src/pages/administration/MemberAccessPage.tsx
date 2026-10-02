@@ -12,6 +12,7 @@ import {
   getMemberAccessRequest,
   listMemberAccessRequest,
   createMemberRequest,
+  updateMemberBirthDateRequest,
   updateMemberModulesRequest,
   updateMemberStatusRequest,
   type MemberAccessSummary,
@@ -45,18 +46,22 @@ export function MemberAccessPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [changingMemberStatus, setChangingMemberStatus] = useState(false);
+  const [birthDate, setBirthDate] = useState("");
+  const [savingBirthDate, setSavingBirthDate] = useState(false);
   const [newMember, setNewMember] = useState<{
     displayName: string;
     email: string;
     initialPassword: string;
     primaryRoleSlug: StaffRoleSlug;
     enabledModules: MemberModuleKey[];
+    birthDate: string;
   }>({
     displayName: "",
     email: "",
     initialPassword: "",
     primaryRoleSlug: "technician",
     enabledModules: [...getDefaultModulesForRole("technician")] as MemberModuleKey[],
+    birthDate: "",
   });
 
   const selectedMember = useMemo(
@@ -115,6 +120,7 @@ export function MemberAccessPage() {
         }
         setEnabledModules(detail.enabledModules);
         setAvailableModules(detail.availableModules);
+        setBirthDate(detail.birthDate ?? "");
       } catch (error) {
         if (!cancelled) {
           setErrorMessage(getAuthErrorMessage(error));
@@ -216,6 +222,7 @@ export function MemberAccessPage() {
         initialPassword: "",
         primaryRoleSlug: "technician",
         enabledModules: [...getDefaultModulesForRole("technician")] as MemberModuleKey[],
+        birthDate: "",
       });
       setSaveMessage(t("memberAccess", "memberCreated"));
     } catch (error) {
@@ -265,6 +272,31 @@ export function MemberAccessPage() {
       setErrorMessage(getAuthErrorMessage(error));
     } finally {
       setChangingMemberStatus(false);
+    }
+  }
+
+  async function handleBirthDateSave(): Promise<void> {
+    if (!user || !accessToken || !selectedMember) return;
+    setSavingBirthDate(true);
+    setErrorMessage(null);
+    setSaveMessage(null);
+    try {
+      const result = await updateMemberBirthDateRequest(
+        user.organization.id,
+        selectedMember.id,
+        accessToken,
+        birthDate || null,
+      );
+      setMembers((current) =>
+        current.map((member) =>
+          member.id === result.id ? { ...member, birthDate: result.birthDate } : member,
+        ),
+      );
+      setSaveMessage(t("memberAccess", "birthdaySaved"));
+    } catch (error) {
+      setErrorMessage(getAuthErrorMessage(error));
+    } finally {
+      setSavingBirthDate(false);
     }
   }
 
@@ -335,6 +367,16 @@ export function MemberAccessPage() {
                 <option value="service-coordinator">{t("memberAccess", "roleCoordinator")}</option>
               </select>
             </label>
+            <label>
+              <span>{t("memberAccess", "birthday")}</span>
+              <input
+                type="date"
+                value={newMember.birthDate}
+                onChange={(event) =>
+                  setNewMember((current) => ({ ...current, birthDate: event.target.value }))
+                }
+              />
+            </label>
           </div>
           <fieldset className="member-access__modules">
             <legend>{t("memberAccess", "enabledModules")}</legend>
@@ -400,6 +442,15 @@ export function MemberAccessPage() {
                       {member.primaryRole.name}
                       {member.isOrganizationOwner ? ` · ${t("memberAccess", "ownerBadge")}` : ""}
                     </span>
+                    <span className="member-access__member-birthday">
+                      {member.birthDate
+                        ? `${t("memberAccess", "birthday")}: ${new Intl.DateTimeFormat("he-IL", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                          }).format(new Date(`${member.birthDate}T00:00:00`))}`
+                        : `${t("memberAccess", "birthday")}: ${t("memberAccess", "birthdayNotSet")}`}
+                    </span>
                     <span
                       className={`member-access__member-status member-access__member-status--${member.status.toLowerCase()}`}
                     >
@@ -423,6 +474,24 @@ export function MemberAccessPage() {
               <div className="member-access__owner-note">
                 <h2>{selectedMember.displayName}</h2>
                 <p>{t("memberAccess", "ownerFullAccess")}</p>
+                <div className="member-access__birthday-editor">
+                  <label className="member-access__birthday-field">
+                    <span>{t("memberAccess", "birthday")}</span>
+                    <input
+                      type="date"
+                      value={birthDate}
+                      onChange={(event) => setBirthDate(event.target.value)}
+                    />
+                  </label>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={savingBirthDate}
+                    onClick={() => void handleBirthDateSave()}
+                  >
+                    {savingBirthDate ? t("common", "loading") : t("memberAccess", "saveBirthday")}
+                  </Button>
+                </div>
                 <ul>
                   {MODULE_KEYS.map((moduleKey) => (
                     <li key={moduleKey}>{t("memberAccess", MODULE_LABEL_KEYS[moduleKey])}</li>
@@ -432,6 +501,24 @@ export function MemberAccessPage() {
             ) : (
               <>
                 <h2>{selectedMember.displayName}</h2>
+                <div className="member-access__birthday-editor">
+                  <label className="member-access__birthday-field">
+                    <span>{t("memberAccess", "birthday")}</span>
+                    <input
+                      type="date"
+                      value={birthDate}
+                      onChange={(event) => setBirthDate(event.target.value)}
+                    />
+                  </label>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={savingBirthDate}
+                    onClick={() => void handleBirthDateSave()}
+                  >
+                    {savingBirthDate ? t("common", "loading") : t("memberAccess", "saveBirthday")}
+                  </Button>
+                </div>
                 {selectedMember.status === "SUSPENDED" ? (
                   <p className="member-access__suspended-note">
                     {t("memberAccess", "suspendedHint")}

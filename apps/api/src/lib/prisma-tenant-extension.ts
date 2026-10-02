@@ -33,6 +33,8 @@ const TENANT_SCOPED_MODELS = new Set([
   "WorkBreak",
   "AttendancePeriodLock",
   "WorkDayLocation",
+  "DirectConversation",
+  "DirectMessage",
 ]);
 
 const GLOBAL_MODELS = new Set(["User", "Permission", "RolePermission", "RefreshToken"]);

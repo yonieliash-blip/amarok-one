@@ -44,6 +44,8 @@ export const PERMISSIONS = {
   TASKS_READ: "tasks:read",
   TASKS_WRITE: "tasks:write",
   TASKS_MANAGE: "tasks:manage",
+  MESSAGES_READ: "messages:read",
+  MESSAGES_WRITE: "messages:write",
 } as const;
 
 export type PermissionSlug = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -269,6 +271,16 @@ export const ALL_PERMISSIONS: readonly PermissionDefinition[] = [
     slug: PERMISSIONS.TASKS_MANAGE,
     name: "Manage Tasks",
     description: "Create, assign, and manage organization tasks",
+  },
+  {
+    slug: PERMISSIONS.MESSAGES_READ,
+    name: "Read Messages",
+    description: "View private organization conversations",
+  },
+  {
+    slug: PERMISSIONS.MESSAGES_WRITE,
+    name: "Write Messages",
+    description: "Send private organization messages",
   },
 ] as const;
 

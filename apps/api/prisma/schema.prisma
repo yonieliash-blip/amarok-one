@@ -46,6 +46,8 @@ model Organization {
   workDayLocations       WorkDayLocation[]
   tasks                  Task[]
   numberSequences        OrganizationNumberSequence[]
+  directConversations    DirectConversation[]
+  directMessages         DirectMessage[]
 
   @@index([deletedAt])
   @@map("organizations")
@@ -125,6 +127,9 @@ model User {
   assignedTasks              Task[]                  @relation("TaskAssignee")
   createdTasks               Task[]                  @relation("TaskCreator")
   completedTasks             Task[]                  @relation("TaskCompleter")
+  directConversationsFirst  DirectConversation[]    @relation("DirectConversationParticipantOne")
+  directConversationsSecond DirectConversation[]    @relation("DirectConversationParticipantTwo")
+  sentDirectMessages        DirectMessage[]         @relation("DirectMessageSender")
 
   @@index([deletedAt])
   @@index([isActive])
@@ -220,6 +225,7 @@ model OrganizationMember {
   isOrganizationOwner Boolean                  @default(false)
   status              OrganizationMemberStatus @default(ACTIVE)
   permissionsVersion  Int                      @default(1)
+  birthDate           DateTime?                @db.Date
   createdAt           DateTime                 @default(now())
   updatedAt           DateTime                 @updatedAt
   deletedAt           DateTime?
@@ -234,6 +240,48 @@ model OrganizationMember {
   @@index([userId])
   @@index([organizationId, deletedAt])
   @@map("organization_members")
+}
+
+/// One private, tenant-scoped conversation between exactly two active organization users.
+/// Participant IDs are stored in canonical order to prevent duplicate conversations.
+model DirectConversation {
+  id               String    @id @default(uuid()) @db.Uuid
+  organizationId   String    @db.Uuid
+  participantOneId String    @db.Uuid
+  participantTwoId String    @db.Uuid
+  lastMessageAt    DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  participantOne  User         @relation("DirectConversationParticipantOne", fields: [participantOneId], references: [id], onDelete: Restrict)
+  participantTwo  User         @relation("DirectConversationParticipantTwo", fields: [participantTwoId], references: [id], onDelete: Restrict)
+  messages        DirectMessage[]
+
+  @@unique([organizationId, participantOneId, participantTwoId])
+  @@index([organizationId, lastMessageAt])
+  @@index([organizationId, participantOneId])
+  @@index([organizationId, participantTwoId])
+  @@map("direct_conversations")
+}
+
+/// Immutable text message in a private organization conversation.
+model DirectMessage {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  conversationId String   @db.Uuid
+  senderId       String   @db.Uuid
+  body           String
+  readAt         DateTime?
+  createdAt      DateTime @default(now())
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  conversation DirectConversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  sender       User               @relation("DirectMessageSender", fields: [senderId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, conversationId, createdAt])
+  @@index([organizationId, senderId])
+  @@map("direct_messages")
 }
 
 /// Per-member module entitlement (authoritative for non-owner users).
