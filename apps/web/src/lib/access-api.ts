@@ -101,6 +101,19 @@ export async function updateMemberBirthDateRequest(
   return response.data;
 }
 
+export async function updateMemberDisplayNameRequest(
+  organizationId: string,
+  memberId: string,
+  accessToken: string,
+  displayName: string,
+): Promise<{ id: string; displayName: string }> {
+  const response = await apiRequest<{ id: string; displayName: string }>(
+    `/organizations/${organizationId}/access/members/${memberId}/display-name`,
+    { method: "PATCH", accessToken, body: JSON.stringify({ displayName }) },
+  );
+  return response.data;
+}
+
 export async function updateMemberStatusRequest(
   organizationId: string,
   memberId: string,

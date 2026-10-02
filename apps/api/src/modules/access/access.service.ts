@@ -23,6 +23,7 @@ import type {
   CreateOrganizationMemberInput,
   UpdateMemberModuleAccessInput,
   UpdateMemberBirthDateInput,
+  UpdateMemberDisplayNameInput,
   UpdateMemberStatusInput,
 } from "./access.schemas.js";
 
@@ -356,6 +357,40 @@ export function createAccessService() {
     return { id: updated.id, birthDate: updated.birthDate?.toISOString().slice(0, 10) };
   }
 
+  async function updateMemberDisplayName(
+    organizationId: string,
+    memberId: string,
+    actorUserId: string,
+    input: UpdateMemberDisplayNameInput,
+  ) {
+    const [actorMember, targetMember] = await Promise.all([
+      loadOrganizationMember(organizationId, actorUserId),
+      loadMemberForManagement(organizationId, memberId),
+    ]);
+    if (!targetMember) throw notFound("Organization member not found");
+    assertActorCanManageTarget(actorMember, targetMember);
+
+    const displayName = input.displayName.trim();
+    if (targetMember.user.displayName === displayName) {
+      return { id: targetMember.id, displayName };
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: targetMember.userId },
+      data: { displayName },
+      select: { displayName: true },
+    });
+    await writeAuditLog({
+      organizationId,
+      actorId: actorUserId,
+      action: "member.display_name_updated",
+      entityType: "OrganizationMember",
+      entityId: targetMember.id,
+      metadata: { targetUserId: targetMember.userId },
+    });
+    return { id: targetMember.id, displayName: updated.displayName };
+  }
+
   async function assertOwnerInvariantOnDemote(
     organizationId: string,
     targetMemberId: string,
@@ -374,6 +409,7 @@ export function createAccessService() {
     updateMemberModuleAccess,
     updateMemberStatus,
     updateMemberBirthDate,
+    updateMemberDisplayName,
     assertOwnerInvariantOnDemote,
   };
 }

@@ -13,6 +13,7 @@ import {
   listMemberAccessRequest,
   createMemberRequest,
   updateMemberBirthDateRequest,
+  updateMemberDisplayNameRequest,
   updateMemberModulesRequest,
   updateMemberStatusRequest,
   type MemberAccessSummary,
@@ -48,6 +49,8 @@ export function MemberAccessPage() {
   const [changingMemberStatus, setChangingMemberStatus] = useState(false);
   const [birthDate, setBirthDate] = useState("");
   const [savingBirthDate, setSavingBirthDate] = useState(false);
+  const [displayName, setDisplayName] = useState("");
+  const [savingDisplayName, setSavingDisplayName] = useState(false);
   const [newMember, setNewMember] = useState<{
     displayName: string;
     email: string;
@@ -121,6 +124,7 @@ export function MemberAccessPage() {
         setEnabledModules(detail.enabledModules);
         setAvailableModules(detail.availableModules);
         setBirthDate(detail.birthDate ?? "");
+        setDisplayName(detail.displayName);
       } catch (error) {
         if (!cancelled) {
           setErrorMessage(getAuthErrorMessage(error));
@@ -300,6 +304,56 @@ export function MemberAccessPage() {
     }
   }
 
+  async function handleDisplayNameSave(): Promise<void> {
+    if (!user || !accessToken || !selectedMember || displayName.trim().length < 2) return;
+    setSavingDisplayName(true);
+    setErrorMessage(null);
+    setSaveMessage(null);
+    try {
+      const result = await updateMemberDisplayNameRequest(
+        user.organization.id,
+        selectedMember.id,
+        accessToken,
+        displayName,
+      );
+      setMembers((current) =>
+        current.map((member) =>
+          member.id === result.id ? { ...member, displayName: result.displayName } : member,
+        ),
+      );
+      setDisplayName(result.displayName);
+      setSaveMessage(t("memberAccess", "displayNameSaved"));
+      if (selectedMember.userId === user.id) {
+        await refreshSession();
+      }
+    } catch (error) {
+      setErrorMessage(getAuthErrorMessage(error));
+    } finally {
+      setSavingDisplayName(false);
+    }
+  }
+
+  const displayNameEditor = selectedMember ? (
+    <div className="member-access__display-name-editor">
+      <label className="member-access__display-name-field">
+        <span>{t("memberAccess", "displayName")}</span>
+        <input
+          value={displayName}
+          onChange={(event) => setDisplayName(event.target.value)}
+          autoComplete="name"
+        />
+      </label>
+      <Button
+        type="button"
+        variant="secondary"
+        disabled={savingDisplayName || displayName.trim().length < 2}
+        onClick={() => void handleDisplayNameSave()}
+      >
+        {savingDisplayName ? t("common", "loading") : t("memberAccess", "saveDisplayName")}
+      </Button>
+    </div>
+  ) : null;
+
   return (
     <div className="customers-page">
       <header className="customers-page__header">
@@ -474,6 +528,7 @@ export function MemberAccessPage() {
               <div className="member-access__owner-note">
                 <h2>{selectedMember.displayName}</h2>
                 <p>{t("memberAccess", "ownerFullAccess")}</p>
+                {displayNameEditor}
                 <div className="member-access__birthday-editor">
                   <label className="member-access__birthday-field">
                     <span>{t("memberAccess", "birthday")}</span>
@@ -501,6 +556,7 @@ export function MemberAccessPage() {
             ) : (
               <>
                 <h2>{selectedMember.displayName}</h2>
+                {displayNameEditor}
                 <div className="member-access__birthday-editor">
                   <label className="member-access__birthday-field">
                     <span>{t("memberAccess", "birthday")}</span>

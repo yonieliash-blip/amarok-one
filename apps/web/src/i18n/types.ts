@@ -22,6 +22,7 @@ export interface TranslationMessages {
     operations: string;
     closeNavigation: string;
     toggleNavigation: string;
+    menu: string;
     mainNavigation: string;
     platformFooter: string;
   };
@@ -203,6 +204,9 @@ export interface TranslationMessages {
     createMember: string;
     memberCreated: string;
     name: string;
+    displayName: string;
+    saveDisplayName: string;
+    displayNameSaved: string;
     email: string;
     initialPassword: string;
     role: string;

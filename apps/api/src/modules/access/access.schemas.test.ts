@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createOrganizationMemberSchema,
   updateMemberBirthDateSchema,
+  updateMemberDisplayNameSchema,
   updateMemberStatusSchema,
 } from "./access.schemas.js";
 
@@ -40,5 +41,12 @@ describe("createOrganizationMemberSchema", () => {
     });
     expect(updateMemberBirthDateSchema.parse({ birthDate: null })).toEqual({ birthDate: null });
     expect(() => updateMemberBirthDateSchema.parse({ birthDate: "15/06/1984" })).toThrow();
+  });
+
+  it("accepts a Hebrew display name and rejects a blank one", () => {
+    expect(updateMemberDisplayNameSchema.parse({ displayName: "יונתן אליאש" })).toEqual({
+      displayName: "יונתן אליאש",
+    });
+    expect(() => updateMemberDisplayNameSchema.parse({ displayName: " " })).toThrow();
   });
 });
