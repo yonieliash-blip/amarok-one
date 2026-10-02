@@ -14,6 +14,19 @@ export interface AttendanceDay {
   locationSampleCount: number;
 }
 
+export interface CurrentWorkDay {
+  id: string;
+  status: "ACTIVE" | "COMPLETED";
+  startedAt: string;
+  endedAt: string | null;
+}
+
+export interface AttendanceLocationInput {
+  latitude: number;
+  longitude: number;
+  accuracy: number | null;
+}
+
 export interface AttendanceEmployee {
   userId: string;
   displayName: string;
@@ -74,6 +87,46 @@ export async function getMonthlyAttendanceReportRequest(
     { accessToken },
   );
   return response.data;
+}
+
+export async function getCurrentWorkDayRequest(
+  organizationId: string,
+  accessToken: string,
+): Promise<CurrentWorkDay | null> {
+  const response = await apiRequest<CurrentWorkDay | null>(
+    `/organizations/${organizationId}/attendance/current`,
+    { accessToken },
+  );
+  return response.data;
+}
+
+async function submitWorkDayActionRequest(
+  organizationId: string,
+  accessToken: string,
+  action: "start" | "end",
+  location: AttendanceLocationInput | null,
+): Promise<CurrentWorkDay> {
+  const response = await apiRequest<CurrentWorkDay>(
+    `/organizations/${organizationId}/attendance/${action}`,
+    { method: "POST", accessToken, body: JSON.stringify({ location }) },
+  );
+  return response.data;
+}
+
+export function startWorkDayRequest(
+  organizationId: string,
+  accessToken: string,
+  location: AttendanceLocationInput | null,
+): Promise<CurrentWorkDay> {
+  return submitWorkDayActionRequest(organizationId, accessToken, "start", location);
+}
+
+export function endWorkDayRequest(
+  organizationId: string,
+  accessToken: string,
+  location: AttendanceLocationInput | null,
+): Promise<CurrentWorkDay> {
+  return submitWorkDayActionRequest(organizationId, accessToken, "end", location);
 }
 
 export async function getLiveTechnicianLocationsRequest(
