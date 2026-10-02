@@ -289,7 +289,7 @@ All other routes require JWT authentication.
 
 Models automatically scoped by the Prisma extension:
 
-- `Company`, `Branch`, `Customer`, `CustomerContact`
+- `Company`, `Branch`, `Customer`, `CustomerContact`, `OrganizationNumberSequence`
 - `EquipmentType`, `Equipment`
 - `ServiceCall`, `ServiceCallVisit`
 - `WorkflowEvent`, `UserRole`, `Role`, `AuditLog`
@@ -451,27 +451,28 @@ Technicians with `my_service_calls:read` but **without** `service_calls:read` ar
 **Client:** `apps/api/src/lib/prisma.ts`  
 **Migrations:** `apps/api/prisma/migrations/`
 
-### Entity model (17 models)
+### Entity model (18 models)
 
-| Model              | Scope             | Soft delete      |
-| ------------------ | ----------------- | ---------------- |
-| `Organization`     | Tenant root       | Yes              |
-| `Company`          | Tenant            | Yes              |
-| `Branch`           | Tenant            | Yes              |
-| `User`             | Global identity   | Yes              |
-| `Permission`       | Global catalog    | No               |
-| `Role`             | Tenant            | Yes              |
-| `RolePermission`   | Join              | No               |
-| `UserRole`         | Tenant membership | Yes              |
-| `RefreshToken`     | Per user          | No (revoked)     |
-| `AuditLog`         | Tenant            | No (append-only) |
-| `Customer`         | Tenant            | Yes              |
-| `CustomerContact`  | Tenant            | Yes              |
-| `EquipmentType`    | Tenant            | Yes              |
-| `Equipment`        | Tenant            | Yes              |
-| `ServiceCall`      | Tenant            | Yes              |
-| `ServiceCallVisit` | Tenant            | Yes              |
-| `WorkflowEvent`    | Tenant            | No (append-only) |
+| Model                        | Scope             | Soft delete      |
+| ---------------------------- | ----------------- | ---------------- |
+| `Organization`               | Tenant root       | Yes              |
+| `Company`                    | Tenant            | Yes              |
+| `Branch`                     | Tenant            | Yes              |
+| `User`                       | Global identity   | Yes              |
+| `Permission`                 | Global catalog    | No               |
+| `Role`                       | Tenant            | Yes              |
+| `RolePermission`             | Join              | No               |
+| `UserRole`                   | Tenant membership | Yes              |
+| `RefreshToken`               | Per user          | No (revoked)     |
+| `AuditLog`                   | Tenant            | No (append-only) |
+| `Customer`                   | Tenant            | Yes              |
+| `OrganizationNumberSequence` | Tenant            | No               |
+| `CustomerContact`            | Tenant            | Yes              |
+| `EquipmentType`              | Tenant            | Yes              |
+| `Equipment`                  | Tenant            | Yes              |
+| `ServiceCall`                | Tenant            | Yes              |
+| `ServiceCallVisit`           | Tenant            | Yes              |
+| `WorkflowEvent`              | Tenant            | No (append-only) |
 
 ### Key enums
 

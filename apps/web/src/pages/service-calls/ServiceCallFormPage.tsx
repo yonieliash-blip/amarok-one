@@ -317,19 +317,14 @@ export function ServiceCallFormPage() {
           <h3>{t("serviceCalls", "detailsSection")}</h3>
           <div className="customer-form__grid">
             <label className="customer-form__field">
-              <span>
-                {t("serviceCalls", "serviceCallNumber")} {t("common", "requiredMark")}
-              </span>
-              <input
-                required
-                dir="ltr"
-                value={form.serviceCallNumber}
-                onChange={(event) =>
-                  updateField("serviceCallNumber", event.target.value.toUpperCase())
-                }
-                pattern="[A-Z0-9_-]+"
-                title={t("serviceCalls", "serviceCallNumberPatternTitle")}
-              />
+              <span>{t("serviceCalls", "serviceCallNumber")}</span>
+              {isEdit ? (
+                <input readOnly dir="ltr" value={form.serviceCallNumber} />
+              ) : (
+                <p className="customer-form__auto-number" dir="ltr">
+                  {t("serviceCalls", "serviceCallNumberAuto")}
+                </p>
+              )}
             </label>
             <label className="customer-form__field customer-form__field--wide">
               <span>

@@ -64,8 +64,8 @@
 
   /* ── Typography ─────────────────────────────────────────────── */
   --ds-font-family:
-    "Alef", "Segoe UI", "Arial Hebrew", "David Libre", system-ui, -apple-system, BlinkMacSystemFont,
-    sans-serif;
+    "Noto Sans Hebrew", "Noto Sans", "Segoe UI", "Arial Hebrew", system-ui, -apple-system,
+    BlinkMacSystemFont, sans-serif;
 
   --ds-font-weight-regular: 400;
   --ds-font-weight-bold: 700;

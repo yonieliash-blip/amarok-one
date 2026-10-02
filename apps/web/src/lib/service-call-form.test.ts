@@ -10,7 +10,6 @@ describe("service call form payloads", () => {
     const payload = buildCreatePayload(
       {
         ...EMPTY_SERVICE_CALL_FORM,
-        serviceCallNumber: "SC-100",
         title: "Leak repair",
         customerId: "c1",
         equipmentId: "e1",
@@ -20,7 +19,6 @@ describe("service call form payloads", () => {
     );
 
     expect(payload).toMatchObject({
-      serviceCallNumber: "SC-100",
       title: "Leak repair",
       customerId: "c1",
       equipmentId: "e1",

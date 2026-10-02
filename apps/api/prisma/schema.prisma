@@ -45,6 +45,7 @@ model Organization {
   attendancePeriodLocks  AttendancePeriodLock[]
   workDayLocations       WorkDayLocation[]
   tasks                  Task[]
+  numberSequences        OrganizationNumberSequence[]
 
   @@index([deletedAt])
   @@map("organizations")
@@ -486,6 +487,23 @@ model Customer {
   @@index([organizationId, deletedAt])
   @@index([organizationId, status])
   @@map("customers")
+}
+
+/// Per-organization counters for human-facing operational references.
+/// A counter is reserved inside the same transaction as its target entity.
+model OrganizationNumberSequence {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  scope          String
+  nextValue      Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, scope])
+  @@index([organizationId])
+  @@map("organization_number_sequences")
 }
 
 /// Physical work site under a billing customer (for example, a quarry or plant).

@@ -18,6 +18,7 @@ import {
 } from "../../lib/mappers.js";
 import { paginationMeta, parsePagination } from "../../lib/pagination.js";
 import { prisma } from "../../lib/prisma.js";
+import { reserveOperationalNumber } from "../../lib/organization-number-sequence.js";
 import { assertOrganizationExists } from "../organizations/organization.service.js";
 import { buildCustomerListWhere } from "./customer-filters.js";
 import {
@@ -117,22 +118,24 @@ export async function createCustomer(
   await assertOrganizationExists(organizationId);
 
   try {
-    const customer = await prisma.customer.create({
-      data: {
-        organizationId,
-        name: input.name,
-        legalName: input.legalName,
-        registrationNumber: input.registrationNumber,
-        customerNumber: input.customerNumber,
-        email: input.email,
-        phone: input.phone,
-        address: input.address,
-        city: input.city,
-        country: input.country,
-        notes: input.notes,
-        status: input.status ? fromCustomerStatusDto(input.status) : undefined,
-      },
-    });
+    const customer = await prisma.$transaction(async (tx) =>
+      tx.customer.create({
+        data: {
+          organizationId,
+          name: input.name,
+          legalName: input.legalName,
+          registrationNumber: input.registrationNumber,
+          customerNumber: await reserveOperationalNumber(tx, organizationId, "customer-number"),
+          email: input.email,
+          phone: input.phone,
+          address: input.address,
+          city: input.city,
+          country: input.country,
+          notes: input.notes,
+          status: input.status ? fromCustomerStatusDto(input.status) : undefined,
+        },
+      }),
+    );
 
     await writeAuditLog({
       organizationId,
@@ -146,9 +149,7 @@ export async function createCustomer(
     return toCustomerDto(customer);
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      throw conflict("Customer number already exists in this organization", {
-        customerNumber: input.customerNumber,
-      });
+      throw conflict("Generated customer number already exists in this organization");
     }
     throw error;
   }
@@ -168,7 +169,6 @@ export async function updateCustomer(
     ...(input.registrationNumber !== undefined
       ? { registrationNumber: input.registrationNumber }
       : {}),
-    ...(input.customerNumber !== undefined ? { customerNumber: input.customerNumber } : {}),
     ...(input.email !== undefined ? { email: input.email } : {}),
     ...(input.phone !== undefined ? { phone: input.phone } : {}),
     ...(input.address !== undefined ? { address: input.address } : {}),
@@ -196,9 +196,7 @@ export async function updateCustomer(
     return toCustomerDto(customer);
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      throw conflict("Customer number already exists in this organization", {
-        customerNumber: input.customerNumber,
-      });
+      throw conflict("Customer number already exists in this organization");
     }
     throw error;
   }

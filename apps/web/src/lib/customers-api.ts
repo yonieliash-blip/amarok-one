@@ -70,7 +70,6 @@ export interface CustomerFormInput {
   name: string;
   legalName?: string;
   registrationNumber?: string;
-  customerNumber: string;
   email?: string;
   phone?: string;
   address?: string;

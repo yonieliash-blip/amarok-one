@@ -1,6 +1,6 @@
-import { createHash } from "node:crypto";
 import { env } from "../../env.js";
 import { writeAuditLog } from "../../lib/audit.js";
+import { reserveOperationalNumber } from "../../lib/organization-number-sequence.js";
 import { prisma } from "../../lib/prisma.js";
 import {
   createMorningClient,
@@ -26,11 +26,6 @@ export interface MorningCustomerSyncService {
 function optionalText(value: string | undefined): string | undefined {
   const text = value?.trim();
   return text || undefined;
-}
-
-function morningCustomerNumber(morningClientId: string): string {
-  const hash = createHash("sha256").update(morningClientId).digest("hex").toUpperCase();
-  return `M-${hash.slice(0, 24)}`;
 }
 
 function mappedCustomer(client: MorningClientRecord) {
@@ -97,7 +92,11 @@ export function createMorningCustomerSyncService(
                 data: {
                   organizationId,
                   ...customer,
-                  customerNumber: morningCustomerNumber(clientId),
+                  customerNumber: await reserveOperationalNumber(
+                    tx,
+                    organizationId,
+                    "customer-number",
+                  ),
                   morningClientId: clientId,
                   morningLastSyncedAt: now,
                 },

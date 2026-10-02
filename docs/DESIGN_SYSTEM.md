@@ -64,13 +64,14 @@
 
 ## 2. Typography
 
-**Family:** Alef (Google Fonts), loaded in `apps/web/index.html`. Weights **400** (regular) and **700** (bold) only.
+**Family:** Noto Sans Hebrew with Noto Sans fallback, loaded in `apps/web/index.html`.
+Weights **400** (regular), **600** (semibold), and **700** (bold) are available.
 
 | CSS weight in designs | Implementation                  |
 | --------------------- | ------------------------------- |
 | Regular body          | `400`                           |
-| Medium (500)          | Use `400` (no 500 file)         |
-| Semibold (600)        | Use `700` or `400` by hierarchy |
+| Medium (500)          | Use `400` or `600` by hierarchy |
+| Semibold (600)        | Use `600`                       |
 | Bold headings         | `700`                           |
 
 ### Heading scale
@@ -411,6 +412,6 @@ Domain badges (customer, equipment, service call) wrap `@amarok-one/ui` `Badge` 
 | `apps/web/src/design-system/tokens.css` | CSS custom properties                      |
 | `apps/web/src/index.css`                | Current app styles (legacy class names)    |
 | `packages/ui/src/styles.css`            | Base component styles (to align in future) |
-| `apps/web/index.html`                   | Alef font load                             |
+| `apps/web/index.html`                   | Noto Sans font load                        |
 
 **Version:** 1.0 — foundation spec; component library expansion is the next sprint.

@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createContact, getCustomerById, softDeleteCustomer } from "./customer.service.js";
+import {
+  createContact,
+  createCustomer,
+  getCustomerById,
+  softDeleteCustomer,
+} from "./customer.service.js";
 
 const organizationId = "11111111-1111-4111-8111-111111111111";
 const customerId = "22222222-2222-4222-8222-222222222222";
@@ -39,8 +44,9 @@ const contactRecord = {
   deletedAt: null,
 };
 
-const { transactionMock, customerFindFirstMock } = vi.hoisted(() => ({
+const { transactionMock, customerCreateMock, customerFindFirstMock } = vi.hoisted(() => ({
   transactionMock: vi.fn(),
+  customerCreateMock: vi.fn(),
   customerFindFirstMock: vi.fn(),
 }));
 
@@ -49,7 +55,7 @@ vi.mock("../../lib/prisma.js", () => ({
     $transaction: transactionMock,
     customer: {
       findFirst: customerFindFirstMock,
-      create: vi.fn(),
+      create: customerCreateMock,
       update: vi.fn(),
     },
     customerSite: {
@@ -88,6 +94,33 @@ describe("customer.service", () => {
     const operations = transactionMock.mock.calls[0]?.[0];
     expect(Array.isArray(operations)).toBe(true);
     expect(operations).toHaveLength(3);
+  });
+
+  it("assigns the next AMAROK customer number when creating a customer", async () => {
+    customerCreateMock.mockResolvedValue({ ...customerRecord, customerNumber: "AM-CU-01" });
+    transactionMock.mockImplementation(
+      async (
+        callback: (tx: {
+          customer: { create: ReturnType<typeof vi.fn> };
+          organizationNumberSequence: { upsert: ReturnType<typeof vi.fn> };
+        }) => Promise<unknown>,
+      ) =>
+        callback({
+          customer: { create: customerCreateMock },
+          organizationNumberSequence: { upsert: vi.fn().mockResolvedValue({ nextValue: 2 }) },
+        }),
+    );
+
+    await expect(
+      createCustomer(organizationId, { name: "Nordic Lift Services" }),
+    ).resolves.toMatchObject({
+      customerNumber: "AM-CU-01",
+    });
+    expect(customerCreateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ customerNumber: "AM-CU-01" }),
+      }),
+    );
   });
 
   it("clears existing primary contacts when creating a primary contact", async () => {
