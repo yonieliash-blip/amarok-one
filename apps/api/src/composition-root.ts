@@ -8,6 +8,7 @@ import { createAccessService } from "./modules/access/access.service.js";
 import { createServiceCallService } from "./modules/service-calls/service-call.service.js";
 import { ServiceCallWorkflowIntegration } from "./modules/service-calls/service-call-workflow.integration.js";
 import { createMorningCustomerSyncService } from "./modules/morning/morning-customer-sync.service.js";
+import { createMessagesService } from "./modules/messages/messages.service.js";
 
 export function createCompositionRoot() {
   const eventStore = new PrismaWorkflowEventStore(prisma);
@@ -25,6 +26,7 @@ export function createCompositionRoot() {
   });
   const accessService = createAccessService();
   const morningCustomerSyncService = createMorningCustomerSyncService();
+  const messagesService = createMessagesService();
 
   return {
     eventStore,
@@ -32,6 +34,7 @@ export function createCompositionRoot() {
     serviceCallService,
     accessService,
     morningCustomerSyncService,
+    messagesService,
   };
 }
 

@@ -22,6 +22,7 @@ import {
 import type {
   CreateOrganizationMemberInput,
   UpdateMemberModuleAccessInput,
+  UpdateMemberBirthDateInput,
   UpdateMemberStatusInput,
 } from "./access.schemas.js";
 
@@ -94,6 +95,7 @@ export function createAccessService() {
           organizationId,
           userId: user.id,
           primaryRoleId: role.id,
+          birthDate: input.birthDate ? new Date(`${input.birthDate}T00:00:00.000Z`) : null,
           moduleAccess: {
             create: input.enabledModules.map((moduleKey) => ({ organizationId, moduleKey })),
           },
@@ -132,6 +134,7 @@ export function createAccessService() {
       status: member.status,
       enabledModules: resolved.enabledModules,
       permissionsVersion: member.permissionsVersion,
+      birthDate: member.birthDate?.toISOString().slice(0, 10),
     };
   }
 
@@ -163,6 +166,7 @@ export function createAccessService() {
         status: member.status,
         enabledModules: resolved.enabledModules,
         permissionsVersion: member.permissionsVersion,
+        birthDate: member.birthDate?.toISOString().slice(0, 10),
       };
     });
   }
@@ -193,6 +197,7 @@ export function createAccessService() {
         description: module.description,
       })),
       permissionsVersion: member.permissionsVersion,
+      birthDate: member.birthDate?.toISOString().slice(0, 10),
     };
   }
 
@@ -321,6 +326,36 @@ export function createAccessService() {
     };
   }
 
+  async function updateMemberBirthDate(
+    organizationId: string,
+    memberId: string,
+    actorUserId: string,
+    input: UpdateMemberBirthDateInput,
+  ) {
+    const [actorMember, targetMember] = await Promise.all([
+      loadOrganizationMember(organizationId, actorUserId),
+      loadMemberForManagement(organizationId, memberId),
+    ]);
+    if (!targetMember) throw notFound("Organization member not found");
+    assertActorCanManageTarget(actorMember, targetMember);
+
+    const birthDate = input.birthDate ? new Date(`${input.birthDate}T00:00:00.000Z`) : null;
+    const updated = await prisma.organizationMember.update({
+      where: { id: targetMember.id },
+      data: { birthDate },
+      select: { id: true, birthDate: true },
+    });
+    await writeAuditLog({
+      organizationId,
+      actorId: actorUserId,
+      action: "member.birth_date_updated",
+      entityType: "OrganizationMember",
+      entityId: targetMember.id,
+      metadata: { targetUserId: targetMember.userId, hasBirthDate: Boolean(updated.birthDate) },
+    });
+    return { id: updated.id, birthDate: updated.birthDate?.toISOString().slice(0, 10) };
+  }
+
   async function assertOwnerInvariantOnDemote(
     organizationId: string,
     targetMemberId: string,
@@ -338,6 +373,7 @@ export function createAccessService() {
     getMemberAccess,
     updateMemberModuleAccess,
     updateMemberStatus,
+    updateMemberBirthDate,
     assertOwnerInvariantOnDemote,
   };
 }

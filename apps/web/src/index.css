@@ -433,6 +433,38 @@ a {
   font-size: 0.875rem;
 }
 
+.member-access__member-birthday {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--amarok-text-muted);
+  font-size: 0.8125rem;
+}
+
+.member-access__birthday-editor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.member-access__birthday-field {
+  display: grid;
+  gap: 0.375rem;
+  color: var(--amarok-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.member-access__birthday-field input {
+  min-width: 11rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--amarok-border);
+  border-radius: var(--amarok-radius);
+  background: var(--amarok-bg);
+  color: var(--amarok-text);
+}
+
 .member-access__member-status {
   display: inline-flex;
   width: fit-content;
@@ -528,6 +560,260 @@ a {
   gap: 0.375rem;
   min-width: 10rem;
   font-size: 0.875rem;
+}
+
+.service-call-customer-picker {
+  position: relative;
+}
+
+.service-call-customer-picker__results {
+  display: grid;
+  max-height: 12.5rem;
+  margin-top: 0.45rem;
+  overflow-y: auto;
+  border: 1px solid var(--amarok-border);
+  border-radius: var(--amarok-radius);
+  background: var(--amarok-surface);
+}
+
+.service-call-customer-picker__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 0;
+  border-bottom: 1px solid var(--amarok-border);
+  background: transparent;
+  color: var(--amarok-text);
+  cursor: pointer;
+  text-align: start;
+}
+
+.service-call-customer-picker__option:last-child {
+  border-bottom: 0;
+}
+
+.service-call-customer-picker__option:hover,
+.service-call-customer-picker__option--selected {
+  background: var(--amarok-bg-hover);
+}
+
+.service-call-customer-picker__option span {
+  color: var(--amarok-text-muted);
+  font-size: 0.8125rem;
+}
+
+.service-call-customer-picker__empty {
+  margin: 0;
+  padding: 0.75rem;
+  color: var(--amarok-text-muted);
+}
+
+.messages-page__layout {
+  display: grid;
+  grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr);
+  min-height: 34rem;
+  overflow: hidden;
+  border: 1px solid var(--amarok-border);
+  border-radius: 0.75rem;
+  background: var(--amarok-surface);
+}
+
+.messages-page__people {
+  border-inline-end: 1px solid var(--amarok-border);
+  background: var(--amarok-bg);
+}
+
+.messages-page__search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem;
+  border-bottom: 1px solid var(--amarok-border);
+  color: var(--amarok-text-muted);
+}
+
+.messages-page__search input {
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--amarok-border);
+  border-radius: var(--amarok-radius);
+  background: var(--amarok-surface);
+  color: var(--amarok-text);
+}
+
+.messages-page__member-list {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0.5rem;
+  list-style: none;
+}
+
+.messages-page__member {
+  position: relative;
+  display: grid;
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--amarok-text);
+  cursor: pointer;
+  text-align: start;
+}
+
+.messages-page__member:hover,
+.messages-page__member--selected {
+  border-color: var(--amarok-border);
+  background: var(--amarok-bg-hover);
+}
+
+.messages-page__member-name {
+  font-weight: 700;
+}
+
+.messages-page__member-role {
+  margin-top: 0.2rem;
+  color: var(--amarok-text-muted);
+  font-size: 0.8rem;
+}
+
+.messages-page__unread {
+  position: absolute;
+  inset-inline-end: 0.75rem;
+  top: 50%;
+  display: grid;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.35rem;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--amarok-accent);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transform: translateY(-50%);
+}
+
+.messages-page__conversation {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-width: 0;
+}
+
+.messages-page__conversation-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 4.3rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--amarok-border);
+}
+
+.messages-page__conversation-header h3,
+.messages-page__conversation-header p {
+  margin: 0;
+}
+
+.messages-page__conversation-header p {
+  margin-top: 0.15rem;
+  color: var(--amarok-text-muted);
+  font-size: 0.85rem;
+}
+
+.messages-page__thread {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 1rem;
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--amarok-bg) 64%, var(--amarok-surface));
+}
+
+.messages-page__message {
+  align-self: flex-start;
+  max-width: min(78%, 34rem);
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--amarok-border);
+  border-radius: 0.75rem 0.75rem 0.75rem 0.15rem;
+  background: var(--amarok-surface);
+}
+
+.messages-page__message--mine {
+  align-self: flex-end;
+  border-color: color-mix(in srgb, var(--amarok-accent) 30%, var(--amarok-border));
+  border-radius: 0.75rem 0.75rem 0.15rem 0.75rem;
+  background: color-mix(in srgb, var(--amarok-accent) 10%, var(--amarok-surface));
+}
+
+.messages-page__message p,
+.messages-page__message time {
+  margin: 0;
+}
+
+.messages-page__message p {
+  white-space: pre-wrap;
+}
+
+.messages-page__message time {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--amarok-text-muted);
+  font-size: 0.75rem;
+}
+
+.messages-page__composer {
+  display: flex;
+  align-items: end;
+  gap: 0.75rem;
+  padding: 0.875rem;
+  border-top: 1px solid var(--amarok-border);
+}
+
+.messages-page__composer textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--amarok-border);
+  border-radius: var(--amarok-radius);
+  background: var(--amarok-bg);
+  color: var(--amarok-text);
+}
+
+.messages-page__empty {
+  margin: 0;
+  padding: 1rem;
+  color: var(--amarok-text-muted);
+}
+
+.messages-page__empty--center {
+  align-self: center;
+  justify-self: center;
+}
+
+@media (max-width: 700px) {
+  .messages-page__layout {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .messages-page__people {
+    border-inline-end: 0;
+    border-bottom: 1px solid var(--amarok-border);
+  }
+
+  .messages-page__member-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: 13rem;
+    overflow-y: auto;
+  }
+
+  .messages-page__conversation {
+    min-height: 28rem;
+  }
 }
 
 .customers-table-wrap {

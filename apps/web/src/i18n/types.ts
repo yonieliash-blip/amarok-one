@@ -48,6 +48,7 @@ export interface TranslationMessages {
     tasks: string;
     accounting: string;
     reports: string;
+    messages: string;
     memberAccess: string;
     navGroupOverview: string;
     navGroupOperations: string;
@@ -85,6 +86,7 @@ export interface TranslationMessages {
     tasks: string;
     accounting: string;
     reports: string;
+    messages: string;
     default: string;
   };
   auth: {
@@ -221,6 +223,27 @@ export interface TranslationMessages {
     reactivateConfirm: string;
     memberSuspended: string;
     memberReactivated: string;
+    birthday: string;
+    birthdayNotSet: string;
+    saveBirthday: string;
+    birthdaySaved: string;
+  };
+  messages: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    loading: string;
+    loadError: string;
+    employees: string;
+    searchEmployees: string;
+    noEmployees: string;
+    noConversation: string;
+    chooseEmployee: string;
+    writeMessage: string;
+    send: string;
+    sending: string;
+    sendError: string;
+    unread: string;
   };
   mySchedulePage: {
     eyebrow: string;
@@ -549,6 +572,8 @@ export interface TranslationMessages {
     scheduledAt: string;
     completedAt: string;
     customer: string;
+    customerSearchPlaceholder: string;
+    customerSearchEmpty: string;
     equipment: string;
     branch: string;
     noBranch: string;
@@ -748,6 +773,11 @@ export interface TranslationMessages {
     todayNote: string;
     waitingManagerTitle: string;
     waitingManagerNote: string;
+    messagesTitle: string;
+    messagesNote: string;
+    greetingMorning: string;
+    greetingAfternoon: string;
+    greetingEvening: string;
     recentCallsTitle: string;
     viewAll: string;
     callNumber: string;

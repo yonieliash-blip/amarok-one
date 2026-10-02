@@ -15,6 +15,7 @@ export interface MemberAccessSummary {
   status: "ACTIVE" | "SUSPENDED";
   enabledModules: MemberModuleKey[];
   permissionsVersion: number;
+  birthDate?: string;
 }
 
 export interface MemberAccessDetail extends MemberAccessSummary {
@@ -31,6 +32,7 @@ export interface CreateMemberInput {
   initialPassword: string;
   primaryRoleSlug: "technician" | "service-coordinator";
   enabledModules: MemberModuleKey[];
+  birthDate?: string;
 }
 
 export async function createMemberRequest(
@@ -83,6 +85,19 @@ export async function updateMemberModulesRequest(
     accessToken,
     body: JSON.stringify({ enabledModules }),
   });
+  return response.data;
+}
+
+export async function updateMemberBirthDateRequest(
+  organizationId: string,
+  memberId: string,
+  accessToken: string,
+  birthDate: string | null,
+): Promise<{ id: string; birthDate?: string }> {
+  const response = await apiRequest<{ id: string; birthDate?: string }>(
+    `/organizations/${organizationId}/access/members/${memberId}/birth-date`,
+    { method: "PATCH", accessToken, body: JSON.stringify({ birthDate }) },
+  );
   return response.data;
 }
 

@@ -5,7 +5,7 @@ import { useAuth } from "../auth/useAuth";
 import { useTranslation } from "../i18n/useTranslation";
 import { NavIcon } from "./nav-icons";
 
-const MOBILE_NAV_PRIORITY = ["service-calls", "tasks", "parts"];
+const MOBILE_NAV_PRIORITY = ["service-calls", "messages", "tasks"];
 
 interface MobileNavigationProps {
   onOpenMenu: () => void;

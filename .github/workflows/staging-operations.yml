@@ -18,6 +18,7 @@ on:
           - apply_customer_site_indexes
           - restart_web
           - deploy_api_and_migrate
+          - apply_internal_messages_and_birthdays
           - repair_operational_numbers
 
 permissions:
@@ -182,6 +183,31 @@ jobs:
                 git fetch --no-tags origin main
                 git merge --ff-only origin/main
                 compose build --no-cache api
+                compose up -d --no-deps --force-recreate api
+                curl --fail --show-error --retry 12 --retry-all-errors \
+                  https://staging-api.amarok-ce.com/health
+                ;;
+              apply_internal_messages_and_birthdays)
+                git fetch --no-tags origin main
+                git merge --ff-only origin/main
+                test -f apps/api/prisma/migrations/20261002150000_internal_messages_and_birthdays/migration.sql
+                compose exec -T postgres sh -ec '
+                  set -eu
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM \"_prisma_migrations\" WHERE migration_name = \$\$20261002150000_internal_messages_and_birthdays\$\$ AND finished_at IS NOT NULL AND rolled_back_at IS NULL;")" = "0"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT to_regclass(\$\$public.direct_conversations\$\$) IS NULL;")" = "t"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT to_regclass(\$\$public.direct_messages\$\$) IS NULL;")" = "t"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = \$\$public\$\$ AND table_name = \$\$organization_members\$\$ AND column_name = \$\$birthDate\$\$;")" = "0"
+                '
+                compose build --no-cache api
+                compose run --rm --no-deps --entrypoint sh api -ec \
+                  'prisma migrate deploy --schema=./prisma/schema.prisma'
+                compose exec -T postgres sh -ec '
+                  set -eu
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM \"_prisma_migrations\" WHERE migration_name = \$\$20261002150000_internal_messages_and_birthdays\$\$ AND finished_at IS NOT NULL AND rolled_back_at IS NULL;")" = "1"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT to_regclass(\$\$public.direct_conversations\$\$) IS NOT NULL;")" = "t"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT to_regclass(\$\$public.direct_messages\$\$) IS NOT NULL;")" = "t"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = \$\$public\$\$ AND table_name = \$\$organization_members\$\$ AND column_name = \$\$birthDate\$\$;")" = "1"
+                '
                 compose up -d --no-deps --force-recreate api
                 curl --fail --show-error --retry 12 --retry-all-errors \
                   https://staging-api.amarok-ce.com/health

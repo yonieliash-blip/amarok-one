@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createOrganizationMemberSchema, updateMemberStatusSchema } from "./access.schemas.js";
+import {
+  createOrganizationMemberSchema,
+  updateMemberBirthDateSchema,
+  updateMemberStatusSchema,
+} from "./access.schemas.js";
 
 describe("createOrganizationMemberSchema", () => {
   const valid = {
@@ -28,5 +32,13 @@ describe("createOrganizationMemberSchema", () => {
       status: "SUSPENDED",
     });
     expect(() => updateMemberStatusSchema.parse({ status: "DELETED" })).toThrow();
+  });
+
+  it("accepts an optional ISO birthday and rejects malformed dates", () => {
+    expect(updateMemberBirthDateSchema.parse({ birthDate: "1984-06-15" })).toEqual({
+      birthDate: "1984-06-15",
+    });
+    expect(updateMemberBirthDateSchema.parse({ birthDate: null })).toEqual({ birthDate: null });
+    expect(() => updateMemberBirthDateSchema.parse({ birthDate: "15/06/1984" })).toThrow();
   });
 });

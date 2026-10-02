@@ -36,6 +36,7 @@ import { AttendanceReportPage } from "./pages/reports/AttendanceReportPage";
 import { WebSplashScreen } from "./components/WebSplashScreen";
 import { TasksPage } from "./pages/tasks/TasksPage";
 import { DispatchBoardPage } from "./pages/calendar/DispatchBoardPage";
+import { MessagesPage } from "./pages/messages/MessagesPage";
 
 export function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -98,6 +99,7 @@ export function App() {
                 />
                 <Route path="parts" element={<PartsCatalogPage />} />
                 <Route path="tasks" element={<TasksPage />} />
+                <Route path="messages" element={<MessagesPage />} />
                 <Route
                   path="accounting"
                   element={<ModulePlaceholderPage titleKey="accounting" />}

@@ -291,6 +291,40 @@ export interface OrganizationMember {
   };
 }
 
+/** Active organization colleague available for a private conversation. */
+export interface DirectMessageMember {
+  id: EntityId;
+  userId: EntityId;
+  displayName: string;
+  email: string;
+  role: Pick<AuthRole, "id" | "slug" | "name">;
+}
+
+/** A private two-person conversation, scoped to one organization. */
+export interface DirectConversationSummary {
+  id: EntityId;
+  organizationId: EntityId;
+  member: DirectMessageMember;
+  lastMessage?: {
+    id: EntityId;
+    body: string;
+    senderId: EntityId;
+    createdAt: ISODateString;
+  };
+  unreadCount: number;
+  updatedAt: ISODateString;
+}
+
+/** Immutable chat message returned to a conversation participant. */
+export interface DirectMessage {
+  id: EntityId;
+  conversationId: EntityId;
+  senderId: EntityId;
+  body: string;
+  readAt?: ISODateString;
+  createdAt: ISODateString;
+}
+
 /** A scheduled field visit shown on the service dispatch board. */
 export interface DispatchBoardAssignment {
   visit: ServiceCallVisit;

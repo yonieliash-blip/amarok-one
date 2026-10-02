@@ -56,6 +56,8 @@ export const MODULE_DEFINITIONS: readonly ModuleDefinition[] = [
         PERMISSIONS.MY_SCHEDULE_READ,
         PERMISSIONS.MY_ATTENDANCE_READ,
         PERMISSIONS.MY_ATTENDANCE_WRITE,
+        PERMISSIONS.MESSAGES_READ,
+        PERMISSIONS.MESSAGES_WRITE,
       ],
       create: [],
       edit: [],

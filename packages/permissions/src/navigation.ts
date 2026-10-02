@@ -25,6 +25,7 @@ export type NavLabelKey =
   | "tasks"
   | "accounting"
   | "reports"
+  | "messages"
   | "memberAccess";
 
 export interface NavigationItemDefinition {
@@ -110,6 +111,12 @@ export const NAVIGATION_ITEMS: readonly NavigationItemDefinition[] = [
     to: "/tasks",
     labelKey: "tasks",
     permissions: [PERMISSIONS.TASKS_READ],
+  },
+  {
+    id: "messages",
+    to: "/messages",
+    labelKey: "messages",
+    permissions: [PERMISSIONS.MESSAGES_READ],
   },
   {
     id: "accounting",

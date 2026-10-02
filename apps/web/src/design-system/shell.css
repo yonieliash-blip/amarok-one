@@ -1301,7 +1301,7 @@
 
 .management-dashboard__metrics {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: var(--ds-space-4);
 }
 
@@ -1344,6 +1344,25 @@
 .management-metric--waitingManager .management-metric__icon {
   background: var(--ds-color-warning-muted);
   color: var(--ds-color-warning);
+}
+.management-metric--messages .management-metric__icon {
+  background: var(--ds-color-primary-muted);
+  color: var(--ds-color-primary);
+}
+
+.management-metric__link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.management-metric__link:hover .management-metric,
+.management-metric__link:focus-visible .management-metric {
+  border-color: var(--ds-color-primary);
+  box-shadow: 0 10px 24px rgba(17, 27, 75, 0.11);
+}
+
+.management-metric__link:focus-visible {
+  outline: none;
 }
 
 .management-metric__label,
@@ -1409,6 +1428,22 @@
 }
 .management-metric--waitingManager .management-metric__spark {
   color: var(--ds-color-warning);
+}
+.management-metric--messages .management-metric__spark {
+  color: var(--ds-color-primary);
+}
+
+.management-dashboard__greeting {
+  display: flex;
+  align-items: center;
+  min-height: 3.15rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-color-bg-surface);
+  color: var(--ds-color-text);
+  box-shadow: 0 6px 18px rgba(17, 27, 75, 0.04);
+  font-weight: var(--ds-font-weight-bold);
 }
 
 .management-dashboard__grid {

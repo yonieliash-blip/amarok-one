@@ -17,7 +17,7 @@ const GROUPS: readonly NavGroupDefinition[] = [
   {
     key: "operations",
     labelKey: "navGroupOperations",
-    itemIds: ["service-calls", "my-service-calls", "customers", "equipment"],
+    itemIds: ["service-calls", "my-service-calls", "customers", "equipment", "messages"],
   },
   {
     key: "field",
