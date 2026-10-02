@@ -1,6 +1,10 @@
 import { Menu } from "lucide-react";
 import { NavLink } from "react-router-dom";
-import { buildNavigationItems, permissionSlugsFromCarrier } from "@amarok-one/permissions";
+import {
+  buildNavigationItems,
+  getDefaultLandingPath,
+  permissionSlugsFromCarrier,
+} from "@amarok-one/permissions";
 import { BrandLogo } from "../components/BrandLogo";
 import { UserMenu } from "./UserMenu";
 import { useAuth } from "../auth/useAuth";
@@ -13,18 +17,27 @@ const PRIMARY_NAV_ITEM_IDS = new Set([
   "technicians",
   "reports",
   "member-access",
+  "messages",
 ]);
 
 interface HeaderProps {
   title: string;
   onMenuToggle: () => void;
   menuOpen?: boolean;
+  unreadMessageCount?: number;
 }
 
-export function Header({ title, onMenuToggle, menuOpen = false }: HeaderProps) {
+export function Header({
+  title,
+  onMenuToggle,
+  menuOpen = false,
+  unreadMessageCount = 0,
+}: HeaderProps) {
   const { user } = useAuth();
   const { t } = useTranslation();
-  const navigationItems = buildNavigationItems(permissionSlugsFromCarrier(user), user?.role.slug, {
+  const permissions = permissionSlugsFromCarrier(user);
+  const homePath = getDefaultLandingPath(permissions, user?.role.slug);
+  const navigationItems = buildNavigationItems(permissions, user?.role.slug, {
     isOrganizationOwner: user?.isOrganizationOwner,
   }).filter(
     (item) =>
@@ -34,7 +47,13 @@ export function Header({ title, onMenuToggle, menuOpen = false }: HeaderProps) {
   return (
     <header className="app-header">
       <div className="app-header__brand">
-        <BrandLogo variant="header" />
+        <NavLink
+          to={homePath}
+          className="app-header__brand-link"
+          aria-label={t("nav", "dashboard")}
+        >
+          <BrandLogo variant="header" />
+        </NavLink>
       </div>
 
       <nav className="app-header__navigation" aria-label={t("common", "mainNavigation")}>
@@ -48,6 +67,14 @@ export function Header({ title, onMenuToggle, menuOpen = false }: HeaderProps) {
             }
           >
             {t("nav", item.labelKey)}
+            {item.id === "messages" && unreadMessageCount > 0 ? (
+              <span
+                className="app-header__unread"
+                aria-label={`${unreadMessageCount} ${t("messages", "unread")}`}
+              >
+                {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+              </span>
+            ) : null}
           </NavLink>
         ))}
       </nav>

@@ -922,6 +922,16 @@
   flex: 0 0 auto;
 }
 
+.app-header__brand-link {
+  display: inline-flex;
+  border-radius: var(--ds-radius-sm);
+}
+
+.app-header__brand-link:focus-visible {
+  outline: 2px solid var(--ds-color-primary);
+  outline-offset: 0.25rem;
+}
+
 .app-header__brand .brand-logo__image {
   width: 10.5rem;
 }
@@ -946,14 +956,32 @@
 }
 
 .app-header__navigation-link {
+  position: relative;
   display: inline-flex;
   align-items: center;
+  gap: var(--ds-space-2);
   padding: 0 var(--ds-space-4);
   border-bottom: 3px solid transparent;
   color: rgba(255, 255, 255, 0.84);
   font-size: var(--ds-text-body-sm-size);
   font-weight: var(--ds-font-weight-bold);
   white-space: nowrap;
+}
+
+.app-header__unread,
+.mobile-navigation__unread {
+  display: inline-grid;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  padding-inline: 0.22rem;
+  place-items: center;
+  border: 2px solid #17263a;
+  border-radius: 999px;
+  background: var(--ds-color-error);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: var(--ds-font-weight-bold);
+  line-height: 1;
 }
 
 .app-header__navigation-link:hover,
@@ -1305,6 +1333,10 @@
 .management-dashboard__actions .amarok-button {
   min-height: 2.8rem;
   border-radius: var(--ds-radius-lg);
+}
+
+.management-dashboard__new-call {
+  white-space: nowrap;
 }
 
 .management-dashboard__notice,
@@ -1697,6 +1729,11 @@
   }
   .management-dashboard__actions .customers-page__action-link .amarok-button {
     min-width: auto;
+  }
+  .management-dashboard__new-call {
+    min-height: 2.5rem;
+    padding-inline: var(--ds-space-3);
+    font-size: var(--ds-text-body-sm-size);
   }
   .management-metric {
     min-height: 8rem;
