@@ -327,6 +327,16 @@ export const en: TranslationMessages = {
     routeStart: "Start point",
     routeEnd: "End point",
     closeRoute: "Close",
+    liveLocationsTitle: "Technicians in the field now",
+    liveLocationsSubtitle:
+      "Last location saved during an active work day. Refreshes automatically.",
+    noActiveTechnicians: "No technicians currently have an active work day.",
+    lastLocation: "Tracked location",
+    clockInLocation: "Clock-in location",
+    noLocation: "No location received yet.",
+    lastUpdated: "Last updated",
+    locationStale: "Location is not current (over 15 minutes old).",
+    openInMap: "Open in map",
   },
   customers: {
     accountsEyebrow: "Accounts",

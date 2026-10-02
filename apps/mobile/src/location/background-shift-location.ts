@@ -1,6 +1,6 @@
 import * as Location from "expo-location";
 import * as TaskManager from "expo-task-manager";
-import { enqueueTrackedLocations } from "./shift-location-queue";
+import { enqueueTrackedLocations, flushBackgroundTrackedLocations } from "./shift-location-queue";
 import { mapLocationObjects } from "./location-mapping";
 
 export const BACKGROUND_SHIFT_LOCATION_TASK = "amarok-background-shift-location";
@@ -9,7 +9,9 @@ TaskManager.defineTask<{ locations?: Location.LocationObject[] }>(
   BACKGROUND_SHIFT_LOCATION_TASK,
   ({ data, error }) => {
     if (error || !data?.locations) return;
-    void enqueueTrackedLocations(mapLocationObjects(data.locations)).catch(() => undefined);
+    void enqueueTrackedLocations(mapLocationObjects(data.locations))
+      .then(() => flushBackgroundTrackedLocations())
+      .catch(() => undefined);
   },
 );
 

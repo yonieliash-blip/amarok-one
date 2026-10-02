@@ -1,5 +1,13 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { submitTrackedLocations, type TrackedLocation } from "../api/attendance";
+import { isApiRequestError } from "../api/client";
+import { refreshSessionRequest } from "../api/auth";
+import {
+  persistSession,
+  persistShiftTrackingSession,
+  readRefreshToken,
+  readShiftTrackingSession,
+} from "../auth/session-storage";
 
 const QUEUE_KEY = "@amarok/shift-location-queue";
 const MAX_QUEUED_POINTS = 500;
@@ -37,4 +45,37 @@ export async function flushTrackedLocations(
   );
   await writeQueue(remaining);
   return points.length;
+}
+
+/**
+ * Runs inside Expo's background location task. The session is kept in the
+ * platform secure store so queued points can be delivered without requiring
+ * the foreground React tree to be alive. Network or authorization failures
+ * intentionally leave the queue intact for the next location callback.
+ */
+export async function flushBackgroundTrackedLocations(): Promise<number> {
+  const tracking = await readShiftTrackingSession();
+  if (!tracking) return 0;
+
+  try {
+    return await flushTrackedLocations(
+      tracking.organizationId,
+      tracking.accessToken,
+      tracking.workDayStartedAt,
+    );
+  } catch (error) {
+    if (!isApiRequestError(error) || (error.status !== 401 && error.status !== 403)) throw error;
+  }
+
+  const refreshToken = await readRefreshToken();
+  if (!refreshToken) throw new Error("Missing refresh token for background location tracking");
+  const session = await refreshSessionRequest(refreshToken);
+  await persistSession(session);
+  const refreshedTracking = { ...tracking, accessToken: session.accessToken };
+  await persistShiftTrackingSession(refreshedTracking);
+  return flushTrackedLocations(
+    refreshedTracking.organizationId,
+    refreshedTracking.accessToken,
+    refreshedTracking.workDayStartedAt,
+  );
 }

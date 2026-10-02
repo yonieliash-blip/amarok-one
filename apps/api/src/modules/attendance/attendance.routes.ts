@@ -18,6 +18,7 @@ import {
   endBreak,
   endWorkDay,
   getCurrentWorkDay,
+  getLiveTechnicianLocations,
   getMonthlyAttendanceReport,
   getWorkDayLocations,
   startBreak,
@@ -35,6 +36,15 @@ function userId(context: Parameters<typeof getAuth>[0]): string {
 
 export const attendanceRoutes = new Hono()
   .use("*", tenantGuard)
+  .get(
+    "/live-locations",
+    requirePermission("attendance:read"),
+    zValidator("param", attendanceParamsSchema),
+    async (context) => {
+      const { organizationId } = context.req.valid("param");
+      return context.json(createApiResponse(await getLiveTechnicianLocations(organizationId)));
+    },
+  )
   .get(
     "/reports/monthly",
     requirePermission("attendance:read"),

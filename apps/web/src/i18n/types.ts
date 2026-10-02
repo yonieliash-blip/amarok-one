@@ -327,6 +327,15 @@ export interface TranslationMessages {
     routeStart: string;
     routeEnd: string;
     closeRoute: string;
+    liveLocationsTitle: string;
+    liveLocationsSubtitle: string;
+    noActiveTechnicians: string;
+    lastLocation: string;
+    clockInLocation: string;
+    noLocation: string;
+    lastUpdated: string;
+    locationStale: string;
+    openInMap: string;
   };
   customers: {
     accountsEyebrow: string;

@@ -8,11 +8,13 @@ import { getAuthErrorMessage } from "../../lib/auth-errors";
 import {
   approveWorkDayRequest,
   correctWorkDayRequest,
+  getLiveTechnicianLocationsRequest,
   getMonthlyAttendanceReportRequest,
   getWorkDayLocationsRequest,
   lockAttendancePeriodRequest,
   unlockAttendancePeriodRequest,
   type AttendanceDay,
+  type LiveTechnicianLocation,
   type MonthlyAttendanceReport,
   type WorkDayLocationPoint,
 } from "../../lib/attendance-api";
@@ -45,11 +47,16 @@ function latestDayWithRoute(days: AttendanceDay[]): AttendanceDay | null {
   );
 }
 
+function isLocationStale(lastUpdatedAt: string): boolean {
+  return Date.now() - new Date(lastUpdatedAt).getTime() > 15 * 60_000;
+}
+
 export function AttendanceReportPage() {
   const { user, accessToken } = useAuth();
   const { t, locale } = useTranslation();
   const [month, setMonth] = useState(currentIsraelMonth);
   const [report, setReport] = useState<MonthlyAttendanceReport | null>(null);
+  const [liveLocations, setLiveLocations] = useState<LiveTechnicianLocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
@@ -66,12 +73,14 @@ export function AttendanceReportPage() {
       setLoading(true);
       setError(null);
       try {
-        const data = await getMonthlyAttendanceReportRequest(
-          user.organization.id,
-          accessToken,
-          month,
-        );
-        if (!cancelled) setReport(data);
+        const [data, activeTechnicians] = await Promise.all([
+          getMonthlyAttendanceReportRequest(user.organization.id, accessToken, month),
+          getLiveTechnicianLocationsRequest(user.organization.id, accessToken),
+        ]);
+        if (!cancelled) {
+          setReport(data);
+          setLiveLocations(activeTechnicians);
+        }
       } catch (cause) {
         if (!cancelled) setError(getAuthErrorMessage(cause));
       } finally {
@@ -83,6 +92,11 @@ export function AttendanceReportPage() {
       cancelled = true;
     };
   }, [accessToken, month, retryKey, user]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setRetryKey((key) => key + 1), 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   async function approve(day: AttendanceDay): Promise<void> {
     if (!user || !accessToken) return;
@@ -217,6 +231,71 @@ export function AttendanceReportPage() {
           onClose={() => setRoute(null)}
         />
       ) : null}
+
+      <section
+        className="customers-table-wrap"
+        aria-label={t("attendanceReport", "liveLocationsTitle")}
+      >
+        <div className="customers-page__header">
+          <div>
+            <h3 className="customers-page__title">{t("attendanceReport", "liveLocationsTitle")}</h3>
+            <p className="customers-page__subtitle">
+              {t("attendanceReport", "liveLocationsSubtitle")}
+            </p>
+          </div>
+        </div>
+        {liveLocations.length === 0 ? (
+          <p>{t("attendanceReport", "noActiveTechnicians")}</p>
+        ) : (
+          <table className="customers-table">
+            <thead>
+              <tr>
+                <th>{t("attendanceReport", "employee")}</th>
+                <th>{t("attendanceReport", "lastUpdated")}</th>
+                <th>{t("attendanceReport", "route")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {liveLocations.map((technician) => {
+                const location = technician.lastKnownLocation;
+                const stale = isLocationStale(technician.lastUpdatedAt);
+                return (
+                  <tr key={technician.workDayId}>
+                    <td>
+                      <strong>{technician.displayName}</strong>
+                    </td>
+                    <td>
+                      {formatDateTime(technician.lastUpdatedAt)}
+                      {stale ? <p>{t("attendanceReport", "locationStale")}</p> : null}
+                    </td>
+                    <td>
+                      {!location ? (
+                        <span>{t("attendanceReport", "noLocation")}</span>
+                      ) : (
+                        <>
+                          <span>
+                            {location.source === "tracking"
+                              ? t("attendanceReport", "lastLocation")
+                              : t("attendanceReport", "clockInLocation")}
+                            {`: ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`}
+                          </span>{" "}
+                          <a
+                            href={`https://www.google.com/maps?q=${location.latitude},${location.longitude}`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {t("attendanceReport", "openInMap")}
+                          </a>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </section>
 
       {!report || report.employees.length === 0 ? (
         <EmptyState
