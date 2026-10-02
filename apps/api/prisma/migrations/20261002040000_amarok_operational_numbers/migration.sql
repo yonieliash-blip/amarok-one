@@ -42,7 +42,10 @@ WITH numbered_customers AS (
   WHERE "deletedAt" IS NULL
 )
 UPDATE "customers" AS customer
-SET "customerNumber" = 'AM-CU-' || LPAD(numbered_customers."sequenceNumber"::TEXT, 2, '0')
+SET "customerNumber" =
+  'AM-CU-' ||
+  CASE WHEN numbered_customers."sequenceNumber" < 10 THEN '0' ELSE '' END ||
+  numbered_customers."sequenceNumber"::TEXT
 FROM numbered_customers
 WHERE customer."id" = numbered_customers."id";
 
