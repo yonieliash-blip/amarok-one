@@ -18,8 +18,9 @@ import {
 import { isApiRequestError } from "../../lib/api-client";
 
 type FormStatus = "loading" | "ready" | "submitting" | "error";
+type CustomerFormState = CustomerFormInput & { customerNumber: string };
 
-const EMPTY_FORM: CustomerFormInput = {
+const EMPTY_FORM: CustomerFormState = {
   name: "",
   customerNumber: "",
   legalName: "",
@@ -40,7 +41,7 @@ export function CustomerFormPage() {
   const { user, accessToken } = useAuth();
   const { t } = useTranslation();
   const [status, setStatus] = useState<FormStatus>(isEdit ? "loading" : "ready");
-  const [form, setForm] = useState<CustomerFormInput>(EMPTY_FORM);
+  const [form, setForm] = useState<CustomerFormState>(EMPTY_FORM);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -97,9 +98,9 @@ export function CustomerFormPage() {
     };
   }, [isEdit, customerId, user, accessToken, t]);
 
-  function updateField<K extends keyof CustomerFormInput>(
+  function updateField<K extends keyof CustomerFormState>(
     key: K,
-    value: CustomerFormInput[K],
+    value: CustomerFormState[K],
   ): void {
     setForm((current) => ({ ...current, [key]: value }));
     setSuccessMessage(null);
@@ -117,7 +118,6 @@ export function CustomerFormPage() {
 
     const payload: CustomerFormInput = {
       name: form.name.trim(),
-      customerNumber: form.customerNumber.trim(),
       status: form.status,
       legalName: form.legalName?.trim() || undefined,
       registrationNumber: form.registrationNumber?.trim() || undefined,
@@ -221,25 +221,14 @@ export function CustomerFormPage() {
               />
             </label>
             <label className="customer-form__field">
-              <span>
-                {t("customers", "customerNumber")} {t("common", "requiredMark")}
-              </span>
-              <input
-                required
-                dir="ltr"
-                value={form.customerNumber}
-                onChange={(event) =>
-                  updateField("customerNumber", event.target.value.toUpperCase())
-                }
-                pattern="[A-Z0-9_-]+"
-                title={t("customers", "customerNumberPatternTitle")}
-                onInvalid={(event) => {
-                  event.currentTarget.setCustomValidity(
-                    t("customers", "customerNumberPatternTitle"),
-                  );
-                }}
-                onInput={(event) => event.currentTarget.setCustomValidity("")}
-              />
+              <span>{t("customers", "customerNumber")}</span>
+              {isEdit ? (
+                <input readOnly dir="ltr" value={form.customerNumber} />
+              ) : (
+                <p className="customer-form__auto-number" dir="ltr">
+                  {t("customers", "customerNumberAuto")}
+                </p>
+              )}
             </label>
             <label className="customer-form__field">
               <span>{t("customers", "registrationNumber")}</span>

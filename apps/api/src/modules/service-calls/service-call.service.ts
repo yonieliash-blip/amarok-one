@@ -25,6 +25,7 @@ import {
 } from "../../lib/mappers.js";
 import { paginationMeta, parsePagination } from "../../lib/pagination.js";
 import { prisma } from "../../lib/prisma.js";
+import { reserveOperationalNumber } from "../../lib/organization-number-sequence.js";
 import { mapWorkflowError } from "../../lib/workflow-errors.js";
 import { PrismaWorkflowEventStore } from "../../infrastructure/workflow/prisma-workflow-event-store.js";
 import { assertOrganizationExists } from "../organizations/organization.service.js";
@@ -505,7 +506,11 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
         const serviceCall = await tx.serviceCall.create({
           data: {
             organizationId,
-            serviceCallNumber: input.serviceCallNumber,
+            serviceCallNumber: await reserveOperationalNumber(
+              tx,
+              organizationId,
+              "service-call-number",
+            ),
             title: input.title,
             description: input.description,
             status: fromServiceCallStatusDto("open"),
@@ -548,9 +553,7 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
       return dto;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-        throw conflict("Service call number already exists in this organization", {
-          serviceCallNumber: input.serviceCallNumber,
-        });
+        throw conflict("Generated service call number already exists in this organization");
       }
       throw mapWorkflowError(error);
     }
@@ -596,9 +599,6 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
     }
 
     const data: Prisma.ServiceCallUpdateInput = {
-      ...(patchInput.serviceCallNumber !== undefined
-        ? { serviceCallNumber: patchInput.serviceCallNumber }
-        : {}),
       ...(patchInput.title !== undefined ? { title: patchInput.title } : {}),
       ...(patchInput.description !== undefined ? { description: patchInput.description } : {}),
       ...(patchInput.priority !== undefined
@@ -654,9 +654,7 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
       return dto;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-        throw conflict("Service call number already exists in this organization", {
-          serviceCallNumber: patchInput.serviceCallNumber,
-        });
+        throw conflict("Service call number already exists in this organization");
       }
       throw mapWorkflowError(error);
     }

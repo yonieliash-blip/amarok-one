@@ -3,8 +3,8 @@
 
 :root {
   --amarok-font-family:
-    "Alef", "Segoe UI", "Arial Hebrew", "David Libre", system-ui, -apple-system, BlinkMacSystemFont,
-    sans-serif;
+    "Noto Sans Hebrew", "Noto Sans", "Segoe UI", "Arial Hebrew", system-ui, -apple-system,
+    BlinkMacSystemFont, sans-serif;
 }
 
 *,
@@ -35,6 +35,18 @@ body {
 button,
 input {
   font: inherit;
+}
+
+.customer-form__auto-number {
+  margin: 0;
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  padding-inline: var(--ds-space-4);
+  border: 1px dashed var(--ds-color-border);
+  border-radius: var(--ds-radius-lg);
+  color: var(--ds-color-text-muted);
+  background: var(--ds-color-bg-subtle);
 }
 
 a {

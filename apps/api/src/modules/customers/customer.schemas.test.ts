@@ -9,7 +9,6 @@ describe("customer.schemas", () => {
   it("accepts valid create payloads", () => {
     const result = createCustomerSchema.safeParse({
       name: "Nordic Lift Services",
-      customerNumber: "CUST-001",
       email: "info@example.com",
       status: "active",
     });
@@ -17,10 +16,10 @@ describe("customer.schemas", () => {
     expect(result.success).toBe(true);
   });
 
-  it("rejects invalid customer numbers", () => {
+  it("rejects manually supplied customer numbers", () => {
     const result = createCustomerSchema.safeParse({
       name: "Invalid Customer",
-      customerNumber: "cust-001",
+      customerNumber: "AM-CU-01",
     });
 
     expect(result.success).toBe(false);
@@ -29,6 +28,11 @@ describe("customer.schemas", () => {
   it("requires at least one field on update", () => {
     const result = updateCustomerSchema.safeParse({});
 
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects manually supplied customer numbers on update", () => {
+    const result = updateCustomerSchema.safeParse({ customerNumber: "AM-CU-01" });
     expect(result.success).toBe(false);
   });
 

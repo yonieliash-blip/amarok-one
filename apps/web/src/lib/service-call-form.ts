@@ -2,7 +2,6 @@ import type { ServiceCallPriority } from "@amarok-one/types";
 
 /** Metadata fields allowed on create (no lifecycle fields). */
 export interface ServiceCallCreatePayload {
-  serviceCallNumber: string;
   title: string;
   description?: string;
   priority?: ServiceCallPriority;
@@ -20,7 +19,6 @@ export interface ServiceCallCreatePayload {
 
 /** Metadata fields allowed on PATCH (managers with service_calls:write). */
 export interface ServiceCallUpdatePayload {
-  serviceCallNumber?: string;
   title?: string;
   description?: string | null;
   priority?: ServiceCallPriority;
@@ -71,7 +69,6 @@ export function buildCreatePayload(
   scheduling: { openedAt?: string; scheduledAt?: string },
 ): ServiceCallCreatePayload {
   return {
-    serviceCallNumber: values.serviceCallNumber.trim(),
     title: values.title.trim(),
     description: values.description.trim() || undefined,
     priority: values.priority,
@@ -93,7 +90,6 @@ export function buildUpdatePayload(
   scheduling: { openedAt?: string; scheduledAt?: string | null },
 ): ServiceCallUpdatePayload {
   return {
-    serviceCallNumber: values.serviceCallNumber.trim(),
     title: values.title.trim(),
     description: values.description.trim() || null,
     priority: values.priority,

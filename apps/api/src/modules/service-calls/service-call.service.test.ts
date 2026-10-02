@@ -227,6 +227,9 @@ describe("createServiceCallService production hardening", () => {
     vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
       return callback({
         serviceCall: { create: txCreate },
+        organizationNumberSequence: {
+          upsert: vi.fn().mockResolvedValue({ nextValue: 2 }),
+        },
       } as never);
     });
 
@@ -234,7 +237,6 @@ describe("createServiceCallService production hardening", () => {
     await service.createServiceCall(
       organizationId,
       {
-        serviceCallNumber: "SC-NEW",
         title: "New",
         customerId: baseDto.customerId,
         equipmentId: baseDto.equipmentId,
@@ -244,6 +246,11 @@ describe("createServiceCallService production hardening", () => {
 
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(workflow.syncAfterCreate).toHaveBeenCalledTimes(1);
+    expect(txCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ serviceCallNumber: "AM-SE-01" }),
+      }),
+    );
     const syncContext = vi.mocked(workflow.syncAfterCreate).mock.calls[0]?.[2];
     expect(syncContext?.eventStore).toBeDefined();
   });
@@ -269,6 +276,9 @@ describe("createServiceCallService production hardening", () => {
             title: "New",
           }),
         },
+        organizationNumberSequence: {
+          upsert: vi.fn().mockResolvedValue({ nextValue: 2 }),
+        },
       } as never);
     });
 
@@ -276,7 +286,6 @@ describe("createServiceCallService production hardening", () => {
 
     await expect(
       service.createServiceCall(organizationId, {
-        serviceCallNumber: "SC-NEW",
         title: "New",
         customerId: baseDto.customerId,
         equipmentId: baseDto.equipmentId,

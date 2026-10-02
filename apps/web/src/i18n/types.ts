@@ -354,6 +354,7 @@ export interface TranslationMessages {
     internalNotes: string;
     name: string;
     customerNumber: string;
+    customerNumberAuto: string;
     customerNumberPatternTitle: string;
     status: string;
     saving: string;
@@ -538,6 +539,7 @@ export interface TranslationMessages {
     notesSection: string;
     noNotes: string;
     serviceCallNumber: string;
+    serviceCallNumberAuto: string;
     serviceCallNumberPatternTitle: string;
     titleLabel: string;
     description: string;

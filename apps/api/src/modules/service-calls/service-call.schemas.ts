@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { codeSchema, paginationQuerySchema } from "../../lib/schemas.js";
+import { paginationQuerySchema } from "../../lib/schemas.js";
 import { organizationIdParamSchema } from "../organizations/organization.schemas.js";
 
 export const serviceCallStatusSchema = z.enum([
@@ -19,29 +19,29 @@ export const serviceCallIdParamSchema = organizationIdParamSchema.extend({
 
 const dateTimeSchema = z.string().datetime({ offset: true }).or(z.string().date());
 
-export const createServiceCallSchema = z.object({
-  serviceCallNumber: codeSchema,
-  title: z.string().trim().min(2).max(256),
-  description: z.string().trim().max(4000).optional(),
-  status: serviceCallStatusSchema.optional(),
-  priority: serviceCallPrioritySchema.optional(),
-  openedAt: dateTimeSchema.optional(),
-  scheduledAt: dateTimeSchema.optional(),
-  completedAt: dateTimeSchema.optional(),
-  customerId: z.string().uuid(),
-  customerSiteId: z.string().uuid().optional(),
-  equipmentId: z.string().uuid(),
-  branchId: z.string().uuid().optional(),
-  assignedUserId: z.string().uuid().optional(),
-  contactName: z.string().trim().min(2).max(128).optional(),
-  contactPhone: z.string().trim().min(3).max(32).optional(),
-  location: z.string().trim().min(2).max(256).optional(),
-  notes: z.string().trim().max(2000).optional(),
-});
+export const createServiceCallSchema = z
+  .object({
+    title: z.string().trim().min(2).max(256),
+    description: z.string().trim().max(4000).optional(),
+    status: serviceCallStatusSchema.optional(),
+    priority: serviceCallPrioritySchema.optional(),
+    openedAt: dateTimeSchema.optional(),
+    scheduledAt: dateTimeSchema.optional(),
+    completedAt: dateTimeSchema.optional(),
+    customerId: z.string().uuid(),
+    customerSiteId: z.string().uuid().optional(),
+    equipmentId: z.string().uuid(),
+    branchId: z.string().uuid().optional(),
+    assignedUserId: z.string().uuid().optional(),
+    contactName: z.string().trim().min(2).max(128).optional(),
+    contactPhone: z.string().trim().min(3).max(32).optional(),
+    location: z.string().trim().min(2).max(256).optional(),
+    notes: z.string().trim().max(2000).optional(),
+  })
+  .strict();
 
 export const updateServiceCallSchema = z
   .object({
-    serviceCallNumber: codeSchema.optional(),
     title: z.string().trim().min(2).max(256).optional(),
     description: z.string().trim().max(4000).nullable().optional(),
     status: serviceCallStatusSchema.optional(),
@@ -59,6 +59,7 @@ export const updateServiceCallSchema = z
     location: z.string().trim().min(2).max(256).nullable().optional(),
     notes: z.string().trim().max(2000).nullable().optional(),
   })
+  .strict()
   .refine((value) => Object.values(value).some((field) => field !== undefined), {
     message: "At least one field must be provided",
   });
