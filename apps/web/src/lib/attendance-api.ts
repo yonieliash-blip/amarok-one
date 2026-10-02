@@ -50,6 +50,20 @@ export interface WorkDayLocationPoint {
   accuracy: number | null;
 }
 
+export interface LiveTechnicianLocation {
+  workDayId: string;
+  userId: string;
+  displayName: string;
+  startedAt: string;
+  lastUpdatedAt: string;
+  lastKnownLocation: {
+    latitude: number;
+    longitude: number;
+    accuracy: number | null;
+    source: "tracking" | "clock_in";
+  } | null;
+}
+
 export async function getMonthlyAttendanceReportRequest(
   organizationId: string,
   accessToken: string,
@@ -57,6 +71,17 @@ export async function getMonthlyAttendanceReportRequest(
 ): Promise<MonthlyAttendanceReport> {
   const response = await apiRequest<MonthlyAttendanceReport>(
     `/organizations/${organizationId}/attendance/reports/monthly?month=${encodeURIComponent(month)}`,
+    { accessToken },
+  );
+  return response.data;
+}
+
+export async function getLiveTechnicianLocationsRequest(
+  organizationId: string,
+  accessToken: string,
+): Promise<LiveTechnicianLocation[]> {
+  const response = await apiRequest<LiveTechnicianLocation[]>(
+    `/organizations/${organizationId}/attendance/live-locations`,
     { accessToken },
   );
   return response.data;

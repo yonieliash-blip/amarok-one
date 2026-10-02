@@ -201,6 +201,69 @@ export async function getWorkDayLocations(organizationId: string, workDayId: str
   }));
 }
 
+/** Returns only technicians with an active work day and their latest stored point. */
+export async function getLiveTechnicianLocations(organizationId: string) {
+  const rows = await prisma.workDay.findMany({
+    where: {
+      organizationId,
+      status: "ACTIVE",
+      user: {
+        isActive: true,
+        deletedAt: null,
+        organizationMembers: {
+          some: {
+            organizationId,
+            status: "ACTIVE",
+            deletedAt: null,
+            primaryRole: { slug: "technician", deletedAt: null },
+          },
+        },
+      },
+    },
+    select: {
+      id: true,
+      startedAt: true,
+      startLatitude: true,
+      startLongitude: true,
+      startAccuracy: true,
+      user: { select: { id: true, displayName: true } },
+      locations: {
+        select: { recordedAt: true, latitude: true, longitude: true, accuracy: true },
+        orderBy: { recordedAt: "desc" },
+        take: 1,
+      },
+    },
+    orderBy: { startedAt: "asc" },
+  });
+
+  return rows.map((row) => {
+    const latest = row.locations[0];
+    const hasClockInLocation = row.startLatitude !== null && row.startLongitude !== null;
+    return {
+      workDayId: row.id,
+      userId: row.user.id,
+      displayName: row.user.displayName,
+      startedAt: row.startedAt,
+      lastUpdatedAt: latest?.recordedAt ?? row.startedAt,
+      lastKnownLocation: latest
+        ? {
+            latitude: Number(latest.latitude),
+            longitude: Number(latest.longitude),
+            accuracy: latest.accuracy,
+            source: "tracking" as const,
+          }
+        : hasClockInLocation
+          ? {
+              latitude: Number(row.startLatitude),
+              longitude: Number(row.startLongitude),
+              accuracy: row.startAccuracy,
+              source: "clock_in" as const,
+            }
+          : null,
+    };
+  });
+}
+
 export async function lockAttendancePeriod(organizationId: string, month: string, actorId: string) {
   const { from, to } = monthRange(month);
   const existingLock = await prisma.attendancePeriodLock.findFirst({

@@ -3,6 +3,7 @@ import {
   endWorkDay,
   correctWorkDay,
   getMonthlyAttendanceReport,
+  getLiveTechnicianLocations,
   getWorkDayLocations,
   lockAttendancePeriod,
   recordWorkDayLocations,
@@ -254,5 +255,45 @@ describe("attendance.service", () => {
       where: { organizationId: org, workDayId: "day-1" },
       orderBy: { recordedAt: "asc" },
     });
+  });
+
+  it("returns the latest stored location only for active technicians in the tenant", async () => {
+    mocks.workDayFindMany.mockResolvedValue([
+      {
+        id: "day-1",
+        startedAt: new Date("2026-10-02T06:00:00.000Z"),
+        startLatitude: "32.085300",
+        startLongitude: "34.781800",
+        startAccuracy: 10,
+        user: { id: user, displayName: "Dana" },
+        locations: [
+          {
+            recordedAt: new Date("2026-10-02T06:10:00.000Z"),
+            latitude: "32.090000",
+            longitude: "34.790000",
+            accuracy: 18,
+          },
+        ],
+      },
+    ]);
+
+    await expect(getLiveTechnicianLocations(org)).resolves.toEqual([
+      expect.objectContaining({
+        workDayId: "day-1",
+        userId: user,
+        displayName: "Dana",
+        lastKnownLocation: {
+          latitude: 32.09,
+          longitude: 34.79,
+          accuracy: 18,
+          source: "tracking",
+        },
+      }),
+    ]);
+    expect(mocks.workDayFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ organizationId: org, status: "ACTIVE" }),
+      }),
+    );
   });
 });

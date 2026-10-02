@@ -24,6 +24,7 @@ import {
 } from "../api/attendance";
 import { Button, Card, Eyebrow, ScreenSubtitle, ScreenTitle, StatusPill } from "../components/ui";
 import { captureClockLocation } from "../location/clock-location";
+import { clearShiftTrackingSession, persistShiftTrackingSession } from "../auth/session-storage";
 import {
   enableBackgroundShiftTracking,
   isBackgroundShiftTrackingActive,
@@ -124,6 +125,9 @@ export function HomeScreen({ navigation }: Props) {
   }, [accessToken, user, workDayActive, workDayStartedAt]);
 
   useEffect(() => {
+    // Wait for the server to resolve the current work day after launch. Otherwise
+    // a briefly-null local state could stop valid background tracking.
+    if (loading) return;
     if (workDayActive) {
       void isBackgroundShiftTrackingActive()
         .then(setBackgroundGpsTracking)
@@ -132,12 +136,43 @@ export function HomeScreen({ navigation }: Props) {
     }
     void stopBackgroundShiftTracking()
       .catch(() => undefined)
-      .finally(() => setBackgroundGpsTracking(false));
-  }, [workDayActive]);
+      .finally(() => {
+        void clearShiftTrackingSession();
+        setBackgroundGpsTracking(false);
+      });
+  }, [loading, workDayActive]);
 
   async function handleStartWorkDay(): Promise<void> {
     if (!user || !accessToken) return;
-    await runClockAction((location) => startWorkDay(user.organization.id, accessToken, location));
+    const result = await runClockAction((location) =>
+      startWorkDay(user.organization.id, accessToken, location),
+    );
+    if (!result) return;
+
+    await persistShiftTrackingSession({
+      organizationId: user.organization.id,
+      workDayStartedAt: result.startedAt,
+      accessToken,
+    });
+    setBackgroundGpsBusy(true);
+    try {
+      const enabled = await enableBackgroundShiftTracking();
+      setBackgroundGpsTracking(enabled);
+      if (!enabled) {
+        Alert.alert(
+          "נדרשת הרשאת מיקום ברקע",
+          "יום העבודה התחיל, אך המיקום יישמר רק כשהאפליקציה פתוחה עד לאישור מיקום ברקע בהגדרות המכשיר.",
+        );
+      }
+    } catch {
+      setBackgroundGpsTracking(false);
+      Alert.alert(
+        "לא ניתן להפעיל GPS ברקע",
+        "יום העבודה ממשיך כרגיל. אפשר לאשר מיקום בהגדרות המכשיר ולהפעיל GPS ברקע מחדש.",
+      );
+    } finally {
+      setBackgroundGpsBusy(false);
+    }
   }
 
   async function handleEndWorkDay(): Promise<void> {
@@ -150,6 +185,7 @@ export function HomeScreen({ navigation }: Props) {
     );
     if (result?.endedAt) {
       await stopBackgroundShiftTracking().catch(() => undefined);
+      await clearShiftTrackingSession();
       setBackgroundGpsTracking(false);
     }
   }
@@ -204,6 +240,7 @@ export function HomeScreen({ navigation }: Props) {
 
   async function handleLogout(): Promise<void> {
     await stopBackgroundShiftTracking().catch(() => undefined);
+    await clearShiftTrackingSession();
     await logout();
   }
 
