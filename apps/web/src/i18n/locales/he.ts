@@ -336,6 +336,17 @@ export const he: TranslationMessages = {
     locationStale: "המיקום אינו עדכני (מעל 15 דקות).",
     openInMap: "פתיחה במפה",
   },
+  workDay: {
+    title: "יום עבודה",
+    notStarted: "טרם התחלת יום עבודה",
+    activeSince: "יום העבודה התחיל ב־{{time}}",
+    start: "התחל עבודה",
+    end: "סיים עבודה",
+    updating: "מעדכן…",
+    loadError: "לא ניתן לטעון את מצב יום העבודה.",
+    actionError: "לא ניתן לעדכן את יום העבודה.",
+    locationHint: "המיקום נשמר רק בעת התחלה וסיום של יום העבודה.",
+  },
   customers: {
     accountsEyebrow: "חשבונות",
     title: "לקוחות",

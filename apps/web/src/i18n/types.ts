@@ -337,6 +337,17 @@ export interface TranslationMessages {
     locationStale: string;
     openInMap: string;
   };
+  workDay: {
+    title: string;
+    notStarted: string;
+    activeSince: string;
+    start: string;
+    end: string;
+    updating: string;
+    loadError: string;
+    actionError: string;
+    locationHint: string;
+  };
   customers: {
     accountsEyebrow: string;
     title: string;

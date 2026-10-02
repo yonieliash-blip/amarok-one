@@ -338,6 +338,17 @@ export const en: TranslationMessages = {
     locationStale: "Location is not current (over 15 minutes old).",
     openInMap: "Open in map",
   },
+  workDay: {
+    title: "Work day",
+    notStarted: "You have not started a work day yet",
+    activeSince: "Work day started at {{time}}",
+    start: "Start work",
+    end: "End work",
+    updating: "Updating…",
+    loadError: "Unable to load the current work day.",
+    actionError: "Unable to update the work day.",
+    locationHint: "Location is saved only when starting and ending the work day.",
+  },
   customers: {
     accountsEyebrow: "Accounts",
     title: "Customers",

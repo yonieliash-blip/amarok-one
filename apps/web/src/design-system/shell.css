@@ -30,6 +30,77 @@
   max-width: 100%;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
+}
+
+.app-shell__work-day {
+  width: 100%;
+  max-width: 96rem;
+  min-width: 0;
+  margin: var(--ds-space-5) auto 0;
+  padding-inline: var(--ds-page-padding);
+}
+
+.app-shell__content > * {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+
+.work-day-control {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-4);
+  padding: var(--ds-space-4) var(--ds-space-5);
+  border: 1px solid var(--ds-color-border);
+  border-radius: var(--ds-radius-xl);
+  background: var(--ds-color-bg-elevated);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.work-day-control__icon {
+  display: grid;
+  flex: 0 0 auto;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-color-warning-muted);
+  color: var(--ds-color-primary);
+}
+
+.work-day-control__content {
+  min-width: 0;
+  flex: 1;
+}
+
+.work-day-control__eyebrow,
+.work-day-control__status,
+.work-day-control__hint,
+.work-day-control__error {
+  margin: 0;
+}
+
+.work-day-control__eyebrow {
+  color: var(--ds-color-text-muted);
+  font-size: var(--ds-text-caption-size);
+  font-weight: var(--ds-font-weight-bold);
+}
+
+.work-day-control__status {
+  font-weight: var(--ds-font-weight-bold);
+}
+
+.work-day-control__hint {
+  margin-top: var(--ds-space-1);
+  color: var(--ds-color-text-muted);
+  font-size: var(--ds-text-caption-size);
+}
+
+.work-day-control__error {
+  margin-top: var(--ds-space-1);
+  color: var(--ds-color-error-on);
+  font-size: var(--ds-text-caption-size);
 }
 
 .app-shell__content {
@@ -1169,6 +1240,22 @@
 }
 
 @media (max-width: 768px) {
+  .app-shell__work-day {
+    margin-top: var(--ds-space-4);
+    padding-inline: var(--ds-page-padding-mobile);
+  }
+
+  .work-day-control {
+    align-items: flex-start;
+    gap: var(--ds-space-3);
+    padding: var(--ds-space-4);
+  }
+
+  .work-day-control .amarok-button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
   .app-shell__content {
     padding: var(--ds-space-6) var(--ds-page-padding-mobile)
       calc(5.75rem + env(safe-area-inset-bottom));
@@ -2181,6 +2268,16 @@
 }
 
 @media (max-width: 480px) {
+  .work-day-control {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .work-day-control .amarok-button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
   .dispatch-board__toolbar .amarok-button {
     min-width: 2.75rem;
   }

@@ -3,6 +3,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { Header } from "./Header";
 import { MobileNavigation } from "./MobileNavigation";
 import { Sidebar } from "./Sidebar";
+import { WorkDayControl } from "../components/WorkDayControl";
 import { useAuth } from "../auth/useAuth";
 import { useTranslation } from "../i18n/useTranslation";
 import { getUnreadMessageCountRequest } from "../lib/messages-api";
@@ -115,6 +116,9 @@ export function AppLayout() {
           onMenuToggle={() => setSidebarOpen((value) => !value)}
           unreadMessageCount={user ? unreadMessageCount : 0}
         />
+        <div className="app-shell__work-day">
+          <WorkDayControl />
+        </div>
         <main className="app-shell__content">
           <Outlet />
         </main>
