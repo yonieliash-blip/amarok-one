@@ -3,7 +3,9 @@ import { Outlet, useLocation } from "react-router-dom";
 import { Header } from "./Header";
 import { MobileNavigation } from "./MobileNavigation";
 import { Sidebar } from "./Sidebar";
+import { useAuth } from "../auth/useAuth";
 import { useTranslation } from "../i18n/useTranslation";
+import { getUnreadMessageCountRequest } from "../lib/messages-api";
 
 const MOBILE_NAV_QUERY = "(max-width: 768px)";
 
@@ -67,10 +69,33 @@ function resolvePageTitle(pathname: string, t: ReturnType<typeof useTranslation>
 
 export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const isMobileNav = useMobileNav(setSidebarOpen);
   const location = useLocation();
+  const { accessToken, user } = useAuth();
   const { t } = useTranslation();
   const title = resolvePageTitle(location.pathname, t);
+
+  useEffect(() => {
+    if (!user || !accessToken) return;
+
+    let cancelled = false;
+    const refreshUnreadMessages = async (): Promise<void> => {
+      try {
+        const count = await getUnreadMessageCountRequest(user.organization.id, accessToken);
+        if (!cancelled) setUnreadMessageCount(count);
+      } catch {
+        // A temporary notification refresh failure must not interrupt the active screen.
+      }
+    };
+
+    void refreshUnreadMessages();
+    const interval = window.setInterval(() => void refreshUnreadMessages(), 30_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [accessToken, location.pathname, user]);
 
   return (
     <div className="app-shell">
@@ -88,11 +113,15 @@ export function AppLayout() {
           title={title}
           menuOpen={isMobileNav && sidebarOpen}
           onMenuToggle={() => setSidebarOpen((value) => !value)}
+          unreadMessageCount={user ? unreadMessageCount : 0}
         />
         <main className="app-shell__content">
           <Outlet />
         </main>
-        <MobileNavigation onOpenMenu={() => setSidebarOpen(true)} />
+        <MobileNavigation
+          onOpenMenu={() => setSidebarOpen(true)}
+          unreadMessageCount={user ? unreadMessageCount : 0}
+        />
       </div>
 
       {isMobileNav && sidebarOpen ? (

@@ -9,9 +9,10 @@ const MOBILE_NAV_PRIORITY = ["service-calls", "messages", "tasks"];
 
 interface MobileNavigationProps {
   onOpenMenu: () => void;
+  unreadMessageCount?: number;
 }
 
-export function MobileNavigation({ onOpenMenu }: MobileNavigationProps) {
+export function MobileNavigation({ onOpenMenu, unreadMessageCount = 0 }: MobileNavigationProps) {
   const { user } = useAuth();
   const { t } = useTranslation();
   const navigationItems = buildNavigationItems(permissionSlugsFromCarrier(user), user?.role.slug, {
@@ -45,6 +46,14 @@ export function MobileNavigation({ onOpenMenu }: MobileNavigationProps) {
         >
           <NavIcon itemId={item.id} />
           <span>{t("nav", item.labelKey)}</span>
+          {item.id === "messages" && unreadMessageCount > 0 ? (
+            <span
+              className="mobile-navigation__unread"
+              aria-label={`${unreadMessageCount} ${t("messages", "unread")}`}
+            >
+              {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+            </span>
+          ) : null}
         </NavLink>
       ))}
       {dashboardItem ? (

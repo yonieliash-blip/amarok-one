@@ -770,7 +770,7 @@ export const en: TranslationMessages = {
   managementDashboard: {
     title: "Dashboard",
     subtitle: "A current view of service and operations",
-    newServiceCall: "Open service call",
+    newServiceCall: "Service call",
     refresh: "Refresh",
     loading: "Loading dashboard…",
     loadError: "Dashboard data is currently unavailable.",

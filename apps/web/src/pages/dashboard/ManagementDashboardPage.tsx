@@ -181,7 +181,11 @@ export function ManagementDashboardPage() {
         <div className="management-dashboard__actions">
           {canWrite ? (
             <Link to="/service-calls/new" className="customers-page__action-link">
-              <Button variant="primary">
+              <Button
+                variant="primary"
+                className="management-dashboard__new-call"
+                aria-label={t("titles", "newServiceCall")}
+              >
                 <Plus size={20} aria-hidden="true" />
                 {t("managementDashboard", "newServiceCall")}
               </Button>

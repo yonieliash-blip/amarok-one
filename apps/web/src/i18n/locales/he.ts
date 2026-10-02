@@ -766,7 +766,7 @@ export const he: TranslationMessages = {
   managementDashboard: {
     title: "לוח בקרה",
     subtitle: "תמונת מצב עדכנית של השירות והתפעול",
-    newServiceCall: "פתיחת קריאת שירות",
+    newServiceCall: "קריאת שירות",
     refresh: "רענון",
     loading: "טוען את לוח הבקרה…",
     loadError: "לא ניתן לטעון כרגע את נתוני לוח הבקרה.",
