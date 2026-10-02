@@ -18,6 +18,7 @@ on:
           - apply_customer_site_indexes
           - restart_web
           - deploy_api_and_migrate
+          - repair_operational_numbers
 
 permissions:
   contents: read
@@ -181,6 +182,26 @@ jobs:
                 git fetch --no-tags origin main
                 git merge --ff-only origin/main
                 compose build --no-cache api
+                compose up -d --no-deps --force-recreate api
+                curl --fail --show-error --retry 12 --retry-all-errors \
+                  https://staging-api.amarok-ce.com/health
+                ;;
+              repair_operational_numbers)
+                git fetch --no-tags origin main
+                git merge --ff-only origin/main
+                test -f apps/api/prisma/migrations/20261002040000_amarok_operational_numbers/migration.sql
+                compose build --no-cache api
+                # Only marks the known failed Prisma attempt as rolled back; it does not run SQL.
+                compose run --rm --no-deps --entrypoint sh api -ec \
+                  'prisma migrate resolve --rolled-back 20261002040000_amarok_operational_numbers --schema=./prisma/schema.prisma'
+                compose run --rm --no-deps --entrypoint sh api -ec \
+                  'prisma migrate deploy --schema=./prisma/schema.prisma'
+                compose exec -T postgres sh -ec '
+                  set -eu
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM \"_prisma_migrations\" WHERE migration_name = \$\$20261002040000_amarok_operational_numbers\$\$ AND finished_at IS NOT NULL AND rolled_back_at IS NULL;")" = "1"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM customers WHERE \"deletedAt\" IS NULL AND \"customerNumber\" !~ \$\$^AM-CU-[0-9]+\$\$;")" = "0"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM organization_number_sequences WHERE scope = \$\$customer-number\$\$;")" = "1"
+                '
                 compose up -d --no-deps --force-recreate api
                 curl --fail --show-error --retry 12 --retry-all-errors \
                   https://staging-api.amarok-ce.com/health
