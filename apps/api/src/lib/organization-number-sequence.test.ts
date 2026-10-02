@@ -27,4 +27,16 @@ describe("reserveOperationalNumber", () => {
       ),
     ).resolves.toBe("AM-SE-42");
   });
+
+  it("does not truncate operational numbers after the first two digits", async () => {
+    const upsert = vi.fn().mockResolvedValue({ nextValue: 102 });
+
+    await expect(
+      reserveOperationalNumber(
+        { organizationNumberSequence: { upsert } } as never,
+        organizationId,
+        "customer-number",
+      ),
+    ).resolves.toBe("AM-CU-101");
+  });
 });
