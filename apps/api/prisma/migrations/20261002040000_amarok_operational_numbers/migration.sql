@@ -16,6 +16,13 @@ CREATE UNIQUE INDEX "organization_number_sequences_organizationId_scope_key"
 CREATE INDEX "organization_number_sequences_organizationId_idx"
   ON "organization_number_sequences"("organizationId");
 
+-- Existing customer numbers can already occupy a future AM-CU value. Move the
+-- active rows to a UUID-derived namespace first so the final deterministic
+-- numbering does not violate the tenant-scoped unique index while it is updated.
+UPDATE "customers"
+SET "customerNumber" = '__amarok_operational_number_tmp__' || "id"::TEXT
+WHERE "deletedAt" IS NULL;
+
 WITH numbered_customers AS (
   SELECT
     "id",
