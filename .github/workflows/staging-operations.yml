@@ -20,7 +20,7 @@ on:
           - deploy_api_and_migrate
           - apply_internal_messages_and_birthdays
           - operational_numbers_preflight
-          - repair_operational_numbers
+          - apply_customer_identifier_preservation
 
 permissions:
   contents: read
