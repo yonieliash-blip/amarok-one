@@ -72,6 +72,14 @@ function monthRange(month: string): { from: Date; to: Date } {
   };
 }
 
+function dayRange(date: string): { from: Date; to: Date } {
+  const [year, monthNumber, day] = date.split("-").map(Number) as [number, number, number];
+  return {
+    from: israelMidnightUtc(year, monthNumber - 1, day),
+    to: israelMidnightUtc(year, monthNumber - 1, day + 1),
+  };
+}
+
 function israelMonth(date: Date): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: ISRAEL_TIME_ZONE,
@@ -183,6 +191,116 @@ export async function getMonthlyAttendanceReport(
     totalNetMinutes: employeeRows.reduce((sum, employee) => sum + employee.netMinutes, 0),
     locked: Boolean(periodLock && !periodLock.unlockedAt),
     periodLock,
+    employees: employeeRows,
+  };
+}
+
+/**
+ * Returns one operational workday view, grouped by each employee's current
+ * primary role. Only explicitly reported breaks are counted as non-working
+ * time; location freshness is deliberately not interpreted as employee idle time.
+ */
+export async function getDailyAttendanceReport(
+  organizationId: string,
+  date: string,
+  now = new Date(),
+) {
+  const { from, to } = dayRange(date);
+  const rows = await prisma.workDay.findMany({
+    where: { organizationId, startedAt: { gte: from, lt: to } },
+    include: {
+      user: {
+        select: {
+          displayName: true,
+          email: true,
+          organizationMembers: {
+            where: { organizationId, status: "ACTIVE", deletedAt: null },
+            select: { primaryRole: { select: { slug: true, name: true } } },
+            take: 1,
+          },
+        },
+      },
+      breaks: { orderBy: { startedAt: "asc" } },
+      _count: { select: { locations: true } },
+    },
+    orderBy: [{ user: { displayName: "asc" } }, { startedAt: "asc" }],
+  });
+
+  const employees = new Map<
+    string,
+    {
+      userId: string;
+      displayName: string;
+      email: string;
+      role: { slug: string; name: string } | null;
+      workDays: number;
+      grossMinutes: number;
+      breakMinutes: number;
+      netMinutes: number;
+      days: Array<{
+        id: string;
+        status: string;
+        reviewStatus: string;
+        approvedAt: Date | null;
+        startedAt: Date;
+        endedAt: Date | null;
+        grossMinutes: number;
+        breakMinutes: number;
+        netMinutes: number;
+        locationCaptured: boolean;
+        locationSampleCount: number;
+      }>;
+    }
+  >();
+
+  for (const row of rows) {
+    const grossMinutes = durationMinutes(row.startedAt, row.endedAt, now);
+    const breakMinutes = row.breaks.reduce(
+      (total, entry) => total + durationMinutes(entry.startedAt, entry.endedAt, now),
+      0,
+    );
+    const netMinutes = Math.max(0, grossMinutes - breakMinutes);
+    const role = row.user.organizationMembers[0]?.primaryRole ?? null;
+    const employee = employees.get(row.userId) ?? {
+      userId: row.userId,
+      displayName: row.user.displayName,
+      email: row.user.email,
+      role,
+      workDays: 0,
+      grossMinutes: 0,
+      breakMinutes: 0,
+      netMinutes: 0,
+      days: [],
+    };
+    employee.workDays += 1;
+    employee.grossMinutes += grossMinutes;
+    employee.breakMinutes += breakMinutes;
+    employee.netMinutes += netMinutes;
+    employee.days.push({
+      id: row.id,
+      status: row.status,
+      reviewStatus: row.reviewStatus,
+      approvedAt: row.approvedAt,
+      startedAt: row.startedAt,
+      endedAt: row.endedAt,
+      grossMinutes,
+      breakMinutes,
+      netMinutes,
+      locationCaptured: Boolean(row.startLatitude || row.endLatitude || row._count.locations),
+      locationSampleCount: row._count.locations,
+    });
+    employees.set(row.userId, employee);
+  }
+
+  const employeeRows = Array.from(employees.values());
+  return {
+    date,
+    timeZone: ISRAEL_TIME_ZONE,
+    employeeCount: employeeRows.length,
+    totalWorkDays: employeeRows.reduce((sum, employee) => sum + employee.workDays, 0),
+    totalGrossMinutes: employeeRows.reduce((sum, employee) => sum + employee.grossMinutes, 0),
+    totalBreakMinutes: employeeRows.reduce((sum, employee) => sum + employee.breakMinutes, 0),
+    totalNetMinutes: employeeRows.reduce((sum, employee) => sum + employee.netMinutes, 0),
     employees: employeeRows,
   };
 }
