@@ -292,6 +292,16 @@ export interface TranslationMessages {
     eyebrow: string;
     title: string;
     subtitle: string;
+    dailyEyebrow: string;
+    dailyTitle: string;
+    dailySubtitle: string;
+    date: string;
+    dailyEmpty: string;
+    dailyTotals: string;
+    role: string;
+    roleUnknown: string;
+    status: string;
+    completed: string;
     loading: string;
     month: string;
     emptyTitle: string;
