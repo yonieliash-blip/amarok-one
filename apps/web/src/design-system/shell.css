@@ -879,6 +879,14 @@
 }
 
 @media (max-width: 768px) {
+  html,
+  body,
+  #root {
+    inline-size: 100%;
+    max-inline-size: 100%;
+    overflow-x: clip;
+  }
+
   .app-shell {
     display: block;
   }
@@ -1272,6 +1280,15 @@
   .app-header {
     min-height: 4.5rem;
     justify-content: space-between;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .app-header > *,
+  .app-header__start,
+  .app-header__titles,
+  .app-header__brand-link {
+    min-width: 0;
   }
 
   .app-header__brand {

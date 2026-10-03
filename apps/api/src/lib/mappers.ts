@@ -270,7 +270,7 @@ type ServiceCallWithRelations = ServiceCallModel & {
     internalNumber: string;
     manufacturer: string | null;
     model: string | null;
-  };
+  } | null;
   branch: { id: string; name: string; code: string } | null;
   assignedUser: { id: string; email: string; displayName: string } | null;
 };
@@ -371,14 +371,16 @@ export function toServiceCallDto(model: ServiceCallWithRelations): ServiceCall {
           city: model.customerSite.city ?? undefined,
         }
       : undefined,
-    equipmentId: model.equipmentId,
-    equipment: {
-      id: model.equipment.id,
-      name: model.equipment.name,
-      internalNumber: model.equipment.internalNumber,
-      manufacturer: model.equipment.manufacturer ?? undefined,
-      model: model.equipment.model ?? undefined,
-    },
+    equipmentId: model.equipmentId ?? undefined,
+    equipment: model.equipment
+      ? {
+          id: model.equipment.id,
+          name: model.equipment.name,
+          internalNumber: model.equipment.internalNumber,
+          manufacturer: model.equipment.manufacturer ?? undefined,
+          model: model.equipment.model ?? undefined,
+        }
+      : undefined,
     branchId: model.branchId ?? undefined,
     branch: model.branch
       ? {
@@ -398,6 +400,10 @@ export function toServiceCallDto(model: ServiceCallWithRelations): ServiceCall {
     contactName: model.contactName ?? undefined,
     contactPhone: model.contactPhone ?? undefined,
     location: model.location ?? undefined,
+    equipmentModel: model.equipmentModel ?? undefined,
+    equipmentLicensePlate: model.equipmentLicensePlate ?? undefined,
+    equipmentChassisNumber: model.equipmentChassisNumber ?? undefined,
+    purchaseOrderNumber: model.purchaseOrderNumber ?? undefined,
     notes: model.notes ?? undefined,
     createdAt: model.createdAt.toISOString(),
     updatedAt: model.updatedAt.toISOString(),

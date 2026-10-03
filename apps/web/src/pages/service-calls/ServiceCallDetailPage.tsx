@@ -274,6 +274,22 @@ export function ServiceCallDetailPage() {
               <dt>{t("serviceCalls", "workSite")}</dt>
               <dd>{serviceCall.location ?? emptyValue}</dd>
             </div>
+            <div>
+              <dt>דגם כלי</dt>
+              <dd>{serviceCall.equipmentModel ?? serviceCall.equipment?.model ?? emptyValue}</dd>
+            </div>
+            <div>
+              <dt>מספר רישוי</dt>
+              <dd dir="ltr">{serviceCall.equipmentLicensePlate ?? emptyValue}</dd>
+            </div>
+            <div>
+              <dt>מספר שלדה</dt>
+              <dd dir="ltr">{serviceCall.equipmentChassisNumber ?? emptyValue}</dd>
+            </div>
+            <div>
+              <dt>מספר הזמנת רכש</dt>
+              <dd dir="ltr">{serviceCall.purchaseOrderNumber ?? emptyValue}</dd>
+            </div>
           </dl>
         </section>
 

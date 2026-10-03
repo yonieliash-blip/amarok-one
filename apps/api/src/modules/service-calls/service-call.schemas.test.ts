@@ -21,6 +21,30 @@ describe("service-call.schemas", () => {
     expect(result.success).toBe(true);
   });
 
+  it("accepts a one-off equipment context without creating permanent equipment", () => {
+    const result = createServiceCallSchema.safeParse({
+      title: "תיקון אצל לקוח קצה",
+      customerId: validCustomerId,
+      equipmentModel: "מלגזה 3 טון",
+      equipmentLicensePlate: "123-45-678",
+      equipmentChassisNumber: "VIN-123456",
+      purchaseOrderNumber: "PO-7788",
+      contactName: "דוד לוי",
+      contactPhone: "050-1234567",
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("requires either permanent equipment or a one-off equipment model", () => {
+    const result = createServiceCallSchema.safeParse({
+      title: "קריאה ללא כלי",
+      customerId: validCustomerId,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
   it("rejects manually supplied service call numbers", () => {
     const result = createServiceCallSchema.safeParse({
       serviceCallNumber: "AM-SE-01",

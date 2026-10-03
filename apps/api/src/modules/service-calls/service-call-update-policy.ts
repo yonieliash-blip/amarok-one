@@ -14,6 +14,9 @@ export const TECHNICIAN_SERVICE_CALL_PATCH_FIELDS = [
   "contactName",
   "contactPhone",
   "location",
+  "equipmentModel",
+  "equipmentLicensePlate",
+  "equipmentChassisNumber",
 ] as const satisfies readonly (keyof UpdateServiceCallInput)[];
 
 export const CREATE_LIFECYCLE_FORBIDDEN_FIELDS = [
@@ -71,6 +74,13 @@ export function pickTechnicianPatch(input: UpdateServiceCallInput): UpdateServic
     ...(input.contactName !== undefined ? { contactName: input.contactName } : {}),
     ...(input.contactPhone !== undefined ? { contactPhone: input.contactPhone } : {}),
     ...(input.location !== undefined ? { location: input.location } : {}),
+    ...(input.equipmentModel !== undefined ? { equipmentModel: input.equipmentModel } : {}),
+    ...(input.equipmentLicensePlate !== undefined
+      ? { equipmentLicensePlate: input.equipmentLicensePlate }
+      : {}),
+    ...(input.equipmentChassisNumber !== undefined
+      ? { equipmentChassisNumber: input.equipmentChassisNumber }
+      : {}),
   };
 }
 

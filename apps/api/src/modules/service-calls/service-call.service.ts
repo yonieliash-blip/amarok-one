@@ -530,6 +530,10 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
             contactName: input.contactName,
             contactPhone: input.contactPhone,
             location: input.location,
+            equipmentModel: input.equipmentModel,
+            equipmentLicensePlate: input.equipmentLicensePlate,
+            equipmentChassisNumber: input.equipmentChassisNumber,
+            purchaseOrderNumber: input.purchaseOrderNumber,
             notes: input.notes,
           },
           include: serviceCallInclude,
@@ -585,7 +589,16 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
     const nextCustomerId = patchInput.customerId ?? existing.customerId;
     const nextCustomerSiteId =
       patchInput.customerSiteId === undefined ? existing.customerSiteId : patchInput.customerSiteId;
-    const nextEquipmentId = patchInput.equipmentId ?? existing.equipmentId;
+    const nextEquipmentId =
+      patchInput.equipmentId === undefined ? existing.equipmentId : patchInput.equipmentId;
+    const nextEquipmentModel =
+      patchInput.equipmentModel === undefined ? existing.equipmentModel : patchInput.equipmentModel;
+
+    if (!nextEquipmentId && !nextEquipmentModel) {
+      throw badRequest("An existing equipment item or a one-off equipment model is required", {
+        field: "equipmentModel",
+      });
+    }
 
     if (
       patchInput.customerId !== undefined ||
@@ -622,7 +635,11 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
           ? { customerSite: { disconnect: true } }
           : { customerSite: { connect: { id: patchInput.customerSiteId } } }
         : {}),
-      ...(patchInput.equipmentId !== undefined ? { equipmentId: patchInput.equipmentId } : {}),
+      ...(patchInput.equipmentId !== undefined
+        ? patchInput.equipmentId === null
+          ? { equipment: { disconnect: true } }
+          : { equipment: { connect: { id: patchInput.equipmentId } } }
+        : {}),
       ...(patchInput.branchId !== undefined
         ? patchInput.branchId === null
           ? { branch: { disconnect: true } }
@@ -631,6 +648,18 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
       ...(patchInput.contactName !== undefined ? { contactName: patchInput.contactName } : {}),
       ...(patchInput.contactPhone !== undefined ? { contactPhone: patchInput.contactPhone } : {}),
       ...(patchInput.location !== undefined ? { location: patchInput.location } : {}),
+      ...(patchInput.equipmentModel !== undefined
+        ? { equipmentModel: patchInput.equipmentModel }
+        : {}),
+      ...(patchInput.equipmentLicensePlate !== undefined
+        ? { equipmentLicensePlate: patchInput.equipmentLicensePlate }
+        : {}),
+      ...(patchInput.equipmentChassisNumber !== undefined
+        ? { equipmentChassisNumber: patchInput.equipmentChassisNumber }
+        : {}),
+      ...(patchInput.purchaseOrderNumber !== undefined
+        ? { purchaseOrderNumber: patchInput.purchaseOrderNumber }
+        : {}),
       ...(patchInput.notes !== undefined ? { notes: patchInput.notes } : {}),
     };
 
@@ -1113,20 +1142,22 @@ async function validateCustomerSiteEquipmentLink(
   organizationId: string,
   customerId: string,
   customerSiteId: string | null | undefined,
-  equipmentId: string,
+  equipmentId?: string | null,
 ): Promise<void> {
   await assertCustomerInOrganization(organizationId, customerId);
-  const equipment = await assertEquipmentInOrganization(organizationId, equipmentId);
-  assertEquipmentMatchesCustomer(equipment, customerId);
+  if (equipmentId) {
+    const equipment = await assertEquipmentInOrganization(organizationId, equipmentId);
+    assertEquipmentMatchesCustomer(equipment, customerId);
+
+    if (equipment.customerSiteId && equipment.customerSiteId !== customerSiteId) {
+      throw conflict("Equipment is assigned to a different customer site", {
+        equipmentCustomerSiteId: equipment.customerSiteId,
+        requestedCustomerSiteId: customerSiteId ?? null,
+      });
+    }
+  }
 
   if (customerSiteId) {
     await assertCustomerSiteInOrganization(organizationId, customerId, customerSiteId);
-  }
-
-  if (equipment.customerSiteId && equipment.customerSiteId !== customerSiteId) {
-    throw conflict("Equipment is assigned to a different customer site", {
-      equipmentCustomerSiteId: equipment.customerSiteId,
-      requestedCustomerSiteId: customerSiteId ?? null,
-    });
   }
 }

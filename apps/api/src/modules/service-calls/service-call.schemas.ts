@@ -30,15 +30,23 @@ export const createServiceCallSchema = z
     completedAt: dateTimeSchema.optional(),
     customerId: z.string().uuid(),
     customerSiteId: z.string().uuid().optional(),
-    equipmentId: z.string().uuid(),
+    equipmentId: z.string().uuid().optional(),
     branchId: z.string().uuid().optional(),
     assignedUserId: z.string().uuid().optional(),
     contactName: z.string().trim().min(2).max(128).optional(),
     contactPhone: z.string().trim().min(3).max(32).optional(),
     location: z.string().trim().min(2).max(256).optional(),
+    equipmentModel: z.string().trim().min(2).max(128).optional(),
+    equipmentLicensePlate: z.string().trim().min(2).max(64).optional(),
+    equipmentChassisNumber: z.string().trim().min(3).max(64).optional(),
+    purchaseOrderNumber: z.string().trim().min(1).max(128).optional(),
     notes: z.string().trim().max(2000).optional(),
   })
-  .strict();
+  .strict()
+  .refine((value) => value.equipmentId || value.equipmentModel, {
+    message: "An existing equipment item or a one-off equipment model is required",
+    path: ["equipmentModel"],
+  });
 
 export const updateServiceCallSchema = z
   .object({
@@ -51,12 +59,16 @@ export const updateServiceCallSchema = z
     completedAt: dateTimeSchema.nullable().optional(),
     customerId: z.string().uuid().optional(),
     customerSiteId: z.string().uuid().nullable().optional(),
-    equipmentId: z.string().uuid().optional(),
+    equipmentId: z.string().uuid().nullable().optional(),
     branchId: z.string().uuid().nullable().optional(),
     assignedUserId: z.string().uuid().nullable().optional(),
     contactName: z.string().trim().min(2).max(128).nullable().optional(),
     contactPhone: z.string().trim().min(3).max(32).nullable().optional(),
     location: z.string().trim().min(2).max(256).nullable().optional(),
+    equipmentModel: z.string().trim().min(2).max(128).nullable().optional(),
+    equipmentLicensePlate: z.string().trim().min(2).max(64).nullable().optional(),
+    equipmentChassisNumber: z.string().trim().min(3).max(64).nullable().optional(),
+    purchaseOrderNumber: z.string().trim().min(1).max(128).nullable().optional(),
     notes: z.string().trim().max(2000).nullable().optional(),
   })
   .strict()

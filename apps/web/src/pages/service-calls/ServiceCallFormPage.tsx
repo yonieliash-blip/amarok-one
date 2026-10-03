@@ -223,11 +223,15 @@ export function ServiceCallFormPage() {
           priority: call.priority,
           customerId: call.customerId,
           customerSiteId: call.customerSiteId ?? "",
-          equipmentId: call.equipmentId,
+          equipmentId: call.equipmentId ?? "",
           branchId: call.branchId ?? "",
           contactName: call.contactName ?? "",
           contactPhone: call.contactPhone ?? "",
           location: call.location ?? "",
+          equipmentModel: call.equipmentModel ?? "",
+          equipmentLicensePlate: call.equipmentLicensePlate ?? "",
+          equipmentChassisNumber: call.equipmentChassisNumber ?? "",
+          purchaseOrderNumber: call.purchaseOrderNumber ?? "",
           notes: call.notes ?? "",
         });
         setOpenedAtInput(toLocalDateTimeInput(call.openedAt));
@@ -493,17 +497,12 @@ export function ServiceCallFormPage() {
               </select>
             </label>
             <label className="customer-form__field">
-              <span>
-                {t("serviceCalls", "machine")} {t("common", "requiredMark")}
-              </span>
+              <span>{t("serviceCalls", "machine")}</span>
               <select
-                required
                 value={form.equipmentId}
                 onChange={(event) => updateField("equipmentId", event.target.value)}
               >
-                <option value="" disabled>
-                  {form.customerId ? t("serviceCalls", "selectEquipmentHint") : "—"}
-                </option>
+                <option value="">{form.customerId ? "ללא כלי קבוע" : "—"}</option>
                 {compatibleEquipment.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.name} ({item.internalNumber})
@@ -524,6 +523,47 @@ export function ServiceCallFormPage() {
                   </option>
                 ))}
               </select>
+            </label>
+          </div>
+        </section>
+
+        <section className="customer-form__section">
+          <h3>פרטי כלי חד־פעמיים</h3>
+          <p className="customer-form__section-hint">
+            לקריאה אצל לקוח מזדמן: הפרטים נשמרים בקריאה זו בלבד ולא יוצרים כלי או אתר קבועים.
+          </p>
+          <div className="customer-form__grid">
+            <label className="customer-form__field">
+              <span>דגם הכלי {!form.equipmentId ? t("common", "requiredMark") : null}</span>
+              <input
+                required={!form.equipmentId}
+                value={form.equipmentModel}
+                onChange={(event) => updateField("equipmentModel", event.target.value)}
+              />
+            </label>
+            <label className="customer-form__field">
+              <span>מספר רישוי</span>
+              <input
+                dir="ltr"
+                value={form.equipmentLicensePlate}
+                onChange={(event) => updateField("equipmentLicensePlate", event.target.value)}
+              />
+            </label>
+            <label className="customer-form__field">
+              <span>מספר שלדה</span>
+              <input
+                dir="ltr"
+                value={form.equipmentChassisNumber}
+                onChange={(event) => updateField("equipmentChassisNumber", event.target.value)}
+              />
+            </label>
+            <label className="customer-form__field">
+              <span>מספר הזמנת רכש</span>
+              <input
+                dir="ltr"
+                value={form.purchaseOrderNumber}
+                onChange={(event) => updateField("purchaseOrderNumber", event.target.value)}
+              />
             </label>
           </div>
         </section>
