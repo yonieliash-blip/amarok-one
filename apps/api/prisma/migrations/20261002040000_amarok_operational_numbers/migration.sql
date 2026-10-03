@@ -23,11 +23,15 @@ CREATE UNIQUE INDEX "customers_organizationId_customerNumber_active_key"
   ON "customers"("organizationId", "customerNumber")
   WHERE "deletedAt" IS NULL;
 
+ALTER TABLE "customers" ADD COLUMN "externalCustomerNumber" TEXT;
+
 -- Existing customer numbers can already occupy a future AM-CU value. Move the
 -- active rows to a UUID-derived namespace first so the final deterministic
 -- numbering does not violate the tenant-scoped unique index while it is updated.
 UPDATE "customers"
-SET "customerNumber" = '__amarok_operational_number_tmp__' || "id"::TEXT
+SET
+  "externalCustomerNumber" = "customerNumber",
+  "customerNumber" = '__amarok_operational_number_tmp__' || "id"::TEXT
 WHERE "deletedAt" IS NULL;
 
 WITH numbered_customers AS (
@@ -60,5 +64,30 @@ SELECT
   CURRENT_TIMESTAMP,
   CURRENT_TIMESTAMP
 FROM "customers"
+WHERE "deletedAt" IS NULL
+GROUP BY "organizationId";
+
+-- Existing service calls are not renumbered. If any exist, start after the highest AM-SE number
+-- (or the number of existing calls) so the first newly generated number cannot collide.
+INSERT INTO "organization_number_sequences" (
+  "id", "organizationId", "scope", "nextValue", "createdAt", "updatedAt"
+)
+SELECT
+  gen_random_uuid(),
+  "organizationId",
+  'service-call-number',
+  GREATEST(
+    COUNT(*)::INTEGER + 1,
+    MAX(
+      CASE
+        WHEN "serviceCallNumber" ~ '^AM-SE-[0-9]+$'
+          THEN SUBSTRING("serviceCallNumber" FROM '^AM-SE-([0-9]+)$')::INTEGER
+        ELSE 0
+      END
+    ) + 1
+  ),
+  CURRENT_TIMESTAMP,
+  CURRENT_TIMESTAMP
+FROM "service_calls"
 WHERE "deletedAt" IS NULL
 GROUP BY "organizationId";

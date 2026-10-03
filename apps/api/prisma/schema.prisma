@@ -510,8 +510,9 @@ model Customer {
   legalName           String?
   registrationNumber  String?
   customerNumber      String
-  morningClientId     String?
-  morningLastSyncedAt DateTime?
+  externalCustomerNumber String?
+  morningClientId        String?
+  morningLastSyncedAt    DateTime?
   email               String?
   phone               String?
   address             String?
