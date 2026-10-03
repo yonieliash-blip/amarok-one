@@ -22,6 +22,7 @@ on:
           - operational_numbers_preflight
           - apply_customer_identifier_preservation
           - apply_technician_availability
+          - apply_service_context_and_inspiration
 
 permissions:
   contents: read
@@ -270,6 +271,36 @@ jobs:
                   test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT to_regclass(\$\$public.technician_availability\$\$) IS NOT NULL;")" = "t"
                   test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM pg_indexes WHERE schemaname = \$\$public\$\$ AND indexname IN (\$\$technician_availability_organizationId_technicianId_date_key\$\$, \$\$technician_availability_organizationId_date_idx\$\$, \$\$technician_availability_organizationId_technicianId_date_idx\$\$);")" = "3"
                   test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM pg_constraint WHERE conname IN (\$\$technician_availability_organizationId_fkey\$\$, \$\$technician_availability_technicianId_fkey\$\$);")" = "2"
+                '
+                compose up -d --no-deps --force-recreate api web
+                curl --fail --show-error --retry 12 --retry-all-errors \
+                  https://staging-api.amarok-ce.com/health
+                curl --fail --show-error --retry 12 --retry-all-errors \
+                  https://staging.amarok-ce.com/health
+                ;;
+              apply_service_context_and_inspiration)
+                git fetch --no-tags origin main
+                git merge --ff-only origin/main
+                test -f apps/api/prisma/migrations/20261003123000_service_call_one_off_context/migration.sql
+                test -f apps/api/prisma/migrations/20261003124000_inspiration_module/migration.sql
+                compose exec -T postgres sh -ec '
+                  set -eu
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM \"_prisma_migrations\" WHERE migration_name IN (\$\$20261003123000_service_call_one_off_context\$\$, \$\$20261003124000_inspiration_module\$\$) AND finished_at IS NOT NULL AND rolled_back_at IS NULL;")" = "0"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT is_nullable FROM information_schema.columns WHERE table_schema = \$\$public\$\$ AND table_name = \$\$service_calls\$\$ AND column_name = \$\$equipmentId\$\$;")" = "NO"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = \$\$public\$\$ AND table_name = \$\$service_calls\$\$ AND column_name IN (\$\$equipmentModel\$\$, \$\$equipmentLicensePlate\$\$, \$\$equipmentChassisNumber\$\$, \$\$purchaseOrderNumber\$\$);")" = "0"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT to_regclass(\$\$public.inspiration_quotes\$\$) IS NULL;")" = "t"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT to_regclass(\$\$public.employee_inspiration_messages\$\$) IS NULL;")" = "t"
+                '
+                compose build --no-cache api web
+                compose run --rm --no-deps --entrypoint sh api -ec \
+                  'prisma migrate deploy --schema=./prisma/schema.prisma'
+                compose exec -T postgres sh -ec '
+                  set -eu
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM \"_prisma_migrations\" WHERE migration_name IN (\$\$20261003123000_service_call_one_off_context\$\$, \$\$20261003124000_inspiration_module\$\$) AND finished_at IS NOT NULL AND rolled_back_at IS NULL;")" = "2"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT is_nullable FROM information_schema.columns WHERE table_schema = \$\$public\$\$ AND table_name = \$\$service_calls\$\$ AND column_name = \$\$equipmentId\$\$;")" = "YES"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = \$\$public\$\$ AND table_name = \$\$service_calls\$\$ AND column_name IN (\$\$equipmentModel\$\$, \$\$equipmentLicensePlate\$\$, \$\$equipmentChassisNumber\$\$, \$\$purchaseOrderNumber\$\$);")" = "4"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT to_regclass(\$\$public.inspiration_quotes\$\$) IS NOT NULL;")" = "t"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT to_regclass(\$\$public.employee_inspiration_messages\$\$) IS NOT NULL;")" = "t"
                 '
                 compose up -d --no-deps --force-recreate api web
                 curl --fail --show-error --retry 12 --retry-all-errors \
