@@ -291,6 +291,19 @@ export interface OrganizationMember {
   };
 }
 
+/** Explicit daily availability set by a dispatcher for a technician. */
+export type TechnicianAvailabilityStatus = "available" | "unavailable";
+
+export interface TechnicianAvailability {
+  id: EntityId;
+  organizationId: EntityId;
+  technicianId: EntityId;
+  date: string;
+  status: TechnicianAvailabilityStatus;
+  note?: string;
+  updatedAt: ISODateString;
+}
+
 /** Active organization colleague available for a private conversation. */
 export interface DirectMessageMember {
   id: EntityId;
@@ -336,6 +349,7 @@ export interface DispatchBoard {
   scheduledFrom: ISODateString;
   scheduledTo: ISODateString;
   technicians: OrganizationMember[];
+  availability: TechnicianAvailability[];
   assignments: DispatchBoardAssignment[];
   unassignedServiceCalls: ServiceCall[];
 }

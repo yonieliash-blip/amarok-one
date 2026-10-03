@@ -196,6 +196,7 @@ Each feature lives under `apps/api/src/modules/<feature>/`:
 | **customers**     | `/organizations/:organizationId/customers`     | Yes                          | CRUD + nested contacts                                                                         |
 | **equipment**     | `/organizations/:organizationId/equipment`     | Yes                          | Types + assets                                                                                 |
 | **service-calls** | `/organizations/:organizationId/service-calls` | Yes                          | CRUD, lifecycle, visits                                                                        |
+| **technicians**   | `/organizations/:organizationId/technicians`   | Yes                          | Roster, daily availability and assignment-conflict checks                                      |
 | **attendance**    | `/organizations/:organizationId/attendance`    | Yes                          | Clock actions, sampled shift GPS, reports, correction, review + audited payroll-period locking |
 
 ### Cross-cutting libraries
@@ -292,6 +293,7 @@ Models automatically scoped by the Prisma extension:
 - `Company`, `Branch`, `Customer`, `CustomerContact`, `OrganizationNumberSequence`
 - `EquipmentType`, `Equipment`
 - `ServiceCall`, `ServiceCallVisit`
+- `TechnicianAvailability`
 - `WorkflowEvent`, `UserRole`, `Role`, `AuditLog`
 
 `Organization` is scoped by `id` (not `organizationId`).
@@ -451,7 +453,7 @@ Technicians with `my_service_calls:read` but **without** `service_calls:read` ar
 **Client:** `apps/api/src/lib/prisma.ts`  
 **Migrations:** `apps/api/prisma/migrations/`
 
-### Entity model (18 models)
+### Core entity model
 
 | Model                        | Scope             | Soft delete      |
 | ---------------------------- | ----------------- | ---------------- |
@@ -472,6 +474,7 @@ Technicians with `my_service_calls:read` but **without** `service_calls:read` ar
 | `Equipment`                  | Tenant            | Yes              |
 | `ServiceCall`                | Tenant            | Yes              |
 | `ServiceCallVisit`           | Tenant            | Yes              |
+| `TechnicianAvailability`     | Tenant            | No (daily state) |
 | `WorkflowEvent`              | Tenant            | No (append-only) |
 
 ### Key enums
@@ -603,10 +606,12 @@ Audit expansion is deferred (A4).
 - Equipment CRUD
 - Service calls CRUD + lifecycle panel
 - My service calls (technician view)
+- Dispatch board with availability-aware assignment and schedule-conflict protection
+- Technician roster with daily availability management
 
 ### Placeholder routes
 
-Inventory, purchase orders, parts, accounting, reports, calendar, my equipment, and my schedule render `ModulePlaceholderPage`. The technicians route now renders a tenant-scoped roster backed by organization membership and the technician role.
+Inventory, purchase orders, parts, accounting, reports, my equipment, and my schedule render `ModulePlaceholderPage`. The technicians route renders a tenant-scoped roster backed by organization membership and daily availability; the calendar route renders the dispatch board.
 
 ### Known web limitations
 

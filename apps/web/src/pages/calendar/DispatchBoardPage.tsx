@@ -22,6 +22,7 @@ const EMPTY_BOARD: DispatchBoard = {
   scheduledFrom: "",
   scheduledTo: "",
   technicians: [],
+  availability: [],
   assignments: [],
   unassignedServiceCalls: [],
 };
@@ -59,6 +60,15 @@ function timeInputValue(value: string | undefined): string {
   return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
+function addOneHour(value: string): string {
+  const parts = value.split(":");
+  const hours = Number(parts[0] ?? 0);
+  const minutes = Number(parts[1] ?? 0);
+  if (hours >= 23) return "23:59";
+  const totalMinutes = (((hours * 60 + minutes + 60) % (24 * 60)) + 24 * 60) % (24 * 60);
+  return `${String(Math.floor(totalMinutes / 60)).padStart(2, "0")}:${String(totalMinutes % 60).padStart(2, "0")}`;
+}
+
 export function DispatchBoardPage() {
   const { user, accessToken } = useAuth();
   const { t, locale } = useTranslation();
@@ -70,9 +80,11 @@ export function DispatchBoardPage() {
   const [reloadToken, setReloadToken] = useState(0);
   const [technicianByCall, setTechnicianByCall] = useState<Record<string, string>>({});
   const [timeByCall, setTimeByCall] = useState<Record<string, string>>({});
+  const [endTimeByCall, setEndTimeByCall] = useState<Record<string, string>>({});
   const [assigningCallId, setAssigningCallId] = useState<string | null>(null);
   const [technicianByVisit, setTechnicianByVisit] = useState<Record<string, string>>({});
   const [timeByVisit, setTimeByVisit] = useState<Record<string, string>>({});
+  const [endTimeByVisit, setEndTimeByVisit] = useState<Record<string, string>>({});
   const [reschedulingVisitId, setReschedulingVisitId] = useState<string | null>(null);
 
   const canAssign = user ? canAssignServiceCalls(extractPermissionSlugs(user.permissions)) : false;
@@ -95,9 +107,18 @@ export function DispatchBoardPage() {
         setBoard(nextBoard);
         setTechnicianByCall((current) => {
           const next = { ...current };
+          const firstAvailableTechnician = nextBoard.technicians.find(
+            (technician) =>
+              !nextBoard.availability.some(
+                (entry) =>
+                  entry.technicianId === technician.id &&
+                  entry.date === selectedDate &&
+                  entry.status === "unavailable",
+              ),
+          );
           for (const call of nextBoard.unassignedServiceCalls) {
-            if (!next[call.id] && nextBoard.technicians[0]) {
-              next[call.id] = nextBoard.technicians[0].id;
+            if (!next[call.id] && firstAvailableTechnician) {
+              next[call.id] = firstAvailableTechnician.id;
             }
           }
           return next;
@@ -106,6 +127,13 @@ export function DispatchBoardPage() {
           const next = { ...current };
           for (const call of nextBoard.unassignedServiceCalls) {
             next[call.id] ??= "08:00";
+          }
+          return next;
+        });
+        setEndTimeByCall((current) => {
+          const next = { ...current };
+          for (const call of nextBoard.unassignedServiceCalls) {
+            next[call.id] ??= addOneHour(next[call.id] ?? "08:00");
           }
           return next;
         });
@@ -120,6 +148,15 @@ export function DispatchBoardPage() {
           const next = { ...current };
           for (const assignment of nextBoard.assignments) {
             next[assignment.visit.id] ??= timeInputValue(assignment.visit.scheduledStart);
+          }
+          return next;
+        });
+        setEndTimeByVisit((current) => {
+          const next = { ...current };
+          for (const assignment of nextBoard.assignments) {
+            next[assignment.visit.id] ??= assignment.visit.scheduledEnd
+              ? timeInputValue(assignment.visit.scheduledEnd)
+              : addOneHour(timeInputValue(assignment.visit.scheduledStart));
           }
           return next;
         });
@@ -145,14 +182,26 @@ export function DispatchBoardPage() {
     return grouped;
   }, [board.assignments]);
 
+  const unavailableByTechnician = useMemo(
+    () =>
+      new Map(
+        board.availability
+          .filter((entry) => entry.status === "unavailable" && entry.date === selectedDate)
+          .map((entry) => [entry.technicianId, entry]),
+      ),
+    [board.availability, selectedDate],
+  );
+
   async function assign(call: ServiceCall): Promise<void> {
     if (!user || !accessToken) return;
     const technicianId = technicianByCall[call.id];
     const time = timeByCall[call.id];
-    if (!technicianId || !time) return;
+    const endTime = endTimeByCall[call.id];
+    if (!technicianId || !time || !endTime) return;
 
     const scheduledStart = new Date(`${selectedDate}T${time}:00`);
-    if (Number.isNaN(scheduledStart.valueOf())) return;
+    const scheduledEnd = new Date(`${selectedDate}T${endTime}:00`);
+    if (Number.isNaN(scheduledStart.valueOf()) || Number.isNaN(scheduledEnd.valueOf())) return;
 
     setAssigningCallId(call.id);
     setNotice(null);
@@ -161,6 +210,7 @@ export function DispatchBoardPage() {
       await assignTechnicianRequest(user.organization.id, call.id, accessToken, {
         technicianId,
         scheduledStart: scheduledStart.toISOString(),
+        scheduledEnd: scheduledEnd.toISOString(),
       });
       setNotice(t("dispatch", "assignmentSuccess"));
       setReloadToken((value) => value + 1);
@@ -176,10 +226,12 @@ export function DispatchBoardPage() {
     const { visit, serviceCall } = assignment;
     const technicianId = technicianByVisit[visit.id];
     const time = timeByVisit[visit.id];
-    if (!technicianId || !time) return;
+    const endTime = endTimeByVisit[visit.id];
+    if (!technicianId || !time || !endTime) return;
 
     const scheduledStart = new Date(`${selectedDate}T${time}:00`);
-    if (Number.isNaN(scheduledStart.valueOf())) return;
+    const scheduledEnd = new Date(`${selectedDate}T${endTime}:00`);
+    if (Number.isNaN(scheduledStart.valueOf()) || Number.isNaN(scheduledEnd.valueOf())) return;
 
     setReschedulingVisitId(visit.id);
     setNotice(null);
@@ -190,7 +242,11 @@ export function DispatchBoardPage() {
         serviceCall.id,
         visit.id,
         accessToken,
-        { technicianId, scheduledStart: scheduledStart.toISOString() },
+        {
+          technicianId,
+          scheduledStart: scheduledStart.toISOString(),
+          scheduledEnd: scheduledEnd.toISOString(),
+        },
       );
       setNotice(t("dispatch", "rescheduleSuccess"));
       setReloadToken((value) => value + 1);
@@ -298,8 +354,13 @@ export function DispatchBoardPage() {
                     >
                       <option value="">{t("serviceCalls", "selectTechnician")}</option>
                       {board.technicians.map((technician) => (
-                        <option key={technician.id} value={technician.id}>
+                        <option
+                          key={technician.id}
+                          value={technician.id}
+                          disabled={unavailableByTechnician.has(technician.id)}
+                        >
                           {technician.displayName}
+                          {unavailableByTechnician.has(technician.id) ? " — לא זמין" : ""}
                         </option>
                       ))}
                     </select>
@@ -315,11 +376,30 @@ export function DispatchBoardPage() {
                       disabled={!canAssign}
                     />
                   </label>
+                  <label>
+                    <span>שעת סיום</span>
+                    <input
+                      type="time"
+                      value={endTimeByCall[call.id] ?? "09:00"}
+                      min={timeByCall[call.id] ?? "00:00"}
+                      onChange={(event) =>
+                        setEndTimeByCall((current) => ({
+                          ...current,
+                          [call.id]: event.target.value,
+                        }))
+                      }
+                      disabled={!canAssign}
+                    />
+                  </label>
                   {canAssign ? (
                     <Button
                       type="button"
                       onClick={() => void assign(call)}
-                      disabled={!technicianByCall[call.id] || assigningCallId === call.id}
+                      disabled={
+                        !technicianByCall[call.id] ||
+                        unavailableByTechnician.has(technicianByCall[call.id] ?? "") ||
+                        assigningCallId === call.id
+                      }
                     >
                       {assigningCallId === call.id
                         ? t("dispatch", "assigning")
@@ -350,9 +430,19 @@ export function DispatchBoardPage() {
               >
                 <header className="dispatch-technician-column__header">
                   <UsersRound size={20} aria-hidden="true" />
-                  <p>
-                    {assignments.length} {t("dispatch", "plannedVisit")}
-                  </p>
+                  <div>
+                    <p>
+                      {assignments.length} {t("dispatch", "plannedVisit")}
+                    </p>
+                    {unavailableByTechnician.has(technician.id) ? (
+                      <small className="dispatch-technician-column__unavailable">
+                        לא זמין
+                        {unavailableByTechnician.get(technician.id)?.note
+                          ? ` · ${unavailableByTechnician.get(technician.id)?.note}`
+                          : ""}
+                      </small>
+                    ) : null}
+                  </div>
                 </header>
                 {assignments.length === 0 ? (
                   <p className="dispatch-board__empty">{t("dispatch", "noVisits")}</p>
@@ -397,8 +487,15 @@ export function DispatchBoardPage() {
                                   disabled={reschedulingVisitId === visit.id}
                                 >
                                   {board.technicians.map((candidate) => (
-                                    <option key={candidate.id} value={candidate.id}>
+                                    <option
+                                      key={candidate.id}
+                                      value={candidate.id}
+                                      disabled={unavailableByTechnician.has(candidate.id)}
+                                    >
                                       {candidate.displayName}
+                                      {unavailableByTechnician.has(candidate.id)
+                                        ? " — לא זמין"
+                                        : ""}
                                     </option>
                                   ))}
                                 </select>
@@ -419,12 +516,29 @@ export function DispatchBoardPage() {
                                   disabled={reschedulingVisitId === visit.id}
                                 />
                               </label>
+                              <label>
+                                <span>שעת סיום</span>
+                                <input
+                                  type="time"
+                                  value={endTimeByVisit[visit.id] ?? "09:00"}
+                                  min={timeByVisit[visit.id] ?? "00:00"}
+                                  onChange={(event) =>
+                                    setEndTimeByVisit((current) => ({
+                                      ...current,
+                                      [visit.id]: event.target.value,
+                                    }))
+                                  }
+                                  disabled={reschedulingVisitId === visit.id}
+                                />
+                              </label>
                               <Button
                                 type="button"
                                 variant="secondary"
                                 onClick={() => void reschedule(assignment)}
                                 disabled={
-                                  !technicianByVisit[visit.id] || reschedulingVisitId === visit.id
+                                  !technicianByVisit[visit.id] ||
+                                  unavailableByTechnician.has(technicianByVisit[visit.id] ?? "") ||
+                                  reschedulingVisitId === visit.id
                                 }
                               >
                                 {reschedulingVisitId === visit.id

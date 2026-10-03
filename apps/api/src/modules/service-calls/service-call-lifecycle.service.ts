@@ -35,6 +35,7 @@ import type {
   TransitionLifecycleInput,
 } from "./service-call-lifecycle.schemas.js";
 import { projectServiceCallFromWorkflow } from "./service-call-workflow-projection.js";
+import { assertTechnicianCanBeScheduled } from "../technicians/technician-availability.service.js";
 
 export interface ServiceCallLifecycleServiceDeps {
   clock: ReturnType<typeof createWorkflowClock>;
@@ -257,6 +258,12 @@ export function createServiceCallLifecycleService(deps: ServiceCallLifecycleServ
 
     try {
       await prisma.$transaction(async (tx) => {
+        await assertTechnicianCanBeScheduled(tx, {
+          organizationId,
+          technicianId: input.technicianId,
+          scheduledStart: input.scheduledStart,
+          scheduledEnd: input.scheduledEnd,
+        });
         const maxSequence = await tx.serviceCallVisit.aggregate({
           where: { serviceCallId },
           _max: { sequence: true },
@@ -335,6 +342,13 @@ export function createServiceCallLifecycleService(deps: ServiceCallLifecycleServ
 
     try {
       await prisma.$transaction(async (tx) => {
+        await assertTechnicianCanBeScheduled(tx, {
+          organizationId,
+          technicianId: input.technicianId,
+          scheduledStart: input.scheduledStart,
+          scheduledEnd: input.scheduledEnd,
+          excludeVisitId: visitId,
+        });
         await dispatchAndProject(
           tx,
           organizationId,

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Badge } from "@amarok-one/ui";
+import { canAssignServiceCalls, extractPermissionSlugs } from "@amarok-one/permissions";
 import { EmptyState } from "../../components/EmptyState";
 import { ErrorState } from "../../components/ErrorState";
 import { LoadingState } from "../../components/LoadingState";
@@ -8,10 +9,17 @@ import { getAuthErrorMessage } from "../../lib/auth-errors";
 import { getInventoryOverviewRequest } from "../../lib/inventory-api";
 import {
   assignTechnicianServiceVanRequest,
+  listTechnicianAvailabilityRequest,
   listTechniciansRequest,
+  updateTechnicianAvailabilityRequest,
   type TechnicianSummary,
 } from "../../lib/technicians-api";
 import { useTranslation } from "../../i18n/useTranslation";
+
+function todayValue(): string {
+  const now = new Date();
+  return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+}
 
 export function TechniciansListPage() {
   const { user, accessToken } = useAuth();
@@ -23,8 +31,19 @@ export function TechniciansListPage() {
   );
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [availabilityDate, setAvailabilityDate] = useState(todayValue);
+  const [availabilityNoteByTechnician, setAvailabilityNoteByTechnician] = useState<
+    Record<string, string>
+  >({});
+  const [availabilityStatusByTechnician, setAvailabilityStatusByTechnician] = useState<
+    Record<string, "available" | "unavailable">
+  >({});
+  const [savingAvailabilityId, setSavingAvailabilityId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  const canManageAvailability = user
+    ? canAssignServiceCalls(extractPermissionSlugs(user.permissions))
+    : false;
 
   useEffect(() => {
     let cancelled = false;
@@ -33,15 +52,37 @@ export function TechniciansListPage() {
       setLoading(true);
       setError(null);
       try {
-        const [rows, overview] = await Promise.all([
+        const [rows, overview, availabilityRows] = await Promise.all([
           listTechniciansRequest(user.organization.id, accessToken),
           getInventoryOverviewRequest(user.organization.id, accessToken),
+          listTechnicianAvailabilityRequest(
+            user.organization.id,
+            accessToken,
+            availabilityDate,
+            availabilityDate,
+          ),
         ]);
         if (!cancelled) {
           setTechnicians(rows);
           setVanOptions(overview.vans.map((van) => ({ id: van.id, name: van.name })));
           setSelectedVanByTechnician(
             Object.fromEntries(rows.map((row) => [row.id, row.assignedVan?.id ?? ""])),
+          );
+          const availabilityByUser = new Map(
+            availabilityRows.map((entry) => [entry.technicianId, entry]),
+          );
+          setAvailabilityStatusByTechnician(
+            Object.fromEntries(
+              rows.map((row) => [
+                row.id,
+                availabilityByUser.get(row.userId)?.status ?? "available",
+              ]),
+            ),
+          );
+          setAvailabilityNoteByTechnician(
+            Object.fromEntries(
+              rows.map((row) => [row.id, availabilityByUser.get(row.userId)?.note ?? ""]),
+            ),
           );
         }
       } catch (cause) {
@@ -54,7 +95,7 @@ export function TechniciansListPage() {
     return () => {
       cancelled = true;
     };
-  }, [accessToken, retryKey, user]);
+  }, [accessToken, availabilityDate, retryKey, user]);
 
   if (loading) return <LoadingState message={t("technicians", "loading")} />;
   if (error) return <ErrorState message={error} onRetry={() => setRetryKey((key) => key + 1)} />;
@@ -70,6 +111,21 @@ export function TechniciansListPage() {
           </p>
         </div>
       </header>
+      <section className="technicians-availability-toolbar" aria-label="זמינות טכנאים">
+        <label className="customer-form__field">
+          <span>זמינות לתאריך</span>
+          <input
+            type="date"
+            value={availabilityDate}
+            onChange={(event) => setAvailabilityDate(event.target.value)}
+          />
+        </label>
+        <p>
+          {canManageAvailability
+            ? "הגדר אי-זמינות לפני השיבוץ. שיבוץ חופף או ביום לא זמין ייחסם."
+            : "זמינות הטכנאים מוצגת לצפייה בלבד."}
+        </p>
+      </section>
       {technicians.length === 0 ? (
         <EmptyState
           title={t("technicians", "emptyTitle")}
@@ -83,6 +139,7 @@ export function TechniciansListPage() {
                 <th>{t("technicians", "name")}</th>
                 <th>{t("technicians", "email")}</th>
                 <th>{t("technicians", "status")}</th>
+                <th>זמינות</th>
                 <th>ניידת שירות</th>
               </tr>
             </thead>
@@ -99,6 +156,79 @@ export function TechniciansListPage() {
                         ? t("technicians", "active")
                         : t("technicians", "inactive")}
                     </Badge>
+                  </td>
+                  <td>
+                    <div className="technicians-availability-cell">
+                      <select
+                        aria-label={`זמינות ${technician.displayName}`}
+                        value={availabilityStatusByTechnician[technician.id] ?? "available"}
+                        onChange={(event) =>
+                          setAvailabilityStatusByTechnician((current) => ({
+                            ...current,
+                            [technician.id]: event.target.value as "available" | "unavailable",
+                          }))
+                        }
+                        disabled={!canManageAvailability || savingAvailabilityId === technician.id}
+                      >
+                        <option value="available">זמין</option>
+                        <option value="unavailable">לא זמין</option>
+                      </select>
+                      <input
+                        aria-label={`הערת זמינות ${technician.displayName}`}
+                        value={availabilityNoteByTechnician[technician.id] ?? ""}
+                        onChange={(event) =>
+                          setAvailabilityNoteByTechnician((current) => ({
+                            ...current,
+                            [technician.id]: event.target.value,
+                          }))
+                        }
+                        placeholder="הערה"
+                        maxLength={500}
+                        disabled={!canManageAvailability || savingAvailabilityId === technician.id}
+                      />
+                      {canManageAvailability ? (
+                        <button
+                          type="button"
+                          className="customers-table__link inventory-assign__button"
+                          disabled={savingAvailabilityId === technician.id}
+                          onClick={() =>
+                            void (async () => {
+                              if (!user || !accessToken) return;
+                              setSavingAvailabilityId(technician.id);
+                              setError(null);
+                              try {
+                                const saved = await updateTechnicianAvailabilityRequest(
+                                  user.organization.id,
+                                  technician.id,
+                                  availabilityDate,
+                                  accessToken,
+                                  {
+                                    status:
+                                      availabilityStatusByTechnician[technician.id] ?? "available",
+                                    note:
+                                      availabilityNoteByTechnician[technician.id]?.trim() || null,
+                                  },
+                                );
+                                setAvailabilityStatusByTechnician((current) => ({
+                                  ...current,
+                                  [technician.id]: saved.status,
+                                }));
+                                setAvailabilityNoteByTechnician((current) => ({
+                                  ...current,
+                                  [technician.id]: saved.note ?? "",
+                                }));
+                              } catch (cause) {
+                                setError(getAuthErrorMessage(cause));
+                              } finally {
+                                setSavingAvailabilityId(null);
+                              }
+                            })()
+                          }
+                        >
+                          {savingAvailabilityId === technician.id ? "שומר..." : "שמירה"}
+                        </button>
+                      ) : null}
+                    </div>
                   </td>
                   <td>
                     <div className="inventory-assign">
