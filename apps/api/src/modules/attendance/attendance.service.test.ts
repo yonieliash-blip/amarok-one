@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   endWorkDay,
   correctWorkDay,
+  getDailyAttendanceReport,
   getMonthlyAttendanceReport,
   getLiveTechnicianLocations,
   getWorkDayLocations,
@@ -146,6 +147,62 @@ describe("attendance.service", () => {
       totalWorkDays: 1,
       totalNetMinutes: 510,
       employees: [{ displayName: "Dana", grossMinutes: 540, breakMinutes: 30, netMinutes: 510 }],
+    });
+    expect(mocks.workDayFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ organizationId: org, startedAt: expect.any(Object) }),
+      }),
+    );
+  });
+
+  it("groups the daily report by the employee primary role", async () => {
+    mocks.workDayFindMany.mockResolvedValue([
+      {
+        id: "day-1",
+        userId: user,
+        status: "COMPLETED",
+        reviewStatus: "PENDING",
+        approvedAt: null,
+        startedAt: new Date("2026-08-10T05:00:00.000Z"),
+        endedAt: new Date("2026-08-10T14:00:00.000Z"),
+        startLatitude: null,
+        endLatitude: null,
+        user: {
+          displayName: "מור",
+          email: "mor@example.com",
+          organizationMembers: [{ primaryRole: { slug: "office", name: "ניהול משרד" } }],
+        },
+        _count: { locations: 0 },
+        breaks: [
+          {
+            startedAt: new Date("2026-08-10T09:00:00.000Z"),
+            endedAt: new Date("2026-08-10T09:30:00.000Z"),
+          },
+        ],
+      },
+    ]);
+
+    const report = await getDailyAttendanceReport(
+      org,
+      "2026-08-10",
+      new Date("2026-08-10T15:00:00.000Z"),
+    );
+
+    expect(report).toMatchObject({
+      date: "2026-08-10",
+      employeeCount: 1,
+      totalGrossMinutes: 540,
+      totalBreakMinutes: 30,
+      totalNetMinutes: 510,
+      employees: [
+        {
+          displayName: "מור",
+          role: { slug: "office", name: "ניהול משרד" },
+          grossMinutes: 540,
+          breakMinutes: 30,
+          netMinutes: 510,
+        },
+      ],
     });
     expect(mocks.workDayFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
