@@ -34,6 +34,12 @@ export const monthlyAttendanceQuerySchema = z.object({
   month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "month must use YYYY-MM format"),
 });
 
+export const dailyAttendanceQuerySchema = z.object({
+  date: z
+    .string()
+    .regex(/^\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])$/, "date must use YYYY-MM-DD format"),
+});
+
 export const attendancePeriodParamsSchema = organizationIdParamSchema.extend({
   month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "month must use YYYY-MM format"),
 });
