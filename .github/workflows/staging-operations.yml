@@ -218,38 +218,32 @@ jobs:
                   set -eu
                   psql -X -v ON_ERROR_STOP=1 -P pager=off \
                     -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
-                    -c "SELECT migration_name, finished_at, rolled_back_at, applied_steps_count FROM \"_prisma_migrations\" WHERE migration_name = \$\$20261002040000_amarok_operational_numbers\$\$;"
+                    -c "SELECT migration_name, finished_at, rolled_back_at, applied_steps_count FROM \"_prisma_migrations\" WHERE migration_name IN (\$\$20261002040000_amarok_operational_numbers\$\$, \$\$20261003073000_preserve_imported_customer_identifiers\$\$) ORDER BY migration_name, finished_at NULLS LAST;"
                   psql -X -v ON_ERROR_STOP=1 -P pager=off \
                     -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
                     -c "SELECT COUNT(*) AS non_deleted_customers FROM customers WHERE \"deletedAt\" IS NULL;"
                   psql -X -v ON_ERROR_STOP=1 -P pager=off \
                     -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
-                    -c "SELECT COUNT(*) AS non_deleted_service_calls FROM service_calls WHERE \"deletedAt\" IS NULL;"
+                    -c "SELECT COUNT(*) AS imported_customers_with_source_identifier FROM customers WHERE \"deletedAt\" IS NULL AND \"morningClientId\" IS NOT NULL;"
                   psql -X -v ON_ERROR_STOP=1 -P pager=off \
                     -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
-                    -c "SELECT column_name FROM information_schema.columns WHERE table_schema = \$\$public\$\$ AND table_name = \$\$customers\$\$ AND column_name = \$\$externalCustomerNumber\$\$;"
+                    -c "SELECT COUNT(*) AS non_imported_customers_without_source_identifier FROM customers WHERE \"deletedAt\" IS NULL AND \"morningClientId\" IS NULL;"
                   psql -X -v ON_ERROR_STOP=1 -P pager=off \
                     -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
                     -c "SELECT indexname FROM pg_indexes WHERE schemaname = \$\$public\$\$ AND indexname = \$\$customers_organizationId_customerNumber_active_key\$\$;"
                 '
                 ;;
-              repair_operational_numbers)
+              apply_customer_identifier_preservation)
                 git fetch --no-tags origin main
                 git merge --ff-only origin/main
-                test -f apps/api/prisma/migrations/20261002040000_amarok_operational_numbers/migration.sql
+                test -f apps/api/prisma/migrations/20261003073000_preserve_imported_customer_identifiers/migration.sql
                 compose build --no-cache api
-                # Only marks the known failed Prisma attempt as rolled back; it does not run SQL.
-                compose run --rm --no-deps --entrypoint sh api -ec \
-                  'prisma migrate resolve --rolled-back 20261002040000_amarok_operational_numbers --schema=./prisma/schema.prisma'
                 compose run --rm --no-deps --entrypoint sh api -ec \
                   'prisma migrate deploy --schema=./prisma/schema.prisma'
                 compose exec -T postgres sh -ec '
                   set -eu
-                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM \"_prisma_migrations\" WHERE migration_name = \$\$20261002040000_amarok_operational_numbers\$\$ AND finished_at IS NOT NULL AND rolled_back_at IS NULL;")" = "1"
-                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM customers WHERE \"deletedAt\" IS NULL AND \"customerNumber\" !~ \$\$^AM-CU-[0-9]+\$\$;")" = "0"
-                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM customers WHERE \"deletedAt\" IS NULL AND \"externalCustomerNumber\" IS NULL;")" = "0"
-                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM pg_indexes WHERE schemaname = \$\$public\$\$ AND indexname = \$\$customers_organizationId_customerNumber_active_key\$\$;")" = "1"
-                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM (SELECT c.\"organizationId\" FROM customers AS c LEFT JOIN organization_number_sequences AS s ON s.\"organizationId\" = c.\"organizationId\" AND s.scope = \$\$customer-number\$\$ WHERE c.\"deletedAt\" IS NULL GROUP BY c.\"organizationId\", s.\"nextValue\" HAVING s.\"nextValue\" IS DISTINCT FROM COUNT(*)::INTEGER + 1) AS invalid_sequences;")" = "0"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM \"_prisma_migrations\" WHERE migration_name = \$\$20261003073000_preserve_imported_customer_identifiers\$\$ AND finished_at IS NOT NULL AND rolled_back_at IS NULL;")" = "1"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM customers WHERE \"deletedAt\" IS NULL AND \"morningClientId\" IS NOT NULL AND \"externalCustomerNumber\" IS DISTINCT FROM \"morningClientId\";")" = "0"
                 '
                 compose up -d --no-deps --force-recreate api
                 curl --fail --show-error --retry 12 --retry-all-errors \
