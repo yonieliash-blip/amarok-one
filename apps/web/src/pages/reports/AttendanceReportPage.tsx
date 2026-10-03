@@ -8,12 +8,14 @@ import { getAuthErrorMessage } from "../../lib/auth-errors";
 import {
   approveWorkDayRequest,
   correctWorkDayRequest,
+  getDailyAttendanceReportRequest,
   getLiveTechnicianLocationsRequest,
   getMonthlyAttendanceReportRequest,
   getWorkDayLocationsRequest,
   lockAttendancePeriodRequest,
   unlockAttendancePeriodRequest,
   type AttendanceDay,
+  type DailyAttendanceReport,
   type LiveTechnicianLocation,
   type MonthlyAttendanceReport,
   type WorkDayLocationPoint,
@@ -30,6 +32,16 @@ function currentIsraelMonth(): string {
     month: "2-digit",
   }).formatToParts(new Date());
   return `${parts.find((part) => part.type === "year")?.value}-${parts.find((part) => part.type === "month")?.value}`;
+}
+
+function currentIsraelDate(): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jerusalem",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  return `${parts.find((part) => part.type === "year")?.value}-${parts.find((part) => part.type === "month")?.value}-${parts.find((part) => part.type === "day")?.value}`;
 }
 
 function hours(minutes: number): string {
@@ -55,7 +67,9 @@ export function AttendanceReportPage() {
   const { user, accessToken } = useAuth();
   const { t, locale } = useTranslation();
   const [month, setMonth] = useState(currentIsraelMonth);
+  const [date, setDate] = useState(currentIsraelDate);
   const [report, setReport] = useState<MonthlyAttendanceReport | null>(null);
+  const [dailyReport, setDailyReport] = useState<DailyAttendanceReport | null>(null);
   const [liveLocations, setLiveLocations] = useState<LiveTechnicianLocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -73,12 +87,14 @@ export function AttendanceReportPage() {
       setLoading(true);
       setError(null);
       try {
-        const [data, activeTechnicians] = await Promise.all([
+        const [data, dailyData, activeTechnicians] = await Promise.all([
           getMonthlyAttendanceReportRequest(user.organization.id, accessToken, month),
+          getDailyAttendanceReportRequest(user.organization.id, accessToken, date),
           getLiveTechnicianLocationsRequest(user.organization.id, accessToken),
         ]);
         if (!cancelled) {
           setReport(data);
+          setDailyReport(dailyData);
           setLiveLocations(activeTechnicians);
         }
       } catch (cause) {
@@ -91,7 +107,7 @@ export function AttendanceReportPage() {
     return () => {
       cancelled = true;
     };
-  }, [accessToken, month, retryKey, user]);
+  }, [accessToken, date, month, retryKey, user]);
 
   useEffect(() => {
     const interval = window.setInterval(() => setRetryKey((key) => key + 1), 60_000);
@@ -293,6 +309,67 @@ export function AttendanceReportPage() {
                 );
               })}
             </tbody>
+          </table>
+        )}
+      </section>
+
+      <section className="customers-table-wrap" aria-label={t("attendanceReport", "dailyTitle")}>
+        <div className="customers-page__header">
+          <div>
+            <p className="customers-page__eyebrow">{t("attendanceReport", "dailyEyebrow")}</p>
+            <h3 className="customers-page__title">{t("attendanceReport", "dailyTitle")}</h3>
+            <p className="customers-page__subtitle">{t("attendanceReport", "dailySubtitle")}</p>
+          </div>
+          <label>
+            {t("attendanceReport", "date")}
+            <input type="date" value={date} onChange={(event) => setDate(event.target.value)} />
+          </label>
+        </div>
+        {!dailyReport || dailyReport.employees.length === 0 ? (
+          <p>{t("attendanceReport", "dailyEmpty")}</p>
+        ) : (
+          <table className="customers-table">
+            <thead>
+              <tr>
+                <th>{t("attendanceReport", "employee")}</th>
+                <th>{t("attendanceReport", "role")}</th>
+                <th>{t("attendanceReport", "gross")}</th>
+                <th>{t("attendanceReport", "breaks")}</th>
+                <th>{t("attendanceReport", "net")}</th>
+                <th>{t("attendanceReport", "status")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dailyReport.employees.map((employee) => (
+                <tr key={employee.userId}>
+                  <td>
+                    <strong>{employee.displayName}</strong>
+                    <br />
+                    <small>{employee.email}</small>
+                  </td>
+                  <td>{employee.role?.name ?? t("attendanceReport", "roleUnknown")}</td>
+                  <td>{hours(employee.grossMinutes)}</td>
+                  <td>{hours(employee.breakMinutes)}</td>
+                  <td>
+                    <strong>{hours(employee.netMinutes)}</strong>
+                  </td>
+                  <td>
+                    {employee.days.some((day) => day.status === "ACTIVE")
+                      ? t("attendanceReport", "active")
+                      : t("attendanceReport", "completed")}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th colSpan={2}>{t("attendanceReport", "dailyTotals")}</th>
+                <th>{hours(dailyReport.totalGrossMinutes)}</th>
+                <th>{hours(dailyReport.totalBreakMinutes)}</th>
+                <th>{hours(dailyReport.totalNetMinutes)}</th>
+                <th />
+              </tr>
+            </tfoot>
           </table>
         )}
       </section>

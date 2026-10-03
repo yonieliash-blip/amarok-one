@@ -55,6 +55,21 @@ export interface MonthlyAttendanceReport {
   employees: AttendanceEmployee[];
 }
 
+export interface DailyAttendanceEmployee extends AttendanceEmployee {
+  role: { slug: string; name: string } | null;
+}
+
+export interface DailyAttendanceReport {
+  date: string;
+  timeZone: string;
+  employeeCount: number;
+  totalWorkDays: number;
+  totalGrossMinutes: number;
+  totalBreakMinutes: number;
+  totalNetMinutes: number;
+  employees: DailyAttendanceEmployee[];
+}
+
 export interface WorkDayLocationPoint {
   id: string;
   recordedAt: string;
@@ -84,6 +99,18 @@ export async function getMonthlyAttendanceReportRequest(
 ): Promise<MonthlyAttendanceReport> {
   const response = await apiRequest<MonthlyAttendanceReport>(
     `/organizations/${organizationId}/attendance/reports/monthly?month=${encodeURIComponent(month)}`,
+    { accessToken },
+  );
+  return response.data;
+}
+
+export async function getDailyAttendanceReportRequest(
+  organizationId: string,
+  accessToken: string,
+  date: string,
+): Promise<DailyAttendanceReport> {
+  const response = await apiRequest<DailyAttendanceReport>(
+    `/organizations/${organizationId}/attendance/reports/daily?date=${encodeURIComponent(date)}`,
     { accessToken },
   );
   return response.data;

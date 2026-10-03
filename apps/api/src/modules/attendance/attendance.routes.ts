@@ -8,6 +8,7 @@ import {
   attendanceParamsSchema,
   attendancePeriodParamsSchema,
   clockActionSchema,
+  dailyAttendanceQuerySchema,
   monthlyAttendanceQuerySchema,
   correctWorkDaySchema,
   workDayParamsSchema,
@@ -17,6 +18,7 @@ import {
 import {
   endBreak,
   endWorkDay,
+  getDailyAttendanceReport,
   getCurrentWorkDay,
   getLiveTechnicianLocations,
   getMonthlyAttendanceReport,
@@ -43,6 +45,17 @@ export const attendanceRoutes = new Hono()
     async (context) => {
       const { organizationId } = context.req.valid("param");
       return context.json(createApiResponse(await getLiveTechnicianLocations(organizationId)));
+    },
+  )
+  .get(
+    "/reports/daily",
+    requirePermission("attendance:read"),
+    zValidator("param", attendanceParamsSchema),
+    zValidator("query", dailyAttendanceQuerySchema),
+    async (context) => {
+      const { organizationId } = context.req.valid("param");
+      const { date } = context.req.valid("query");
+      return context.json(createApiResponse(await getDailyAttendanceReport(organizationId, date)));
     },
   )
   .get(
