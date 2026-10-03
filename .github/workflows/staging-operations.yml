@@ -21,6 +21,7 @@ on:
           - apply_internal_messages_and_birthdays
           - operational_numbers_preflight
           - apply_customer_identifier_preservation
+          - apply_technician_availability
 
 permissions:
   contents: read
@@ -248,6 +249,33 @@ jobs:
                 compose up -d --no-deps --force-recreate api
                 curl --fail --show-error --retry 12 --retry-all-errors \
                   https://staging-api.amarok-ce.com/health
+                ;;
+              apply_technician_availability)
+                git fetch --no-tags origin main
+                git merge --ff-only origin/main
+                test -f apps/api/prisma/migrations/20261003100000_technician_availability/migration.sql
+                compose exec -T postgres sh -ec '
+                  set -eu
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM \"_prisma_migrations\" WHERE migration_name = \$\$20261003100000_technician_availability\$\$ AND finished_at IS NOT NULL AND rolled_back_at IS NULL;")" = "0"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT to_regtype(\$\$public.\"TechnicianAvailabilityStatus\"\$\$) IS NULL;")" = "t"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT to_regclass(\$\$public.technician_availability\$\$) IS NULL;")" = "t"
+                '
+                compose build --no-cache api
+                compose run --rm --no-deps --entrypoint sh api -ec \
+                  'prisma migrate deploy --schema=./prisma/schema.prisma'
+                compose exec -T postgres sh -ec '
+                  set -eu
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM \"_prisma_migrations\" WHERE migration_name = \$\$20261003100000_technician_availability\$\$ AND finished_at IS NOT NULL AND rolled_back_at IS NULL;")" = "1"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT to_regtype(\$\$public.\"TechnicianAvailabilityStatus\"\$\$) IS NOT NULL;")" = "t"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT to_regclass(\$\$public.technician_availability\$\$) IS NOT NULL;")" = "t"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM pg_indexes WHERE schemaname = \$\$public\$\$ AND indexname IN (\$\$technician_availability_organizationId_technicianId_date_key\$\$, \$\$technician_availability_organizationId_date_idx\$\$, \$\$technician_availability_organizationId_technicianId_date_idx\$\$);")" = "3"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM pg_constraint WHERE conname IN (\$\$technician_availability_organizationId_fkey\$\$, \$\$technician_availability_technicianId_fkey\$\$);")" = "2"
+                '
+                compose up -d --no-deps --force-recreate api web
+                curl --fail --show-error --retry 12 --retry-all-errors \
+                  https://staging-api.amarok-ce.com/health
+                curl --fail --show-error --retry 12 --retry-all-errors \
+                  https://staging.amarok-ce.com/health
                 ;;
               *)
                 echo "Unsupported operation: $OPERATION" >&2
