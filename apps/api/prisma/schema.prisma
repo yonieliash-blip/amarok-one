@@ -49,6 +49,8 @@ model Organization {
   directConversations    DirectConversation[]
   directMessages         DirectMessage[]
   technicianAvailability TechnicianAvailability[]
+  inspirationQuotes      InspirationQuote[]
+  employeeInspirations   EmployeeInspirationMessage[]
 
   @@index([deletedAt])
   @@map("organizations")
@@ -132,6 +134,7 @@ model User {
   directConversationsSecond DirectConversation[]    @relation("DirectConversationParticipantTwo")
   sentDirectMessages        DirectMessage[]         @relation("DirectMessageSender")
   technicianAvailability    TechnicianAvailability[] @relation("TechnicianAvailabilityUser")
+  inspirationMessages        EmployeeInspirationMessage[] @relation("EmployeeInspirationRecipient")
 
   @@index([deletedAt])
   @@index([isActive])
@@ -268,6 +271,43 @@ model TechnicianAvailability {
   @@index([organizationId, date])
   @@index([organizationId, technicianId, date])
   @@map("technician_availability")
+}
+
+/// Manager-curated quote/proverb available to the organization's dashboards.
+model InspirationQuote {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  text           String
+  author         String?
+  isActive       Boolean  @default(true)
+  createdById    String?  @db.Uuid
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, isActive])
+  @@index([organizationId, createdAt])
+  @@map("inspiration_quotes")
+}
+
+/// A private manager message which overrides the general quote for one employee.
+model EmployeeInspirationMessage {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  userId         String   @db.Uuid
+  text           String
+  isActive       Boolean  @default(true)
+  createdById    String?  @db.Uuid
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User         @relation("EmployeeInspirationRecipient", fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, userId])
+  @@index([organizationId, isActive])
+  @@map("employee_inspiration_messages")
 }
 
 /// One private, tenant-scoped conversation between exactly two active organization users.
@@ -777,12 +817,17 @@ model ServiceCall {
   completedAt       DateTime?
   customerId        String                    @db.Uuid
   customerSiteId    String?                   @db.Uuid
-  equipmentId       String                    @db.Uuid
+  // A call may describe a one-off vehicle/tool without creating permanent equipment.
+  equipmentId       String?                   @db.Uuid
   branchId          String?                   @db.Uuid
   assignedUserId    String?                   @db.Uuid
   contactName       String?
   contactPhone      String?
   location          String?
+  equipmentModel    String?
+  equipmentLicensePlate String?
+  equipmentChassisNumber String?
+  purchaseOrderNumber String?
   notes             String?
   createdAt         DateTime                  @default(now())
   updatedAt         DateTime                  @updatedAt
@@ -791,7 +836,7 @@ model ServiceCall {
   organization Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   customer     Customer                @relation(fields: [customerId], references: [id], onDelete: Restrict)
   customerSite CustomerSite?           @relation(fields: [customerSiteId], references: [id], onDelete: SetNull)
-  equipment    Equipment               @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+  equipment    Equipment?              @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
   branch       Branch?                 @relation(fields: [branchId], references: [id], onDelete: SetNull)
   assignedUser User?                   @relation("AssignedTechnician", fields: [assignedUserId], references: [id], onDelete: SetNull)
   visits       ServiceCallVisit[]

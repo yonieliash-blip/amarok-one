@@ -383,7 +383,7 @@ export interface ServiceCall {
   customer?: Pick<Customer, "id" | "name" | "customerNumber">;
   customerSiteId?: EntityId;
   customerSite?: Pick<CustomerSite, "id" | "name" | "address" | "city">;
-  equipmentId: EntityId;
+  equipmentId?: EntityId;
   equipment?: Pick<Equipment, "id" | "name" | "internalNumber" | "manufacturer" | "model">;
   branchId?: EntityId;
   branch?: Pick<Branch, "id" | "name" | "code">;
@@ -392,9 +392,49 @@ export interface ServiceCall {
   contactName?: string;
   contactPhone?: string;
   location?: string;
+  /** One-off tool/vehicle details; these never create permanent equipment records. */
+  equipmentModel?: string;
+  equipmentLicensePlate?: string;
+  equipmentChassisNumber?: string;
+  purchaseOrderNumber?: string;
   notes?: string;
   createdAt: ISODateString;
   updatedAt: ISODateString;
+}
+
+export interface InspirationQuote {
+  id: EntityId;
+  organizationId: EntityId;
+  text: string;
+  author?: string;
+  isActive: boolean;
+  createdAt: ISODateString;
+  updatedAt: ISODateString;
+}
+
+export interface EmployeeInspirationMessage {
+  id: EntityId;
+  organizationId: EntityId;
+  memberId: EntityId;
+  userId: EntityId;
+  employeeName: string;
+  text: string;
+  isActive: boolean;
+  createdAt: ISODateString;
+  updatedAt: ISODateString;
+}
+
+export interface InspirationCurrent {
+  kind: "personal" | "general" | "none";
+  text?: string;
+  author?: string;
+}
+
+export interface InspirationEmployee {
+  memberId: EntityId;
+  userId: EntityId;
+  displayName: string;
+  roleName: string;
 }
 
 /** Permission definition */

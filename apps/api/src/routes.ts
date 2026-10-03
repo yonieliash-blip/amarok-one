@@ -20,12 +20,15 @@ import { attendanceRoutes } from "./modules/attendance/attendance.routes.js";
 import { tasksRoutes } from "./modules/tasks/task.routes.js";
 import { createMessagesRoutes } from "./modules/messages/messages.routes.js";
 import type { MessagesService } from "./modules/messages/messages.service.js";
+import { createInspirationRoutes } from "./modules/inspiration/inspiration.routes.js";
+import type { InspirationService } from "./modules/inspiration/inspiration.service.js";
 
 export function createApiRoutes(
   serviceCallService: ServiceCallService,
   accessService: AccessService,
   morningCustomerSyncService: MorningCustomerSyncService,
   messagesService: MessagesService,
+  inspirationService: InspirationService,
 ): Hono {
   const protectedRoutes = new Hono()
     .use("*", jwtGuard)
@@ -46,6 +49,10 @@ export function createApiRoutes(
     .route("/organizations/:organizationId/parts", partsRoutes)
     .route("/organizations/:organizationId/tasks", tasksRoutes)
     .route("/organizations/:organizationId/messages", createMessagesRoutes(messagesService))
+    .route(
+      "/organizations/:organizationId/inspiration",
+      createInspirationRoutes(inspirationService),
+    )
     .route(
       "/organizations/:organizationId/service-calls",
       createServiceCallRoutes(serviceCallService),

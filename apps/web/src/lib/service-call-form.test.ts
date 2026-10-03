@@ -44,4 +44,27 @@ describe("service call form payloads", () => {
     expect(payload.notes).toBe("Field note");
     expect("completedAt" in payload).toBe(false);
   });
+
+  it("builds a one-off equipment payload without a permanent equipment id", () => {
+    const payload = buildCreatePayload(
+      {
+        ...EMPTY_SERVICE_CALL_FORM,
+        title: "Importer dispatch",
+        customerId: "c1",
+        equipmentModel: "JCB 3CX",
+        equipmentLicensePlate: "123-45-678",
+        equipmentChassisNumber: "VIN-1",
+        purchaseOrderNumber: "PO-900",
+      },
+      {},
+    );
+
+    expect(payload).toMatchObject({
+      equipmentModel: "JCB 3CX",
+      equipmentLicensePlate: "123-45-678",
+      equipmentChassisNumber: "VIN-1",
+      purchaseOrderNumber: "PO-900",
+    });
+    expect(payload.equipmentId).toBeUndefined();
+  });
 });

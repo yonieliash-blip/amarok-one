@@ -37,6 +37,7 @@ import { WebSplashScreen } from "./components/WebSplashScreen";
 import { TasksPage } from "./pages/tasks/TasksPage";
 import { DispatchBoardPage } from "./pages/calendar/DispatchBoardPage";
 import { MessagesPage } from "./pages/messages/MessagesPage";
+import { InspirationPage } from "./pages/administration/InspirationPage";
 
 export function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -106,6 +107,7 @@ export function App() {
                 />
                 <Route path="reports" element={<AttendanceReportPage />} />
                 <Route path="administration/member-access" element={<MemberAccessPage />} />
+                <Route path="administration/inspiration" element={<InspirationPage />} />
               </Route>
             </Route>
           </Route>

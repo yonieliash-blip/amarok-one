@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import type { CatalogPart, ServiceCall } from "@amarok-one/types";
+import type { CatalogPart, InspirationCurrent, ServiceCall } from "@amarok-one/types";
 import { Button } from "@amarok-one/ui";
 import {
   CalendarDays,
@@ -31,6 +31,7 @@ import {
 } from "../../lib/service-manager-dashboard";
 import { hasServiceCallsWrite } from "../../lib/service-calls-api";
 import { getUnreadMessageCountRequest } from "../../lib/messages-api";
+import { getCurrentInspirationRequest } from "../../lib/inspiration-api";
 
 type PageStatus = "loading" | "ready" | "error";
 
@@ -68,6 +69,7 @@ export function ManagementDashboardPage() {
   const [calls, setCalls] = useState<ServiceCall[]>([]);
   const [parts, setParts] = useState<CatalogPart[]>([]);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [inspiration, setInspiration] = useState<InspirationCurrent>({ kind: "none" });
   const [error, setError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
@@ -84,15 +86,19 @@ export function ManagementDashboardPage() {
       setError(null);
 
       try {
-        const [nextCalls, partGroups, nextUnreadMessages] = await Promise.all([
+        const [nextCalls, partGroups, nextUnreadMessages, nextInspiration] = await Promise.all([
           fetchAllServiceCalls(user.organization.id, accessToken),
           listPartsCatalogRequest(user.organization.id, accessToken).catch(() => []),
           getUnreadMessageCountRequest(user.organization.id, accessToken).catch(() => 0),
+          getCurrentInspirationRequest(user.organization.id, accessToken).catch(() => ({
+            kind: "none" as const,
+          })),
         ]);
         if (cancelled) return;
         setCalls(nextCalls);
         setParts(flattenParts(partGroups));
         setUnreadMessages(nextUnreadMessages);
+        setInspiration(nextInspiration);
         setStatus("ready");
       } catch (cause) {
         if (cancelled) return;
@@ -177,8 +183,21 @@ export function ManagementDashboardPage() {
           <h2 className="management-dashboard__title">{t("managementDashboard", "title")}</h2>
           <p className="management-dashboard__subtitle">{t("managementDashboard", "subtitle")}</p>
         </div>
-        <div className="management-dashboard__greeting">{greeting}</div>
+        <div className="management-dashboard__greeting">
+          <strong>{greeting}</strong>
+          {inspiration.text ? (
+            <span>
+              {inspiration.text}
+              {inspiration.author ? ` — ${inspiration.author}` : ""}
+            </span>
+          ) : null}
+        </div>
         <div className="management-dashboard__actions">
+          {user.permissions.some((permission) => permission.slug === "users:write") ? (
+            <Link to="/administration/inspiration" className="customers-page__action-link">
+              <Button variant="secondary">השראה</Button>
+            </Link>
+          ) : null}
           {canWrite ? (
             <Link to="/service-calls/new" className="customers-page__action-link">
               <Button
