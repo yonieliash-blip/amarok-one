@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { endWorkDayRequest, getCurrentWorkDayRequest, startWorkDayRequest } from "./attendance-api";
+import {
+  endWorkDayRequest,
+  getCurrentWorkDayRequest,
+  getDailyAttendanceReportRequest,
+  startWorkDayRequest,
+} from "./attendance-api";
 
 const workDay = {
   id: "work-day-1",
@@ -56,5 +61,29 @@ describe("attendance API", () => {
       method: "POST",
       body: JSON.stringify({ location: null }),
     });
+  });
+
+  it("loads the daily manager report for the selected Israel date", async () => {
+    const report = {
+      date: "2026-10-03",
+      employeeCount: 0,
+      totalWorkDays: 0,
+      totalGrossMinutes: 0,
+      totalBreakMinutes: 0,
+      totalNetMinutes: 0,
+      employees: [],
+    };
+    const fetchMock = stubApiResponse(report);
+
+    await expect(
+      getDailyAttendanceReportRequest("org-1", "access-token", "2026-10-03"),
+    ).resolves.toEqual(report);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/organizations/org-1/attendance/reports/daily?date=2026-10-03"),
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: "Bearer access-token" }),
+      }),
+    );
   });
 });
