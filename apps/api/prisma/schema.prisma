@@ -48,6 +48,7 @@ model Organization {
   numberSequences        OrganizationNumberSequence[]
   directConversations    DirectConversation[]
   directMessages         DirectMessage[]
+  technicianAvailability TechnicianAvailability[]
 
   @@index([deletedAt])
   @@map("organizations")
@@ -130,6 +131,7 @@ model User {
   directConversationsFirst  DirectConversation[]    @relation("DirectConversationParticipantOne")
   directConversationsSecond DirectConversation[]    @relation("DirectConversationParticipantTwo")
   sentDirectMessages        DirectMessage[]         @relation("DirectMessageSender")
+  technicianAvailability    TechnicianAvailability[] @relation("TechnicianAvailabilityUser")
 
   @@index([deletedAt])
   @@index([isActive])
@@ -240,6 +242,32 @@ model OrganizationMember {
   @@index([userId])
   @@index([organizationId, deletedAt])
   @@map("organization_members")
+}
+
+enum TechnicianAvailabilityStatus {
+  AVAILABLE
+  UNAVAILABLE
+}
+
+/// A dispatcher-managed, per-day availability override for an active technician.
+/// Missing rows mean the technician has not been marked unavailable for that day.
+model TechnicianAvailability {
+  id             String                       @id @default(uuid()) @db.Uuid
+  organizationId String                       @db.Uuid
+  technicianId   String                       @db.Uuid
+  date           DateTime                     @db.Date
+  status         TechnicianAvailabilityStatus @default(AVAILABLE)
+  note           String?
+  createdAt      DateTime                     @default(now())
+  updatedAt      DateTime                     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  technician   User         @relation("TechnicianAvailabilityUser", fields: [technicianId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, technicianId, date])
+  @@index([organizationId, date])
+  @@index([organizationId, technicianId, date])
+  @@map("technician_availability")
 }
 
 /// One private, tenant-scoped conversation between exactly two active organization users.

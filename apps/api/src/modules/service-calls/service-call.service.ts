@@ -31,6 +31,7 @@ import { PrismaWorkflowEventStore } from "../../infrastructure/workflow/prisma-w
 import { assertOrganizationExists } from "../organizations/organization.service.js";
 import { buildServiceCallListWhere } from "./service-call-filters.js";
 import { parseDispatchRange } from "./service-call-dispatch.js";
+import { listTechnicianAvailability } from "../technicians/technician-availability.service.js";
 import { assertEquipmentMatchesCustomer } from "./service-call-relationship.js";
 import type { CreateServiceCallInput, UpdateServiceCallInput } from "./service-call.schemas.js";
 import type { ServiceCallWorkflowPort } from "./service-call-workflow.port.js";
@@ -330,7 +331,7 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
     await assertOrganizationExists(organizationId);
     const range = parseDispatchRange(scheduledFrom, scheduledTo);
 
-    const [technicians, visits, unassignedCalls] = await Promise.all([
+    const [technicians, visits, unassignedCalls, availability] = await Promise.all([
       listAssignableUsers(organizationId),
       prisma.serviceCallVisit.findMany({
         where: {
@@ -356,12 +357,17 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
         include: serviceCallInclude,
         orderBy: [{ priority: "desc" }, { openedAt: "asc" }],
       }),
+      listTechnicianAvailability(organizationId, {
+        from: range.scheduledFrom.toISOString().slice(0, 10),
+        to: range.scheduledTo.toISOString().slice(0, 10),
+      }),
     ]);
 
     return {
       scheduledFrom: range.scheduledFrom.toISOString(),
       scheduledTo: range.scheduledTo.toISOString(),
       technicians,
+      availability,
       assignments: visits.map((visit) => ({
         visit: toVisitDto(visit),
         serviceCall: toServiceCallDto(visit.serviceCall),

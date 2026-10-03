@@ -13,19 +13,40 @@ const lifecycleStateSchema = z.enum([
   "closed",
 ]);
 
-export const assignTechnicianSchema = z.object({
-  technicianId: z.string().uuid(),
-  sequence: z.number().int().positive().optional(),
-  scheduledStart: z.string().datetime().optional(),
-  scheduledEnd: z.string().datetime().optional(),
-  notes: z.string().max(4000).optional(),
-});
+function hasValidScheduleWindow(input: {
+  scheduledStart?: string;
+  scheduledEnd?: string;
+}): boolean {
+  if (!input.scheduledEnd) return true;
+  if (!input.scheduledStart) return false;
+  const start = new Date(input.scheduledStart);
+  const end = new Date(input.scheduledEnd);
+  return end > start && end.valueOf() - start.valueOf() <= 24 * 60 * 60 * 1000;
+}
 
-export const rescheduleVisitSchema = z.object({
-  technicianId: z.string().uuid(),
-  scheduledStart: z.string().datetime(),
-  scheduledEnd: z.string().datetime().optional(),
-});
+export const assignTechnicianSchema = z
+  .object({
+    technicianId: z.string().uuid(),
+    sequence: z.number().int().positive().optional(),
+    scheduledStart: z.string().datetime().optional(),
+    scheduledEnd: z.string().datetime().optional(),
+    notes: z.string().max(4000).optional(),
+  })
+  .refine(hasValidScheduleWindow, {
+    message: "scheduledEnd must be after scheduledStart and within 24 hours",
+    path: ["scheduledEnd"],
+  });
+
+export const rescheduleVisitSchema = z
+  .object({
+    technicianId: z.string().uuid(),
+    scheduledStart: z.string().datetime(),
+    scheduledEnd: z.string().datetime().optional(),
+  })
+  .refine(hasValidScheduleWindow, {
+    message: "scheduledEnd must be after scheduledStart and within 24 hours",
+    path: ["scheduledEnd"],
+  });
 
 export const transitionLifecycleSchema = z.object({
   toLifecycleState: lifecycleStateSchema.refine((value) => value !== "new" && value !== "closed", {
