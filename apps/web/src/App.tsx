@@ -38,6 +38,7 @@ import { TasksPage } from "./pages/tasks/TasksPage";
 import { DispatchBoardPage } from "./pages/calendar/DispatchBoardPage";
 import { MessagesPage } from "./pages/messages/MessagesPage";
 import { InspirationPage } from "./pages/administration/InspirationPage";
+import { DocumentCasesPage } from "./pages/document-cases/DocumentCasesPage";
 
 export function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -100,6 +101,7 @@ export function App() {
                 />
                 <Route path="parts" element={<PartsCatalogPage />} />
                 <Route path="tasks" element={<TasksPage />} />
+                <Route path="document-cases" element={<DocumentCasesPage />} />
                 <Route path="messages" element={<MessagesPage />} />
                 <Route
                   path="accounting"

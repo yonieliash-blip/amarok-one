@@ -34,6 +34,7 @@ const NAV_ICON_MAP: Record<string, LucideIcon> = {
   "purchase-orders": ShoppingCart,
   parts: Package,
   tasks: ClipboardList,
+  "document-cases": FileText,
   messages: MessageCircle,
   "office-chat": MessageCircle,
   accounting: FileText,

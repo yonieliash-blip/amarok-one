@@ -44,6 +44,10 @@ export const PERMISSIONS = {
   TASKS_READ: "tasks:read",
   TASKS_WRITE: "tasks:write",
   TASKS_MANAGE: "tasks:manage",
+  DOCUMENT_CASES_READ: "document_cases:read",
+  DOCUMENT_CASES_WRITE: "document_cases:write",
+  DOCUMENT_CASES_APPROVE: "document_cases:approve",
+  DOCUMENT_CASES_SEND: "document_cases:send",
   MESSAGES_READ: "messages:read",
   MESSAGES_WRITE: "messages:write",
 } as const;
@@ -271,6 +275,26 @@ export const ALL_PERMISSIONS: readonly PermissionDefinition[] = [
     slug: PERMISSIONS.TASKS_MANAGE,
     name: "Manage Tasks",
     description: "Create, assign, and manage organization tasks",
+  },
+  {
+    slug: PERMISSIONS.DOCUMENT_CASES_READ,
+    name: "Read Document Cases",
+    description: "View document cases and their immutable history",
+  },
+  {
+    slug: PERMISSIONS.DOCUMENT_CASES_WRITE,
+    name: "Write Document Cases",
+    description: "Create document cases and append document versions",
+  },
+  {
+    slug: PERMISSIONS.DOCUMENT_CASES_APPROVE,
+    name: "Approve Document Cases",
+    description: "Approve or return document versions for correction",
+  },
+  {
+    slug: PERMISSIONS.DOCUMENT_CASES_SEND,
+    name: "Send Document Cases",
+    description: "Record delivery of approved document versions",
   },
   {
     slug: PERMISSIONS.MESSAGES_READ,

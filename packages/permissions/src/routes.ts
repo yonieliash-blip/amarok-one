@@ -77,6 +77,7 @@ export const APP_ROUTE_ACCESS: readonly RouteAccessRule[] = [
   { path: "/purchase-orders", permissions: [PERMISSIONS.PURCHASE_ORDERS_READ] },
   { path: "/parts", permissions: [PERMISSIONS.PARTS_READ] },
   { path: "/tasks", permissions: [PERMISSIONS.TASKS_READ] },
+  { path: "/document-cases", permissions: [PERMISSIONS.DOCUMENT_CASES_READ] },
   { path: "/messages", permissions: [PERMISSIONS.MESSAGES_READ] },
   { path: "/accounting", permissions: [PERMISSIONS.ACCOUNTING_READ] },
   { path: "/reports", permissions: [PERMISSIONS.REPORTS_READ] },

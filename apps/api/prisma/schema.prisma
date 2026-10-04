@@ -53,6 +53,12 @@ model Organization {
   technicianAvailability TechnicianAvailability[]
   inspirationQuotes      InspirationQuote[]
   employeeInspirations   EmployeeInspirationMessage[]
+  documentCases          DocumentCase[]
+  documentCaseDocuments  DocumentCaseDocument[]
+  documentCaseVersions   DocumentCaseDocumentVersion[]
+  documentCaseApprovals  DocumentCaseApproval[]
+  documentCaseDeliveries DocumentCaseDelivery[]
+  documentCaseTaskLinks  DocumentCaseTaskLink[]
 
   @@index([deletedAt])
   @@map("organizations")
@@ -120,23 +126,29 @@ model User {
   userRoles                  UserRole[]
   organizationMembers        OrganizationMember[]
   refreshTokens              RefreshToken[]
-  auditLogs                  AuditLog[]              @relation("AuditActor")
-  assignedServiceCalls       ServiceCall[]           @relation("AssignedTechnician")
-  serviceCallVisits          ServiceCallVisit[]      @relation("VisitTechnician")
-  assignedInventoryLocations InventoryLocation[]     @relation("AssignedInventoryLocationUser")
-  serviceCallWorkReports     ServiceCallWorkReport[] @relation("WorkReportTechnician")
+  auditLogs                  AuditLog[]                    @relation("AuditActor")
+  assignedServiceCalls       ServiceCall[]                 @relation("AssignedTechnician")
+  serviceCallVisits          ServiceCallVisit[]            @relation("VisitTechnician")
+  assignedInventoryLocations InventoryLocation[]           @relation("AssignedInventoryLocationUser")
+  serviceCallWorkReports     ServiceCallWorkReport[]       @relation("WorkReportTechnician")
   workDays                   WorkDay[]
-  approvedWorkDays           WorkDay[]               @relation("WorkDayApprover")
-  lockedAttendancePeriods    AttendancePeriodLock[]  @relation("AttendancePeriodLocker")
-  unlockedAttendancePeriods  AttendancePeriodLock[]  @relation("AttendancePeriodUnlocker")
-  assignedTasks              Task[]                  @relation("TaskAssignee")
-  createdTasks               Task[]                  @relation("TaskCreator")
-  completedTasks             Task[]                  @relation("TaskCompleter")
-  directConversationsFirst  DirectConversation[]    @relation("DirectConversationParticipantOne")
-  directConversationsSecond DirectConversation[]    @relation("DirectConversationParticipantTwo")
-  sentDirectMessages        DirectMessage[]         @relation("DirectMessageSender")
-  technicianAvailability    TechnicianAvailability[] @relation("TechnicianAvailabilityUser")
-  inspirationMessages        EmployeeInspirationMessage[] @relation("EmployeeInspirationRecipient")
+  approvedWorkDays           WorkDay[]                     @relation("WorkDayApprover")
+  lockedAttendancePeriods    AttendancePeriodLock[]        @relation("AttendancePeriodLocker")
+  unlockedAttendancePeriods  AttendancePeriodLock[]        @relation("AttendancePeriodUnlocker")
+  assignedTasks              Task[]                        @relation("TaskAssignee")
+  createdTasks               Task[]                        @relation("TaskCreator")
+  completedTasks             Task[]                        @relation("TaskCompleter")
+  directConversationsFirst   DirectConversation[]          @relation("DirectConversationParticipantOne")
+  directConversationsSecond  DirectConversation[]          @relation("DirectConversationParticipantTwo")
+  sentDirectMessages         DirectMessage[]               @relation("DirectMessageSender")
+  technicianAvailability     TechnicianAvailability[]      @relation("TechnicianAvailabilityUser")
+  inspirationMessages        EmployeeInspirationMessage[]  @relation("EmployeeInspirationRecipient")
+  managedDocumentCases       DocumentCase[]                @relation("DocumentCaseManager")
+  secretarialDocumentCases   DocumentCase[]                @relation("DocumentCaseSecretary")
+  archivedDocumentCases      DocumentCase[]                @relation("DocumentCaseArchiver")
+  createdDocumentVersions    DocumentCaseDocumentVersion[] @relation("DocumentVersionCreator")
+  documentApprovals          DocumentCaseApproval[]        @relation("DocumentApprovalDecider")
+  sentDocumentDeliveries     DocumentCaseDelivery[]        @relation("DocumentDeliverySender")
 
   @@index([deletedAt])
   @@index([isActive])
@@ -323,10 +335,10 @@ model DirectConversation {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  participantOne  User         @relation("DirectConversationParticipantOne", fields: [participantOneId], references: [id], onDelete: Restrict)
-  participantTwo  User         @relation("DirectConversationParticipantTwo", fields: [participantTwoId], references: [id], onDelete: Restrict)
-  messages        DirectMessage[]
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  participantOne User            @relation("DirectConversationParticipantOne", fields: [participantOneId], references: [id], onDelete: Restrict)
+  participantTwo User            @relation("DirectConversationParticipantTwo", fields: [participantTwoId], references: [id], onDelete: Restrict)
+  messages       DirectMessage[]
 
   @@unique([organizationId, participantOneId, participantTwoId])
   @@index([organizationId, lastMessageAt])
@@ -337,13 +349,13 @@ model DirectConversation {
 
 /// Immutable text message in a private organization conversation.
 model DirectMessage {
-  id             String   @id @default(uuid()) @db.Uuid
-  organizationId String   @db.Uuid
-  conversationId String   @db.Uuid
-  senderId       String   @db.Uuid
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @db.Uuid
+  conversationId String    @db.Uuid
+  senderId       String    @db.Uuid
   body           String
   readAt         DateTime?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime  @default(now())
 
   organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   conversation DirectConversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
@@ -443,10 +455,11 @@ model Task {
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  assignedTo   User         @relation("TaskAssignee", fields: [assignedToId], references: [id], onDelete: Restrict)
-  createdBy    User?        @relation("TaskCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  completedBy  User?        @relation("TaskCompleter", fields: [completedById], references: [id], onDelete: SetNull)
+  organization      Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  assignedTo        User                   @relation("TaskAssignee", fields: [assignedToId], references: [id], onDelete: Restrict)
+  createdBy         User?                  @relation("TaskCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  completedBy       User?                  @relation("TaskCompleter", fields: [completedById], references: [id], onDelete: SetNull)
+  documentCaseLinks DocumentCaseTaskLink[]
 
   @@index([organizationId, assignedToId, status])
   @@index([organizationId, dueAt])
@@ -488,11 +501,11 @@ model WorkDay {
   approvedAt     DateTime?
   approvedById   String?                @db.Uuid
 
-  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  user         User              @relation(fields: [userId], references: [id], onDelete: Restrict)
-  approvedBy   User?             @relation("WorkDayApprover", fields: [approvedById], references: [id], onDelete: SetNull)
-  breaks       WorkBreak[]
-  locations    WorkDayLocation[]
+  organization    Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user            User                    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  approvedBy      User?                   @relation("WorkDayApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  breaks          WorkBreak[]
+  locations       WorkDayLocation[]
   activitySamples WorkDayActivitySample[]
 
   @@index([organizationId, userId, startedAt])
@@ -591,36 +604,37 @@ enum CustomerStatus {
 
 /// Tenant-scoped customer account.
 model Customer {
-  id                  String         @id @default(uuid()) @db.Uuid
-  organizationId      String         @db.Uuid
-  name                String
-  legalName           String?
-  registrationNumber  String?
-  customerNumber      String
+  id                     String         @id @default(uuid()) @db.Uuid
+  organizationId         String         @db.Uuid
+  name                   String
+  legalName              String?
+  registrationNumber     String?
+  customerNumber         String
   externalCustomerNumber String?
   morningClientId        String?
   morningLastSyncedAt    DateTime?
-  email               String?
-  phone               String?
-  address             String?
-  city                String?
-  country             String?
-  notes               String?
-  status              CustomerStatus @default(ACTIVE)
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
-  deletedAt           DateTime?
+  email                  String?
+  phone                  String?
+  address                String?
+  city                   String?
+  country                String?
+  notes                  String?
+  status                 CustomerStatus @default(ACTIVE)
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+  deletedAt              DateTime?
 
-  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  contacts     CustomerContact[]
-  sites        CustomerSite[]
-  equipment    Equipment[]
-  serviceCalls ServiceCall[]
+  organization  Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  contacts      CustomerContact[]
+  sites         CustomerSite[]
+  equipment     Equipment[]
+  serviceCalls  ServiceCall[]
+  documentCases DocumentCase[]
 
+  @@unique([organizationId, morningClientId])
   // The database enforces this as a partial unique index for active rows only.
   // Soft-deleted historical customers keep their original number for auditability.
   @@index([organizationId, customerNumber], map: "customers_organizationId_customerNumber_active_key")
-  @@unique([organizationId, morningClientId])
   @@index([organizationId])
   @@index([organizationId, deletedAt])
   @@index([organizationId, status])
@@ -823,34 +837,34 @@ enum InventoryLocationType {
 
 /// Tenant-scoped field service work order.
 model ServiceCall {
-  id                String                    @id @default(uuid()) @db.Uuid
-  organizationId    String                    @db.Uuid
-  serviceCallNumber String
-  title             String
-  description       String?
-  status            ServiceCallStatus         @default(OPEN)
-  lifecycleState    ServiceCallLifecycleState @default(NEW)
-  priority          ServiceCallPriority       @default(NORMAL)
-  openedAt          DateTime                  @default(now())
-  scheduledAt       DateTime?
-  completedAt       DateTime?
-  customerId        String                    @db.Uuid
-  customerSiteId    String?                   @db.Uuid
+  id                     String                    @id @default(uuid()) @db.Uuid
+  organizationId         String                    @db.Uuid
+  serviceCallNumber      String
+  title                  String
+  description            String?
+  status                 ServiceCallStatus         @default(OPEN)
+  lifecycleState         ServiceCallLifecycleState @default(NEW)
+  priority               ServiceCallPriority       @default(NORMAL)
+  openedAt               DateTime                  @default(now())
+  scheduledAt            DateTime?
+  completedAt            DateTime?
+  customerId             String                    @db.Uuid
+  customerSiteId         String?                   @db.Uuid
   // A call may describe a one-off vehicle/tool without creating permanent equipment.
-  equipmentId       String?                   @db.Uuid
-  branchId          String?                   @db.Uuid
-  assignedUserId    String?                   @db.Uuid
-  contactName       String?
-  contactPhone      String?
-  location          String?
-  equipmentModel    String?
-  equipmentLicensePlate String?
+  equipmentId            String?                   @db.Uuid
+  branchId               String?                   @db.Uuid
+  assignedUserId         String?                   @db.Uuid
+  contactName            String?
+  contactPhone           String?
+  location               String?
+  equipmentModel         String?
+  equipmentLicensePlate  String?
   equipmentChassisNumber String?
-  purchaseOrderNumber String?
-  notes             String?
-  createdAt         DateTime                  @default(now())
-  updatedAt         DateTime                  @updatedAt
-  deletedAt         DateTime?
+  purchaseOrderNumber    String?
+  notes                  String?
+  createdAt              DateTime                  @default(now())
+  updatedAt              DateTime                  @updatedAt
+  deletedAt              DateTime?
 
   organization Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   customer     Customer                @relation(fields: [customerId], references: [id], onDelete: Restrict)
@@ -1022,12 +1036,13 @@ model ServiceCallWorkReport {
   updatedAt             DateTime  @updatedAt
   deletedAt             DateTime?
 
-  organization Organization                @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  serviceCall  ServiceCall                 @relation(fields: [serviceCallId], references: [id], onDelete: Restrict)
-  visit        ServiceCallVisit            @relation(fields: [visitId], references: [id], onDelete: Restrict)
-  technician   User                        @relation("WorkReportTechnician", fields: [technicianId], references: [id], onDelete: Restrict)
-  parts        ServiceCallWorkReportPart[]
-  attachments  ServiceCallWorkReportAttachment[]
+  organization         Organization                      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  serviceCall          ServiceCall                       @relation(fields: [serviceCallId], references: [id], onDelete: Restrict)
+  visit                ServiceCallVisit                  @relation(fields: [visitId], references: [id], onDelete: Restrict)
+  technician           User                              @relation("WorkReportTechnician", fields: [technicianId], references: [id], onDelete: Restrict)
+  parts                ServiceCallWorkReportPart[]
+  attachments          ServiceCallWorkReportAttachment[]
+  documentCaseVersions DocumentCaseDocumentVersion[]
 
   @@index([organizationId])
   @@index([serviceCallId])
@@ -1036,18 +1051,210 @@ model ServiceCallWorkReport {
   @@map("service_call_work_reports")
 }
 
+enum DocumentCaseWorkflow {
+  DIRECT_INVOICE
+  QUOTE_AND_PURCHASE_ORDER
+}
+
+enum DocumentCaseStatus {
+  DRAFT
+  QUOTE_REVIEW_REQUIRED
+  QUOTE_CORRECTION_REQUIRED
+  QUOTE_SEND_REQUIRED
+  WAITING_PURCHASE_ORDER
+  INVOICE_REVIEW_REQUIRED
+  INVOICE_CORRECTION_REQUIRED
+  INVOICE_SEND_REQUIRED
+  ARCHIVED
+}
+
+enum DocumentCaseDocumentType {
+  WORK_REPORT
+  QUOTE
+  PURCHASE_ORDER
+  INVOICE
+}
+
+enum DocumentVersionSource {
+  METADATA_ONLY
+  EXISTING_WORK_REPORT
+}
+
+enum DocumentApprovalDecision {
+  APPROVED
+  RETURNED_FOR_CORRECTION
+}
+
+enum DocumentDeliveryChannel {
+  EMAIL
+  WHATSAPP
+  OTHER
+}
+
+enum DocumentCaseTaskKind {
+  MANAGER_REVIEW
+  SECRETARY_SEND
+  SECRETARY_PURCHASE_ORDER
+}
+
+model DocumentCase {
+  id                  String                 @id @default(uuid()) @db.Uuid
+  organizationId      String                 @db.Uuid
+  customerId          String                 @db.Uuid
+  repairReportNumber  String
+  workflow            DocumentCaseWorkflow
+  status              DocumentCaseStatus     @default(DRAFT)
+  managerAssigneeId   String                 @db.Uuid
+  secretaryAssigneeId String                 @db.Uuid
+  archivedAt          DateTime?
+  archivedById        String?                @db.Uuid
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  organization        Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  customer            Customer               @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  manager             User                   @relation("DocumentCaseManager", fields: [managerAssigneeId], references: [id], onDelete: Restrict)
+  secretary           User                   @relation("DocumentCaseSecretary", fields: [secretaryAssigneeId], references: [id], onDelete: Restrict)
+  archivedBy          User?                  @relation("DocumentCaseArchiver", fields: [archivedById], references: [id], onDelete: SetNull)
+  documents           DocumentCaseDocument[]
+  approvals           DocumentCaseApproval[]
+  deliveries          DocumentCaseDelivery[]
+  taskLinks           DocumentCaseTaskLink[]
+
+  @@unique([organizationId, repairReportNumber])
+  @@index([organizationId, status])
+  @@index([organizationId, customerId])
+  @@index([organizationId, archivedAt])
+  @@map("document_cases")
+}
+
+model DocumentCaseDocument {
+  id             String                        @id @default(uuid()) @db.Uuid
+  organizationId String                        @db.Uuid
+  documentCaseId String                        @db.Uuid
+  type           DocumentCaseDocumentType
+  createdAt      DateTime                      @default(now())
+  updatedAt      DateTime                      @updatedAt
+  organization   Organization                  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  documentCase   DocumentCase                  @relation(fields: [documentCaseId], references: [id], onDelete: Restrict)
+  versions       DocumentCaseDocumentVersion[]
+
+  @@unique([documentCaseId, type])
+  @@index([organizationId, documentCaseId])
+  @@map("document_case_documents")
+}
+
+model DocumentCaseDocumentVersion {
+  id                     String                     @id @default(uuid()) @db.Uuid
+  organizationId         String                     @db.Uuid
+  documentId             String                     @db.Uuid
+  versionNumber          Int
+  source                 DocumentVersionSource      @default(METADATA_ONLY)
+  sourceWorkReportId     String?                    @db.Uuid
+  displayName            String
+  externalDocumentNumber String?
+  documentDate           DateTime?                  @db.Date
+  note                   String?
+  createdById            String?                    @db.Uuid
+  createdAt              DateTime                   @default(now())
+  organization           Organization               @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  document               DocumentCaseDocument       @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  sourceWorkReport       ServiceCallWorkReport?     @relation(fields: [sourceWorkReportId], references: [id], onDelete: Restrict)
+  createdBy              User?                      @relation("DocumentVersionCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  approval               DocumentCaseApproval?
+  deliveryItems          DocumentCaseDeliveryItem[]
+  taskLinks              DocumentCaseTaskLink[]
+
+  @@unique([documentId, versionNumber])
+  @@index([organizationId, documentId, createdAt])
+  @@index([sourceWorkReportId])
+  @@map("document_case_document_versions")
+}
+
+model DocumentCaseApproval {
+  id                String                      @id @default(uuid()) @db.Uuid
+  organizationId    String                      @db.Uuid
+  documentCaseId    String                      @db.Uuid
+  documentVersionId String                      @unique @db.Uuid
+  decision          DocumentApprovalDecision
+  note              String?
+  decidedById       String                      @db.Uuid
+  decidedAt         DateTime                    @default(now())
+  createdAt         DateTime                    @default(now())
+  organization      Organization                @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  documentCase      DocumentCase                @relation(fields: [documentCaseId], references: [id], onDelete: Restrict)
+  documentVersion   DocumentCaseDocumentVersion @relation(fields: [documentVersionId], references: [id], onDelete: Restrict)
+  decidedBy         User                        @relation("DocumentApprovalDecider", fields: [decidedById], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, documentCaseId, decidedAt])
+  @@map("document_case_approvals")
+}
+
+model DocumentCaseDelivery {
+  id             String                     @id @default(uuid()) @db.Uuid
+  organizationId String                     @db.Uuid
+  documentCaseId String                     @db.Uuid
+  sentById       String                     @db.Uuid
+  recipientName  String
+  recipientEmail String?
+  recipientPhone String?
+  channel        DocumentDeliveryChannel
+  note           String?
+  sentAt         DateTime
+  createdAt      DateTime                   @default(now())
+  organization   Organization               @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  documentCase   DocumentCase               @relation(fields: [documentCaseId], references: [id], onDelete: Restrict)
+  sentBy         User                       @relation("DocumentDeliverySender", fields: [sentById], references: [id], onDelete: Restrict)
+  items          DocumentCaseDeliveryItem[]
+
+  @@index([organizationId, documentCaseId, sentAt])
+  @@map("document_case_deliveries")
+}
+
+model DocumentCaseDeliveryItem {
+  id                String                      @id @default(uuid()) @db.Uuid
+  deliveryId        String                      @db.Uuid
+  documentVersionId String                      @db.Uuid
+  createdAt         DateTime                    @default(now())
+  delivery          DocumentCaseDelivery        @relation(fields: [deliveryId], references: [id], onDelete: Restrict)
+  documentVersion   DocumentCaseDocumentVersion @relation(fields: [documentVersionId], references: [id], onDelete: Restrict)
+
+  @@unique([deliveryId, documentVersionId])
+  @@index([documentVersionId])
+  @@map("document_case_delivery_items")
+}
+
+model DocumentCaseTaskLink {
+  id                String                       @id @default(uuid()) @db.Uuid
+  organizationId    String                       @db.Uuid
+  documentCaseId    String                       @db.Uuid
+  taskId            String                       @unique @db.Uuid
+  taskKind          DocumentCaseTaskKind
+  documentVersionId String?                      @db.Uuid
+  deduplicationKey  String
+  resolvedAt        DateTime?
+  createdAt         DateTime                     @default(now())
+  organization      Organization                 @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  documentCase      DocumentCase                 @relation(fields: [documentCaseId], references: [id], onDelete: Restrict)
+  task              Task                         @relation(fields: [taskId], references: [id], onDelete: Restrict)
+  documentVersion   DocumentCaseDocumentVersion? @relation(fields: [documentVersionId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, deduplicationKey])
+  @@index([organizationId, documentCaseId, taskKind, resolvedAt])
+  @@map("document_case_task_links")
+}
+
 /// Private photo metadata for a repair order. Object bytes are stored in the configured private bucket.
 model ServiceCallWorkReportAttachment {
-  id             String   @id @default(uuid()) @db.Uuid
-  organizationId String   @db.Uuid
-  workReportId   String   @db.Uuid
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @db.Uuid
+  workReportId   String    @db.Uuid
   category       String
-  storageKey     String   @unique
+  storageKey     String    @unique
   fileName       String
   contentType    String
   byteSize       Int
-  createdById    String   @db.Uuid
-  createdAt      DateTime @default(now())
+  createdById    String    @db.Uuid
+  createdAt      DateTime  @default(now())
   deletedAt      DateTime?
 
   organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
@@ -1058,15 +1265,15 @@ model ServiceCallWorkReportAttachment {
 }
 
 model ServiceCallWorkReportPart {
-  id              String   @id @default(uuid()) @db.Uuid
-  workReportId    String   @db.Uuid
-  inventoryItemId String?  @db.Uuid
-  catalogPartId   String?  @db.Uuid
-  manualName      String?
+  id               String   @id @default(uuid()) @db.Uuid
+  workReportId     String   @db.Uuid
+  inventoryItemId  String?  @db.Uuid
+  catalogPartId    String?  @db.Uuid
+  manualName       String?
   manualPartNumber String?
-  quantity        Int
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  quantity         Int
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   workReport    ServiceCallWorkReport @relation(fields: [workReportId], references: [id], onDelete: Cascade)
   inventoryItem InventoryItem?        @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)

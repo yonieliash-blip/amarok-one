@@ -49,6 +49,7 @@ export interface TranslationMessages {
     purchaseOrders: string;
     parts: string;
     tasks: string;
+    documentCases: string;
     chat: string;
     accounting: string;
     greenInvoiceQueries: string;
@@ -91,6 +92,7 @@ export interface TranslationMessages {
     purchaseOrders: string;
     parts: string;
     tasks: string;
+    documentCases: string;
     accounting: string;
     greenInvoiceQueries: string;
     reports: string;
