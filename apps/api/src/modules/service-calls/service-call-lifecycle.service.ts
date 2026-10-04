@@ -122,11 +122,13 @@ export function createServiceCallLifecycleService(deps: ServiceCallLifecycleServ
   }
 
   async function assertAssignableUser(organizationId: string, userId: string): Promise<void> {
-    const membership = await prisma.userRole.findFirst({
+    const membership = await prisma.organizationMember.findFirst({
       where: {
         organizationId,
         userId,
         deletedAt: null,
+        status: "ACTIVE",
+        primaryRole: { slug: "technician", deletedAt: null },
         user: { deletedAt: null, isActive: true },
       },
       select: { id: true },

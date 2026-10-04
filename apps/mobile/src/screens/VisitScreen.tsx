@@ -621,8 +621,10 @@ export function VisitScreen({ route, navigation }: Props) {
         <Card>
           <Eyebrow>דוח עבודה</Eyebrow>
           <Text style={styles.sectionTitle}>עבודה שבוצעה וחתימת לקוח</Text>
-          {reportEditor ? (
+          {reportEditor?.assignedVan ? (
             <Text style={styles.bodyMuted}>ניידת משויכת: {reportEditor.assignedVan.name}</Text>
+          ) : reportEditor ? (
+            <Text style={styles.bodyMuted}>אין ניידת משויכת; אפשר לדווח חלפים ידניים מהווב.</Text>
           ) : null}
           <TextInput
             value={customerNameDraft}

@@ -13,6 +13,7 @@ import type {
   ServiceCallPriority,
   ServiceCallStatus,
   ServiceCallWorkReport,
+  RepairOrderAttachment,
   WorkReportEditorData,
 } from "@amarok-one/types";
 import {
@@ -334,7 +335,10 @@ export async function saveServiceCallWorkReportRequest(
     workPerformed?: string | null;
     customerName?: string | null;
     customerSignatureData?: string | null;
-    parts: Array<{ inventoryItemId: string; quantity: number }>;
+    parts: Array<
+      | { inventoryItemId: string; quantity: number }
+      | { manualName: string; manualPartNumber?: string | null; quantity: number }
+    >;
   },
 ): Promise<ServiceCallWorkReport> {
   const response = await apiRequest<ServiceCallWorkReport>(
@@ -345,6 +349,25 @@ export async function saveServiceCallWorkReportRequest(
       body: JSON.stringify(payload),
     },
   );
+  return response.data;
+}
+
+export async function uploadServiceCallWorkReportPhotoRequest(
+  organizationId: string,
+  serviceCallId: string,
+  visitId: string,
+  accessToken: string,
+  category: string,
+  file: File,
+): Promise<RepairOrderAttachment> {
+  const form = new FormData();
+  form.set("category", category);
+  form.set("file", file);
+  const response = await apiRequest<RepairOrderAttachment>(
+    `${serviceCallsBase(organizationId)}/${serviceCallId}/visits/${visitId}/work-report/photos`,
+    { method: "POST", accessToken, body: form },
+  );
+  if (!response.data) throw new Error("Photo upload failed");
   return response.data;
 }
 

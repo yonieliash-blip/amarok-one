@@ -20,7 +20,6 @@ import {
   fromServiceCallPriorityDto,
   fromServiceCallStatusDto,
   serviceCallInclude,
-  toOrganizationMemberDto,
   toServiceCallDto,
 } from "../../lib/mappers.js";
 import { paginationMeta, parsePagination } from "../../lib/pagination.js";
@@ -48,6 +47,7 @@ import {
   type ServiceCallLifecycleServiceDeps,
 } from "./service-call-lifecycle.service.js";
 import type { SaveWorkReportInput } from "./service-call-lifecycle.schemas.js";
+import { uploadRepairOrderPhoto } from "./repair-order-storage.js";
 
 export interface ServiceCallServiceDeps extends ServiceCallLifecycleServiceDeps {
   workflow: ServiceCallWorkflowPort;
@@ -152,8 +152,10 @@ function toWorkReportDto(row: {
   updatedAt: Date;
   parts: Array<{
     id: string;
-    inventoryItemId: string;
-    catalogPartId: string;
+    inventoryItemId: string | null;
+    catalogPartId: string | null;
+    manualName: string | null;
+    manualPartNumber: string | null;
     quantity: number;
     inventoryItem: {
       id: string;
@@ -184,7 +186,15 @@ function toWorkReportDto(row: {
         updatedAt: Date;
         assignedUser?: { displayName: string } | null;
       };
-    };
+    } | null;
+  }>;
+  attachments?: Array<{
+    id: string;
+    category: string;
+    fileName: string;
+    contentType: string;
+    byteSize: number;
+    createdAt: Date;
   }>;
 }): ServiceCallWorkReport {
   return {
@@ -201,11 +211,21 @@ function toWorkReportDto(row: {
     updatedAt: row.updatedAt.toISOString(),
     parts: row.parts.map((part) => ({
       id: part.id,
-      inventoryItemId: part.inventoryItemId,
-      catalogPartId: part.catalogPartId,
+      inventoryItemId: part.inventoryItemId ?? undefined,
+      catalogPartId: part.catalogPartId ?? undefined,
+      manualName: part.manualName ?? undefined,
+      manualPartNumber: part.manualPartNumber ?? undefined,
       quantity: part.quantity,
-      inventoryItem: toInventoryItemDto(part.inventoryItem),
-      catalogPart: toInventoryItemDto(part.inventoryItem).part,
+      inventoryItem: part.inventoryItem ? toInventoryItemDto(part.inventoryItem) : undefined,
+      catalogPart: part.inventoryItem ? toInventoryItemDto(part.inventoryItem).part : undefined,
+    })),
+    attachments: row.attachments?.map((attachment) => ({
+      id: attachment.id,
+      category: attachment.category as import("@amarok-one/types").RepairOrderPhotoCategory,
+      fileName: attachment.fileName,
+      contentType: attachment.contentType,
+      byteSize: attachment.byteSize,
+      createdAt: attachment.createdAt.toISOString(),
     })),
   };
 }
@@ -254,28 +274,31 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
   async function listAssignableUsers(organizationId: string): Promise<OrganizationMember[]> {
     await assertOrganizationExists(organizationId);
 
-    const memberships = await prisma.userRole.findMany({
+    const memberships = await prisma.organizationMember.findMany({
       where: {
         organizationId,
         deletedAt: null,
-        role: { slug: "technician", deletedAt: null },
+        status: "ACTIVE",
+        primaryRole: { slug: "technician", deletedAt: null },
         user: { deletedAt: null, isActive: true },
       },
       include: {
         user: true,
-        role: true,
+        primaryRole: true,
       },
       orderBy: [{ user: { displayName: "asc" } }, { createdAt: "asc" }],
     });
 
-    const byUserId = new Map<string, (typeof memberships)[number]>();
-    for (const membership of memberships) {
-      if (!byUserId.has(membership.userId)) {
-        byUserId.set(membership.userId, membership);
-      }
-    }
-
-    return [...byUserId.values()].map(toOrganizationMemberDto);
+    return memberships.map((membership) => ({
+      id: membership.user.id,
+      email: membership.user.email,
+      displayName: membership.user.displayName,
+      role: {
+        id: membership.primaryRole.id,
+        slug: membership.primaryRole.slug,
+        name: membership.primaryRole.name,
+      },
+    }));
   }
 
   async function listServiceCalls(
@@ -755,10 +778,6 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
       },
     });
 
-    if (!assignedVan) {
-      throw badRequest("לא משויכת לטכנאי ניידת שירות.");
-    }
-
     const report = await prisma.serviceCallWorkReport.findFirst({
       where: {
         organizationId,
@@ -767,6 +786,10 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
         deletedAt: null,
       },
       include: {
+        attachments: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: "asc" },
+        },
         parts: {
           include: {
             inventoryItem: {
@@ -789,31 +812,33 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
       },
     });
 
-    const inventoryItems = await prisma.inventoryItem.findMany({
-      where: {
-        organizationId,
-        locationId: assignedVan.id,
-        deletedAt: null,
-      },
-      include: {
-        location: {
-          include: {
-            assignedUser: { select: { displayName: true } },
+    const inventoryItems = assignedVan
+      ? await prisma.inventoryItem.findMany({
+          where: {
+            organizationId,
+            locationId: assignedVan.id,
+            deletedAt: null,
           },
-        },
-        part: {
           include: {
-            category: { select: { id: true, name: true } },
-            subcategory: { select: { id: true, name: true } },
+            location: {
+              include: {
+                assignedUser: { select: { displayName: true } },
+              },
+            },
+            part: {
+              include: {
+                category: { select: { id: true, name: true } },
+                subcategory: { select: { id: true, name: true } },
+              },
+            },
           },
-        },
-      },
-      orderBy: [
-        { part: { category: { name: "asc" } } },
-        { part: { subcategory: { name: "asc" } } },
-        { part: { name: "asc" } },
-      ],
-    });
+          orderBy: [
+            { part: { category: { name: "asc" } } },
+            { part: { subcategory: { name: "asc" } } },
+            { part: { name: "asc" } },
+          ],
+        })
+      : [];
 
     const visibleItems = new Map<string, (typeof inventoryItems)[number]>();
     for (const item of inventoryItems) {
@@ -822,7 +847,9 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
       }
     }
     for (const part of report?.parts ?? []) {
-      visibleItems.set(part.inventoryItem.id, part.inventoryItem);
+      if (part.inventoryItem) {
+        visibleItems.set(part.inventoryItem.id, part.inventoryItem);
+      }
     }
 
     const groups = new Map<string, WorkReportEditorData["partGroups"][number]>();
@@ -847,7 +874,7 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
     }
 
     return {
-      assignedVan: toInventoryLocationDto(assignedVan),
+      assignedVan: assignedVan ? toInventoryLocationDto(assignedVan) : undefined,
       report: report ? toWorkReportDto(report) : undefined,
       partGroups: [...groups.values()],
     };
@@ -890,12 +917,16 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
       },
     });
 
-    if (!assignedVan) {
-      throw badRequest("לא משויכת לטכנאי ניידת שירות.");
-    }
-
+    const inventoryPartEntries = input.parts.filter(
+      (part): part is Extract<(typeof input.parts)[number], { inventoryItemId: string }> =>
+        "inventoryItemId" in part,
+    );
+    const manualPartEntries = input.parts.filter(
+      (part): part is Extract<(typeof input.parts)[number], { manualName: string }> =>
+        "manualName" in part,
+    );
     const aggregatedParts = [
-      ...input.parts
+      ...inventoryPartEntries
         .reduce((map, entry) => {
           map.set(entry.inventoryItemId, (map.get(entry.inventoryItemId) ?? 0) + entry.quantity);
           return map;
@@ -921,6 +952,7 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
 
       if (existing) {
         for (const previousPart of existing.parts) {
+          if (!previousPart.inventoryItemId) continue;
           await tx.inventoryItem.update({
             where: { id: previousPart.inventoryItemId, organizationId },
             data: { quantity: { increment: previousPart.quantity } },
@@ -956,6 +988,9 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
           });
 
       if (aggregatedParts.length > 0) {
+        if (!assignedVan) {
+          throw badRequest("לא משויכת לטכנאי ניידת שירות ולכן לא ניתן לבחור חלקי ניידת.");
+        }
         const inventoryRows = await tx.inventoryItem.findMany({
           where: {
             organizationId,
@@ -1004,12 +1039,27 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
         }
       }
 
+      for (const part of manualPartEntries) {
+        await tx.serviceCallWorkReportPart.create({
+          data: {
+            workReportId: report.id,
+            manualName: part.manualName,
+            manualPartNumber: part.manualPartNumber ?? null,
+            quantity: part.quantity,
+          },
+        });
+      }
+
       return tx.serviceCallWorkReport.findFirstOrThrow({
         where: {
           id: report.id,
           organizationId,
         },
         include: {
+          attachments: {
+            where: { deletedAt: null },
+            orderBy: { createdAt: "asc" },
+          },
           parts: {
             include: {
               inventoryItem: {
@@ -1042,11 +1092,65 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
       metadata: {
         serviceCallId,
         visitId,
-        partCount: aggregatedParts.length,
+        partCount: aggregatedParts.length + manualPartEntries.length,
       },
     });
 
     return toWorkReportDto(saved);
+  }
+
+  async function uploadWorkReportPhoto(
+    organizationId: string,
+    serviceCallId: string,
+    visitId: string,
+    category: string,
+    file: File,
+    actorId: string,
+  ) {
+    const report = await prisma.serviceCallWorkReport.findFirst({
+      where: { organizationId, serviceCallId, visitId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!report) {
+      throw badRequest("יש לשמור הזמנת תיקון לפני העלאת צילום.");
+    }
+
+    const uploaded = await uploadRepairOrderPhoto({
+      organizationId,
+      workReportId: report.id,
+      category,
+      file,
+    });
+    const attachment = await prisma.serviceCallWorkReportAttachment.create({
+      data: {
+        organizationId,
+        workReportId: report.id,
+        category,
+        storageKey: uploaded.storageKey,
+        fileName: uploaded.fileName,
+        contentType: uploaded.contentType,
+        byteSize: uploaded.byteSize,
+        createdById: actorId,
+      },
+    });
+
+    await writeAuditLog({
+      organizationId,
+      actorId,
+      action: "service_call.repair_order_photo.uploaded",
+      entityType: "ServiceCallWorkReportAttachment",
+      entityId: attachment.id,
+      metadata: { serviceCallId, visitId, category, byteSize: attachment.byteSize },
+    });
+
+    return {
+      id: attachment.id,
+      category: attachment.category as import("@amarok-one/types").RepairOrderPhotoCategory,
+      fileName: attachment.fileName,
+      contentType: attachment.contentType,
+      byteSize: attachment.byteSize,
+      createdAt: attachment.createdAt.toISOString(),
+    };
   }
 
   return {
@@ -1071,6 +1175,7 @@ export function createServiceCallService(deps: ServiceCallServiceDeps) {
     finishVisit: lifecycle.finishVisit,
     getWorkReportEditor,
     saveWorkReport,
+    uploadWorkReportPhoto,
   };
 }
 

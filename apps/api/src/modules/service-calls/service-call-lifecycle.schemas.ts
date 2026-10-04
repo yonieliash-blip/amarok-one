@@ -76,10 +76,17 @@ export const saveWorkReportSchema = z.object({
   customerSignatureData: z.string().min(1).max(200000).nullable().optional(),
   parts: z
     .array(
-      z.object({
-        inventoryItemId: z.string().uuid(),
-        quantity: z.number().int().positive(),
-      }),
+      z.union([
+        z.object({
+          inventoryItemId: z.string().uuid(),
+          quantity: z.number().int().positive(),
+        }),
+        z.object({
+          manualName: z.string().trim().min(1).max(240),
+          manualPartNumber: z.string().trim().max(120).nullable().optional(),
+          quantity: z.number().int().positive(),
+        }),
+      ]),
     )
     .max(100),
 });

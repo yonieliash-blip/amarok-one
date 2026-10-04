@@ -2,7 +2,7 @@ import { isAssignedServiceCallsOnly } from "@amarok-one/permissions";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { createApiResponse } from "@amarok-one/utils";
-import { forbidden } from "../../lib/errors.js";
+import { badRequest, forbidden } from "../../lib/errors.js";
 import { getAuth } from "../../lib/auth-context.js";
 import {
   requireAllPermissions,
@@ -406,6 +406,40 @@ export function createServiceCallRoutes(serviceCallService: ServiceCallService):
           actorId(context),
         );
         return context.json(createApiResponse(report));
+      },
+    )
+    .post(
+      "/:serviceCallId/visits/:visitId/work-report/photos",
+      requireAnyPermission("service_calls:write", "my_service_calls:write"),
+      zValidator("param", visitIdParamSchema),
+      async (context) => {
+        const { organizationId, serviceCallId, visitId } = context.req.valid("param");
+        if (assignedOnly(context)) {
+          await serviceCallService.assertAssignedServiceCallAccess(
+            organizationId,
+            serviceCallId,
+            actorId(context),
+          );
+        } else {
+          requireControlCenterWrite(context);
+        }
+
+        const form = await context.req.formData();
+        const category = form.get("category");
+        const file = form.get("file");
+        if (typeof category !== "string" || !file || typeof file === "string") {
+          throw badRequest("צילום הזמנת התיקון אינו תקין.");
+        }
+
+        const attachment = await serviceCallService.uploadWorkReportPhoto(
+          organizationId,
+          serviceCallId,
+          visitId,
+          category,
+          file,
+          actorId(context),
+        );
+        return context.json(createApiResponse(attachment), 201);
       },
     );
 }

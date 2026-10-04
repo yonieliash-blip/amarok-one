@@ -34,6 +34,7 @@ model Organization {
   serviceCalls           ServiceCall[]
   serviceCallVisits      ServiceCallVisit[]
   serviceCallWorkReports ServiceCallWorkReport[]
+  repairOrderAttachments ServiceCallWorkReportAttachment[]
   workflowEvents         WorkflowEvent[]
   userRoles              UserRole[]
   organizationMembers    OrganizationMember[]
@@ -1008,6 +1009,7 @@ model ServiceCallWorkReport {
   visit        ServiceCallVisit            @relation(fields: [visitId], references: [id], onDelete: Restrict)
   technician   User                        @relation("WorkReportTechnician", fields: [technicianId], references: [id], onDelete: Restrict)
   parts        ServiceCallWorkReportPart[]
+  attachments  ServiceCallWorkReportAttachment[]
 
   @@index([organizationId])
   @@index([serviceCallId])
@@ -1016,18 +1018,41 @@ model ServiceCallWorkReport {
   @@map("service_call_work_reports")
 }
 
+/// Private photo metadata for a repair order. Object bytes are stored in the configured private bucket.
+model ServiceCallWorkReportAttachment {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  workReportId   String   @db.Uuid
+  category       String
+  storageKey     String   @unique
+  fileName       String
+  contentType    String
+  byteSize       Int
+  createdById    String   @db.Uuid
+  createdAt      DateTime @default(now())
+  deletedAt      DateTime?
+
+  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  workReport   ServiceCallWorkReport @relation(fields: [workReportId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, workReportId, deletedAt])
+  @@map("service_call_work_report_attachments")
+}
+
 model ServiceCallWorkReportPart {
   id              String   @id @default(uuid()) @db.Uuid
   workReportId    String   @db.Uuid
-  inventoryItemId String   @db.Uuid
-  catalogPartId   String   @db.Uuid
+  inventoryItemId String?  @db.Uuid
+  catalogPartId   String?  @db.Uuid
+  manualName      String?
+  manualPartNumber String?
   quantity        Int
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   workReport    ServiceCallWorkReport @relation(fields: [workReportId], references: [id], onDelete: Cascade)
-  inventoryItem InventoryItem         @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
-  catalogPart   CatalogPart           @relation(fields: [catalogPartId], references: [id], onDelete: Restrict)
+  inventoryItem InventoryItem?        @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  catalogPart   CatalogPart?          @relation(fields: [catalogPartId], references: [id], onDelete: Restrict)
 
   @@index([workReportId])
   @@index([inventoryItemId])

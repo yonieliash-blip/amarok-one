@@ -10,7 +10,6 @@ import {
   MessageCircle,
   Package,
   Plus,
-  RefreshCw,
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
@@ -71,7 +70,6 @@ export function ManagementDashboardPage() {
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [inspiration, setInspiration] = useState<InspirationCurrent>({ kind: "none" });
   const [error, setError] = useState<string | null>(null);
-  const [reloadToken, setReloadToken] = useState(0);
 
   const canWrite = user ? hasServiceCallsWrite(user.permissions) : false;
   const todayStart = useMemo(() => startOfLocalDay(new Date()), []);
@@ -111,7 +109,7 @@ export function ManagementDashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [accessToken, reloadToken, t, user]);
+  }, [accessToken, t, user]);
 
   const metrics = useMemo<Metric[]>(
     () => [
@@ -180,16 +178,12 @@ export function ManagementDashboardPage() {
     <div className="management-dashboard">
       <header className="management-dashboard__header">
         <div>
-          <h2 className="management-dashboard__title">{t("managementDashboard", "title")}</h2>
-          <p className="management-dashboard__subtitle">{t("managementDashboard", "subtitle")}</p>
-        </div>
-        <div className="management-dashboard__greeting">
-          <strong>{greeting}</strong>
+          <h2 className="management-dashboard__title">{greeting}</h2>
           {inspiration.text ? (
-            <span>
+            <p className="management-dashboard__subtitle">
               {inspiration.text}
               {inspiration.author ? ` — ${inspiration.author}` : ""}
-            </span>
+            </p>
           ) : null}
         </div>
         <div className="management-dashboard__actions">
@@ -210,15 +204,6 @@ export function ManagementDashboardPage() {
               </Button>
             </Link>
           ) : null}
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => setReloadToken((value) => value + 1)}
-            disabled={status === "loading"}
-            aria-label={t("managementDashboard", "refresh")}
-          >
-            <RefreshCw size={19} aria-hidden="true" />
-          </Button>
         </div>
       </header>
 

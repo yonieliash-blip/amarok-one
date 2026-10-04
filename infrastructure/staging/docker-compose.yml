@@ -37,6 +37,10 @@ services:
       MORNING_CLIENT_SECRET: ${MORNING_CLIENT_SECRET:-}
       MORNING_TOKEN_URL: ${MORNING_TOKEN_URL:-https://api.morning.co/idp/v1/oauth/token}
       MORNING_API_BASE_URL: ${MORNING_API_BASE_URL:-https://api.greeninvoice.co.il/api/v1}
+      AWS_REGION: ${AWS_REGION:-eu-central-1}
+      REPAIR_ORDER_S3_BUCKET: ${REPAIR_ORDER_S3_BUCKET:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
     expose:
       - "3000"
     networks:

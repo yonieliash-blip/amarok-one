@@ -23,6 +23,7 @@ const TENANT_SCOPED_MODELS = new Set([
   "ServiceCall",
   "ServiceCallVisit",
   "ServiceCallWorkReport",
+  "ServiceCallWorkReportAttachment",
   "WorkflowEvent",
   "UserRole",
   "OrganizationMember",
