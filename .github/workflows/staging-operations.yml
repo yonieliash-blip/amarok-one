@@ -180,6 +180,9 @@ jobs:
                 '
                 ;;
               restart_web)
+                git fetch --no-tags origin main
+                git merge --ff-only origin/main
+                compose build --no-cache web
                 compose up -d --no-deps --force-recreate web
                 curl --fail --show-error --retry 5 --retry-all-errors \
                   https://staging.amarok-ce.com/health
