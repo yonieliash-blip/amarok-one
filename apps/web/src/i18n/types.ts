@@ -248,6 +248,10 @@ export interface TranslationMessages {
     sending: string;
     sendError: string;
     unread: string;
+    newMessageNotice: string;
+    newMessagesNotice: string;
+    openMessages: string;
+    dismissNewMessages: string;
   };
   mySchedulePage: {
     eyebrow: string;
@@ -311,6 +315,7 @@ export interface TranslationMessages {
     gross: string;
     breaks: string;
     net: string;
+    systemInactive: string;
     route: string;
     active: string;
     yes: string;
@@ -357,6 +362,7 @@ export interface TranslationMessages {
     loadError: string;
     actionError: string;
     locationHint: string;
+    activityHint: string;
   };
   customers: {
     accountsEyebrow: string;

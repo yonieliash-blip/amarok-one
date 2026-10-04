@@ -16,6 +16,7 @@ export function buildAttendanceCsv(report: MonthlyAttendanceReport): string {
       "Gross hours",
       "Break hours",
       "Net hours",
+      "No system activity hours",
       "Review status",
       "GPS captured",
     ],
@@ -31,6 +32,7 @@ export function buildAttendanceCsv(report: MonthlyAttendanceReport): string {
         (day.grossMinutes / 60).toFixed(2),
         (day.breakMinutes / 60).toFixed(2),
         (day.netMinutes / 60).toFixed(2),
+        (day.systemInactiveMinutes / 60).toFixed(2),
         day.reviewStatus,
         day.locationCaptured ? "Yes" : "No",
       ]);

@@ -45,6 +45,7 @@ model Organization {
   workBreaks             WorkBreak[]
   attendancePeriodLocks  AttendancePeriodLock[]
   workDayLocations       WorkDayLocation[]
+  workDayActivitySamples WorkDayActivitySample[]
   tasks                  Task[]
   numberSequences        OrganizationNumberSequence[]
   directConversations    DirectConversation[]
@@ -492,6 +493,7 @@ model WorkDay {
   approvedBy   User?             @relation("WorkDayApprover", fields: [approvedById], references: [id], onDelete: SetNull)
   breaks       WorkBreak[]
   locations    WorkDayLocation[]
+  activitySamples WorkDayActivitySample[]
 
   @@index([organizationId, userId, startedAt])
   @@index([organizationId, status])
@@ -540,6 +542,22 @@ model WorkDayLocation {
   @@unique([workDayId, recordedAt])
   @@index([organizationId, workDayId, recordedAt])
   @@map("work_day_locations")
+}
+
+/// A lightweight in-app activity heartbeat during an active work day.
+/// It records interaction with AMAROK ONE only and is never used to alter payable work hours.
+model WorkDayActivitySample {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  workDayId      String   @db.Uuid
+  recordedAt     DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  workDay      WorkDay      @relation(fields: [workDayId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, workDayId, recordedAt])
+  @@map("work_day_activity_samples")
 }
 
 /// Tenant-scoped payroll boundary. An active lock has no unlockedAt value.

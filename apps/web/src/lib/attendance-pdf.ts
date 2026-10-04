@@ -30,6 +30,7 @@ const copy = {
     gross: "ברוטו",
     breaks: "הפסקות",
     net: "נטו",
+    systemInactive: "ללא פעילות במערכת",
     approval: "אישור",
     approved: "מאושר",
     pending: "ממתין",
@@ -50,6 +51,7 @@ const copy = {
     gross: "Gross",
     breaks: "Breaks",
     net: "Net",
+    systemInactive: "No system activity",
     approval: "Approval",
     approved: "Approved",
     pending: "Pending",
@@ -71,7 +73,7 @@ export function buildAttendancePrintHtml(
     <section class="employee">
       <h2>${escapeHtml(employee.displayName)} <small>${escapeHtml(employee.email)}</small></h2>
       <table><thead><tr><th>${labels.date}</th><th>${labels.end}</th><th>${labels.gross}</th>
-      <th>${labels.breaks}</th><th>${labels.net}</th><th>${labels.approval}</th></tr></thead>
+      <th>${labels.breaks}</th><th>${labels.net}</th><th>${labels.systemInactive}</th><th>${labels.approval}</th></tr></thead>
       <tbody>${employee.days
         .map(
           (day) => `<tr>
@@ -79,6 +81,7 @@ export function buildAttendancePrintHtml(
         <td>${day.endedAt ? escapeHtml(formatDateTime(day.endedAt, locale)) : labels.active}</td>
         <td>${hours(day.grossMinutes)}</td><td>${hours(day.breakMinutes)}</td>
         <td><strong>${hours(day.netMinutes)}</strong></td>
+        <td>${hours(day.systemInactiveMinutes)}</td>
         <td>${day.reviewStatus === "APPROVED" ? labels.approved : labels.pending}</td>
       </tr>`,
         )

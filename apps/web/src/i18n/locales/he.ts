@@ -247,6 +247,10 @@ export const he: TranslationMessages = {
     sending: "שולח…",
     sendError: "לא ניתן לשלוח את ההודעה.",
     unread: "לא נקראו",
+    newMessageNotice: "התקבלה הודעה חדשה",
+    newMessagesNotice: "התקבלו {{count}} הודעות חדשות",
+    openMessages: "לפתיחת ההודעות",
+    dismissNewMessages: "סגירת התראת הודעות חדשות",
   },
   mySchedulePage: {
     eyebrow: "שטח",
@@ -310,6 +314,7 @@ export const he: TranslationMessages = {
     gross: "ברוטו",
     breaks: "הפסקות",
     net: "נטו",
+    systemInactive: "ללא פעילות במערכת",
     route: "מיקום",
     active: "עדיין פעיל",
     yes: "כן",
@@ -356,6 +361,7 @@ export const he: TranslationMessages = {
     loadError: "לא ניתן לטעון את מצב יום העבודה.",
     actionError: "לא ניתן לעדכן את יום העבודה.",
     locationHint: "המיקום נשמר רק בעת התחלה וסיום של יום העבודה.",
+    activityHint: "בדוח המנהל נמדדת פעילות בתוך אמארוק בלבד; המדד אינו משנה את שעות העבודה.",
   },
   customers: {
     accountsEyebrow: "חשבונות",

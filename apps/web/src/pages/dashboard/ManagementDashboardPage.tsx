@@ -189,7 +189,7 @@ export function ManagementDashboardPage() {
         <div className="management-dashboard__actions">
           {user.permissions.some((permission) => permission.slug === "users:write") ? (
             <Link to="/administration/inspiration" className="customers-page__action-link">
-              <Button variant="secondary">השראה</Button>
+              <Button variant="secondary">ניהול פתגמים והודעות</Button>
             </Link>
           ) : null}
           {canWrite ? (

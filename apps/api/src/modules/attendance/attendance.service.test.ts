@@ -8,6 +8,7 @@ import {
   getWorkDayLocations,
   lockAttendancePeriod,
   recordWorkDayLocations,
+  recordWorkDayActivity,
   startBreak,
   startWorkDay,
 } from "./attendance.service.js";
@@ -25,6 +26,8 @@ const mocks = vi.hoisted(() => ({
   attendancePeriodLockUpdate: vi.fn(),
   workDayLocationCreateMany: vi.fn(),
   workDayLocationFindMany: vi.fn(),
+  workDayActivitySampleFindFirst: vi.fn(),
+  workDayActivitySampleCreate: vi.fn(),
   audit: vi.fn(),
 }));
 
@@ -49,6 +52,10 @@ vi.mock("../../lib/prisma.js", () => ({
     workDayLocation: {
       createMany: mocks.workDayLocationCreateMany,
       findMany: mocks.workDayLocationFindMany,
+    },
+    workDayActivitySample: {
+      findFirst: mocks.workDayActivitySampleFindFirst,
+      create: mocks.workDayActivitySampleCreate,
     },
   },
 }));
@@ -132,6 +139,7 @@ describe("attendance.service", () => {
         endLatitude: 32,
         user: { displayName: "Dana", email: "dana@example.com" },
         _count: { locations: 2 },
+        activitySamples: [],
         breaks: [
           {
             startedAt: new Date("2026-08-10T09:00:00.000Z"),
@@ -173,6 +181,7 @@ describe("attendance.service", () => {
           organizationMembers: [{ primaryRole: { slug: "office", name: "ניהול משרד" } }],
         },
         _count: { locations: 0 },
+        activitySamples: [],
         breaks: [
           {
             startedAt: new Date("2026-08-10T09:00:00.000Z"),
@@ -288,6 +297,62 @@ describe("attendance.service", () => {
         skipDuplicates: true,
       }),
     );
+  });
+
+  it("reports AMAROK-only inactivity separately from payable hours", async () => {
+    mocks.workDayFindMany.mockResolvedValue([
+      {
+        id: "day-activity",
+        userId: user,
+        status: "COMPLETED",
+        reviewStatus: "PENDING",
+        approvedAt: null,
+        startedAt: new Date("2026-08-10T05:00:00.000Z"),
+        endedAt: new Date("2026-08-10T06:00:00.000Z"),
+        startLatitude: null,
+        endLatitude: null,
+        user: {
+          displayName: "מור",
+          email: "mor@example.com",
+          organizationMembers: [{ primaryRole: { slug: "office", name: "ניהול משרד" } }],
+        },
+        _count: { locations: 0 },
+        breaks: [],
+        activitySamples: [
+          { recordedAt: new Date("2026-08-10T05:00:00.000Z") },
+          { recordedAt: new Date("2026-08-10T05:30:00.000Z") },
+        ],
+      },
+    ]);
+
+    const report = await getDailyAttendanceReport(
+      org,
+      "2026-08-10",
+      new Date("2026-08-10T06:00:00.000Z"),
+    );
+
+    expect(report).toMatchObject({
+      totalNetMinutes: 60,
+      totalSystemInactiveMinutes: 50,
+      employees: [{ netMinutes: 60, systemInactiveMinutes: 50 }],
+    });
+  });
+
+  it("accepts only one activity heartbeat per active minute", async () => {
+    mocks.workDayFindFirst.mockResolvedValue({ id: "day-1" });
+    mocks.workDayActivitySampleFindFirst.mockResolvedValue(null);
+    mocks.workDayActivitySampleCreate.mockResolvedValue({ id: "sample-1" });
+
+    await expect(recordWorkDayActivity(org, user)).resolves.toEqual({ accepted: true });
+    expect(mocks.workDayActivitySampleCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ organizationId: org, workDayId: "day-1" }),
+      }),
+    );
+
+    mocks.workDayActivitySampleFindFirst.mockResolvedValue({ id: "sample-1" });
+    await expect(recordWorkDayActivity(org, user)).resolves.toEqual({ accepted: false });
+    expect(mocks.workDayActivitySampleCreate).toHaveBeenCalledTimes(1);
   });
 
   it("rejects location samples when no work day is active", async () => {

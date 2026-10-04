@@ -30,6 +30,7 @@ import {
   lockAttendancePeriod,
   unlockAttendancePeriod,
   recordWorkDayLocations,
+  recordWorkDayActivity,
 } from "./attendance.service.js";
 
 function userId(context: Parameters<typeof getAuth>[0]): string {
@@ -148,6 +149,17 @@ export const attendanceRoutes = new Hono()
       const { organizationId } = context.req.valid("param");
       return context.json(
         createApiResponse(await getCurrentWorkDay(organizationId, userId(context))),
+      );
+    },
+  )
+  .post(
+    "/activity",
+    requirePermission("my_attendance:write"),
+    zValidator("param", attendanceParamsSchema),
+    async (context) => {
+      const { organizationId } = context.req.valid("param");
+      return context.json(
+        createApiResponse(await recordWorkDayActivity(organizationId, userId(context))),
       );
     },
   )

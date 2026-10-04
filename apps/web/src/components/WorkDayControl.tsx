@@ -1,7 +1,7 @@
 import { hasPermission, permissionSlugsFromCarrier, PERMISSIONS } from "@amarok-one/permissions";
 import { Button } from "@amarok-one/ui";
 import { Clock3, MapPin } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "../auth/useAuth";
 import { formatDate } from "../i18n/format";
 import { useTranslation } from "../i18n/useTranslation";
@@ -9,6 +9,7 @@ import { getApiErrorMessage } from "../lib/auth-errors";
 import {
   endWorkDayRequest,
   getCurrentWorkDayRequest,
+  recordWorkDayActivityRequest,
   startWorkDayRequest,
   type AttendanceLocationInput,
   type CurrentWorkDay,
@@ -41,6 +42,8 @@ export function WorkDayControl() {
   const [status, setStatus] = useState<WorkDayControlStatus>("loading");
   const [workDay, setWorkDay] = useState<CurrentWorkDay | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const lastInteractionAt = useRef(0);
+  const lastActivitySampleAt = useRef(0);
 
   const canRead = hasPermission(permissionSlugsFromCarrier(user), PERMISSIONS.MY_ATTENDANCE_READ);
   const canWrite = hasPermission(permissionSlugsFromCarrier(user), PERMISSIONS.MY_ATTENDANCE_WRITE);
@@ -63,6 +66,46 @@ export function WorkDayControl() {
     const timer = window.setTimeout(() => void load(), 0);
     return () => window.clearTimeout(timer);
   }, [load]);
+
+  useEffect(() => {
+    if (!user || !accessToken || workDay?.status !== "ACTIVE") return;
+    lastActivitySampleAt.current = 0;
+
+    const reportActivity = () => {
+      const now = Date.now();
+      if (
+        document.visibilityState !== "visible" ||
+        now - lastInteractionAt.current > 60_000 ||
+        now - lastActivitySampleAt.current < 60_000
+      ) {
+        return;
+      }
+      lastActivitySampleAt.current = now;
+      void recordWorkDayActivityRequest(user.organization.id, accessToken).catch(() => {
+        lastActivitySampleAt.current = 0;
+      });
+    };
+    const onInteraction = () => {
+      lastInteractionAt.current = Date.now();
+      reportActivity();
+    };
+
+    onInteraction();
+    window.addEventListener("pointerdown", onInteraction, { passive: true });
+    window.addEventListener("keydown", onInteraction);
+    window.addEventListener("touchstart", onInteraction, { passive: true });
+    window.addEventListener("scroll", onInteraction, { passive: true });
+    document.addEventListener("visibilitychange", onInteraction);
+    const interval = window.setInterval(reportActivity, 60_000);
+    return () => {
+      window.removeEventListener("pointerdown", onInteraction);
+      window.removeEventListener("keydown", onInteraction);
+      window.removeEventListener("touchstart", onInteraction);
+      window.removeEventListener("scroll", onInteraction);
+      document.removeEventListener("visibilitychange", onInteraction);
+      window.clearInterval(interval);
+    };
+  }, [accessToken, user, workDay?.id, workDay?.status]);
 
   if (!user || !accessToken || !canRead || !canWrite) return null;
 
@@ -106,6 +149,7 @@ export function WorkDayControl() {
         {shouldCaptureLocation ? (
           <p className="work-day-control__hint">{t("workDay", "locationHint")}</p>
         ) : null}
+        <p className="work-day-control__hint">{t("workDay", "activityHint")}</p>
         {error ? (
           <p className="work-day-control__error" role="alert">
             {error}

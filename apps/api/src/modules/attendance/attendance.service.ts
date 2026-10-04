@@ -38,6 +38,8 @@ function serializeWorkDay<
 const includeBreaks = { breaks: { orderBy: { startedAt: "asc" as const } } };
 
 const ISRAEL_TIME_ZONE = "Asia/Jerusalem";
+const SYSTEM_ACTIVITY_GRACE_MINUTES = 5;
+const ACTIVITY_SAMPLE_MIN_INTERVAL_MS = 60_000;
 
 function israelMidnightUtc(year: number, monthIndex: number, day: number): Date {
   const guess = Date.UTC(year, monthIndex, day);
@@ -100,6 +102,59 @@ function durationMinutes(startedAt: Date, endedAt: Date | null, now: Date): numb
   return Math.max(0, Math.round(((endedAt ?? now).getTime() - startedAt.getTime()) / 60_000));
 }
 
+type TimedBreak = { startedAt: Date; endedAt: Date | null };
+type TimedActivity = { recordedAt: Date };
+
+/**
+ * Inactivity is deliberately limited to AMAROK ONE interaction. The report retains
+ * paid/net time and separately highlights gaps longer than five minutes, excluding
+ * declared breaks. It must not be read as a measurement of computer or work activity.
+ */
+function systemInactiveMinutes(
+  startedAt: Date,
+  endedAt: Date | null,
+  breaks: TimedBreak[],
+  activitySamples: TimedActivity[],
+  now: Date,
+): number {
+  const workEnd = endedAt ?? now;
+  if (workEnd <= startedAt) return 0;
+
+  const sortedBreaks = breaks
+    .map((entry) => ({
+      start: entry.startedAt < startedAt ? startedAt : entry.startedAt,
+      end: (entry.endedAt ?? workEnd) > workEnd ? workEnd : (entry.endedAt ?? workEnd),
+    }))
+    .filter((entry) => entry.end > entry.start)
+    .sort((left, right) => left.start.getTime() - right.start.getTime());
+  const intervals: Array<{ start: Date; end: Date }> = [];
+  let cursor = startedAt;
+  for (const entry of sortedBreaks) {
+    if (entry.end <= cursor) continue;
+    if (entry.start > cursor) intervals.push({ start: cursor, end: entry.start });
+    if (entry.end > cursor) cursor = entry.end;
+  }
+  if (cursor < workEnd) intervals.push({ start: cursor, end: workEnd });
+
+  const samples = [...activitySamples].sort(
+    (left, right) => left.recordedAt.getTime() - right.recordedAt.getTime(),
+  );
+  const graceMs = SYSTEM_ACTIVITY_GRACE_MINUTES * 60_000;
+  let inactiveMs = 0;
+  for (const interval of intervals) {
+    let inactiveFrom = new Date(interval.start.getTime() + graceMs);
+    for (const sample of samples) {
+      if (sample.recordedAt <= interval.start || sample.recordedAt >= interval.end) continue;
+      if (sample.recordedAt > inactiveFrom) {
+        inactiveMs += sample.recordedAt.getTime() - inactiveFrom.getTime();
+      }
+      inactiveFrom = new Date(sample.recordedAt.getTime() + graceMs);
+    }
+    if (inactiveFrom < interval.end) inactiveMs += interval.end.getTime() - inactiveFrom.getTime();
+  }
+  return Math.max(0, Math.round(inactiveMs / 60_000));
+}
+
 export async function getMonthlyAttendanceReport(
   organizationId: string,
   month: string,
@@ -112,6 +167,7 @@ export async function getMonthlyAttendanceReport(
       include: {
         user: true,
         breaks: { orderBy: { startedAt: "asc" } },
+        activitySamples: { select: { recordedAt: true }, orderBy: { recordedAt: "asc" } },
         _count: { select: { locations: true } },
       },
       orderBy: [{ user: { displayName: "asc" } }, { startedAt: "asc" }],
@@ -129,6 +185,7 @@ export async function getMonthlyAttendanceReport(
       grossMinutes: number;
       breakMinutes: number;
       netMinutes: number;
+      systemInactiveMinutes: number;
       days: Array<{
         id: string;
         status: string;
@@ -139,6 +196,8 @@ export async function getMonthlyAttendanceReport(
         grossMinutes: number;
         breakMinutes: number;
         netMinutes: number;
+        systemInactiveMinutes: number;
+        activitySampleCount: number;
         locationCaptured: boolean;
         locationSampleCount: number;
       }>;
@@ -152,6 +211,13 @@ export async function getMonthlyAttendanceReport(
       0,
     );
     const netMinutes = Math.max(0, grossMinutes - breakMinutes);
+    const inactiveMinutes = systemInactiveMinutes(
+      row.startedAt,
+      row.endedAt,
+      row.breaks,
+      row.activitySamples,
+      now,
+    );
     const employee = employees.get(row.userId) ?? {
       userId: row.userId,
       displayName: row.user.displayName,
@@ -160,12 +226,14 @@ export async function getMonthlyAttendanceReport(
       grossMinutes: 0,
       breakMinutes: 0,
       netMinutes: 0,
+      systemInactiveMinutes: 0,
       days: [],
     };
     employee.workDays += 1;
     employee.grossMinutes += grossMinutes;
     employee.breakMinutes += breakMinutes;
     employee.netMinutes += netMinutes;
+    employee.systemInactiveMinutes += inactiveMinutes;
     employee.days.push({
       id: row.id,
       status: row.status,
@@ -176,6 +244,8 @@ export async function getMonthlyAttendanceReport(
       grossMinutes,
       breakMinutes,
       netMinutes,
+      systemInactiveMinutes: inactiveMinutes,
+      activitySampleCount: row.activitySamples.length,
       locationCaptured: Boolean(row.startLatitude || row.endLatitude || row._count.locations),
       locationSampleCount: row._count.locations,
     });
@@ -189,6 +259,10 @@ export async function getMonthlyAttendanceReport(
     employeeCount: employeeRows.length,
     totalWorkDays: employeeRows.reduce((sum, employee) => sum + employee.workDays, 0),
     totalNetMinutes: employeeRows.reduce((sum, employee) => sum + employee.netMinutes, 0),
+    totalSystemInactiveMinutes: employeeRows.reduce(
+      (sum, employee) => sum + employee.systemInactiveMinutes,
+      0,
+    ),
     locked: Boolean(periodLock && !periodLock.unlockedAt),
     periodLock,
     employees: employeeRows,
@@ -198,7 +272,7 @@ export async function getMonthlyAttendanceReport(
 /**
  * Returns one operational workday view, grouped by each employee's current
  * primary role. Only explicitly reported breaks are counted as non-working
- * time; location freshness is deliberately not interpreted as employee idle time.
+ * time; AMAROK ONE activity is reported separately and never changes payable hours.
  */
 export async function getDailyAttendanceReport(
   organizationId: string,
@@ -221,6 +295,7 @@ export async function getDailyAttendanceReport(
         },
       },
       breaks: { orderBy: { startedAt: "asc" } },
+      activitySamples: { select: { recordedAt: true }, orderBy: { recordedAt: "asc" } },
       _count: { select: { locations: true } },
     },
     orderBy: [{ user: { displayName: "asc" } }, { startedAt: "asc" }],
@@ -237,6 +312,7 @@ export async function getDailyAttendanceReport(
       grossMinutes: number;
       breakMinutes: number;
       netMinutes: number;
+      systemInactiveMinutes: number;
       days: Array<{
         id: string;
         status: string;
@@ -247,6 +323,8 @@ export async function getDailyAttendanceReport(
         grossMinutes: number;
         breakMinutes: number;
         netMinutes: number;
+        systemInactiveMinutes: number;
+        activitySampleCount: number;
         locationCaptured: boolean;
         locationSampleCount: number;
       }>;
@@ -260,6 +338,13 @@ export async function getDailyAttendanceReport(
       0,
     );
     const netMinutes = Math.max(0, grossMinutes - breakMinutes);
+    const inactiveMinutes = systemInactiveMinutes(
+      row.startedAt,
+      row.endedAt,
+      row.breaks,
+      row.activitySamples,
+      now,
+    );
     const role = row.user.organizationMembers[0]?.primaryRole ?? null;
     const employee = employees.get(row.userId) ?? {
       userId: row.userId,
@@ -270,12 +355,14 @@ export async function getDailyAttendanceReport(
       grossMinutes: 0,
       breakMinutes: 0,
       netMinutes: 0,
+      systemInactiveMinutes: 0,
       days: [],
     };
     employee.workDays += 1;
     employee.grossMinutes += grossMinutes;
     employee.breakMinutes += breakMinutes;
     employee.netMinutes += netMinutes;
+    employee.systemInactiveMinutes += inactiveMinutes;
     employee.days.push({
       id: row.id,
       status: row.status,
@@ -286,6 +373,8 @@ export async function getDailyAttendanceReport(
       grossMinutes,
       breakMinutes,
       netMinutes,
+      systemInactiveMinutes: inactiveMinutes,
+      activitySampleCount: row.activitySamples.length,
       locationCaptured: Boolean(row.startLatitude || row.endLatitude || row._count.locations),
       locationSampleCount: row._count.locations,
     });
@@ -301,6 +390,10 @@ export async function getDailyAttendanceReport(
     totalGrossMinutes: employeeRows.reduce((sum, employee) => sum + employee.grossMinutes, 0),
     totalBreakMinutes: employeeRows.reduce((sum, employee) => sum + employee.breakMinutes, 0),
     totalNetMinutes: employeeRows.reduce((sum, employee) => sum + employee.netMinutes, 0),
+    totalSystemInactiveMinutes: employeeRows.reduce(
+      (sum, employee) => sum + employee.systemInactiveMinutes,
+      0,
+    ),
     employees: employeeRows,
   };
 }
@@ -573,6 +666,30 @@ export async function recordWorkDayLocations(
     metadata: { acceptedCount: result.count, submittedCount: points.length },
   });
   return { acceptedCount: result.count };
+}
+
+/** Records at most one AMAROK ONE interaction heartbeat per active minute. */
+export async function recordWorkDayActivity(organizationId: string, userId: string) {
+  const workDay = await prisma.workDay.findFirst({
+    where: { organizationId, userId, status: "ACTIVE" },
+  });
+  if (!workDay) throw notFound("Active work day");
+
+  const recordedAt = new Date();
+  const latest = await prisma.workDayActivitySample.findFirst({
+    where: {
+      organizationId,
+      workDayId: workDay.id,
+      recordedAt: { gte: new Date(recordedAt.getTime() - ACTIVITY_SAMPLE_MIN_INTERVAL_MS) },
+    },
+    orderBy: { recordedAt: "desc" },
+  });
+  if (latest) return { accepted: false };
+
+  await prisma.workDayActivitySample.create({
+    data: { organizationId, workDayId: workDay.id, recordedAt },
+  });
+  return { accepted: true };
 }
 
 export async function startWorkDay(

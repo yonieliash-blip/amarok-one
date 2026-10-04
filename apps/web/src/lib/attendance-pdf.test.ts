@@ -8,6 +8,7 @@ const report: MonthlyAttendanceReport = {
   employeeCount: 1,
   totalWorkDays: 1,
   totalNetMinutes: 450,
+  totalSystemInactiveMinutes: 75,
   locked: true,
   periodLock: null,
   employees: [
@@ -19,6 +20,7 @@ const report: MonthlyAttendanceReport = {
       grossMinutes: 480,
       breakMinutes: 30,
       netMinutes: 450,
+      systemInactiveMinutes: 75,
       days: [
         {
           id: "day-1",
@@ -30,6 +32,8 @@ const report: MonthlyAttendanceReport = {
           grossMinutes: 480,
           breakMinutes: 30,
           netMinutes: 450,
+          systemInactiveMinutes: 75,
+          activitySampleCount: 12,
           locationCaptured: true,
           locationSampleCount: 1,
         },
@@ -46,6 +50,7 @@ describe("attendance PDF print document", () => {
     expect(html).toContain("דנה &lt;מנהלת&gt;");
     expect(html).toContain("נעול לשכר");
     expect(html).toContain("7:30");
+    expect(html).toContain("1:15");
     expect(html).not.toContain("חברה <בדיקה>");
   });
 });

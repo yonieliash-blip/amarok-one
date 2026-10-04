@@ -98,8 +98,10 @@ export function MessagesPage() {
       }
     }
     void loadMessages();
+    const interval = window.setInterval(() => void loadMessages(), 15_000);
     return () => {
       cancelled = true;
+      window.clearInterval(interval);
     };
   }, [accessToken, refreshLists, selectedConversationId, t, user]);
 

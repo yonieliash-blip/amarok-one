@@ -9,6 +9,7 @@ describe("attendance CSV", () => {
       employeeCount: 1,
       totalWorkDays: 1,
       totalNetMinutes: 450,
+      totalSystemInactiveMinutes: 75,
       employees: [
         {
           userId: "user-1",
@@ -18,6 +19,7 @@ describe("attendance CSV", () => {
           grossMinutes: 480,
           breakMinutes: 30,
           netMinutes: 450,
+          systemInactiveMinutes: 75,
           days: [
             {
               id: "day-1",
@@ -29,6 +31,8 @@ describe("attendance CSV", () => {
               grossMinutes: 480,
               breakMinutes: 30,
               netMinutes: 450,
+              systemInactiveMinutes: 75,
+              activitySampleCount: 12,
               locationCaptured: true,
               locationSampleCount: 0,
             },
@@ -38,6 +42,6 @@ describe("attendance CSV", () => {
     });
     expect(csv.startsWith("\uFEFFEmployee")).toBe(true);
     expect(csv).toContain('"Dana, ""D"""');
-    expect(csv).toContain(",7.50,APPROVED,Yes");
+    expect(csv).toContain(",7.50,1.25,APPROVED,Yes");
   });
 });
