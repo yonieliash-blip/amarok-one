@@ -7,6 +7,7 @@ export type DashboardNavLabelKey =
   | "serviceDashboard"
   | "warehouseDashboard"
   | "accountingDashboard"
+  | "officeDashboard"
   | "readOnlyDashboard";
 
 /** Default landing path for each role slug. */
@@ -67,7 +68,7 @@ export const ROLE_DASHBOARDS: readonly RoleDashboardDefinition[] = [
   {
     kind: "accounting",
     path: "/dashboard/accounting",
-    labelKey: "accountingDashboard",
+    labelKey: "officeDashboard",
     roleSlugs: ["accounting"],
     permissions: [PERMISSIONS.DASHBOARD_READ, PERMISSIONS.ACCOUNTING_READ],
   },

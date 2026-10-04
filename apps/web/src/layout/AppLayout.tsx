@@ -38,7 +38,7 @@ function resolvePageTitle(pathname: string, t: ReturnType<typeof useTranslation>
   if (pathname === "/dashboard/executive") return t("titles", "executiveDashboard");
   if (pathname === "/dashboard/service") return t("titles", "serviceDashboard");
   if (pathname === "/dashboard/warehouse") return t("titles", "warehouseDashboard");
-  if (pathname === "/dashboard/accounting") return t("titles", "accountingDashboard");
+  if (pathname === "/dashboard/accounting") return t("titles", "officeDashboard");
   if (pathname === "/dashboard/read-only") return t("titles", "readOnlyDashboard");
   if (pathname === "/") return t("titles", "dashboard");
   if (pathname === "/customers") return t("titles", "customers");
@@ -64,6 +64,7 @@ function resolvePageTitle(pathname: string, t: ReturnType<typeof useTranslation>
   if (pathname === "/tasks") return t("titles", "tasks");
   if (pathname === "/messages") return t("titles", "messages");
   if (pathname === "/accounting") return t("titles", "accounting");
+  if (pathname === "/green-invoice-queries") return t("titles", "greenInvoiceQueries");
   if (pathname === "/reports") return t("titles", "reports");
   if (pathname === "/unauthorized") return t("auth", "accessDenied");
   return t("titles", "default");

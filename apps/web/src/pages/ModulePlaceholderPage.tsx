@@ -10,6 +10,7 @@ interface ModulePlaceholderPageProps {
     | "purchaseOrders"
     | "parts"
     | "accounting"
+    | "greenInvoiceQueries"
     | "reports"
     | "myEquipment";
 }

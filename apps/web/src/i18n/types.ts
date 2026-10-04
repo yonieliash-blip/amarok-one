@@ -33,11 +33,13 @@ export interface TranslationMessages {
     serviceDashboard: string;
     warehouseDashboard: string;
     accountingDashboard: string;
+    officeDashboard: string;
     readOnlyDashboard: string;
     customers: string;
     equipment: string;
     fieldService: string;
     serviceCalls: string;
+    completedServiceCalls: string;
     myServiceCalls: string;
     myEquipment: string;
     mySchedule: string;
@@ -47,7 +49,9 @@ export interface TranslationMessages {
     purchaseOrders: string;
     parts: string;
     tasks: string;
+    chat: string;
     accounting: string;
+    greenInvoiceQueries: string;
     reports: string;
     messages: string;
     memberAccess: string;
@@ -63,6 +67,7 @@ export interface TranslationMessages {
     serviceDashboard: string;
     warehouseDashboard: string;
     accountingDashboard: string;
+    officeDashboard: string;
     readOnlyDashboard: string;
     customers: string;
     newCustomer: string;
@@ -73,6 +78,7 @@ export interface TranslationMessages {
     editEquipment: string;
     equipmentDetails: string;
     serviceCalls: string;
+    completedServiceCalls: string;
     newServiceCall: string;
     editServiceCall: string;
     serviceCallDetails: string;
@@ -86,6 +92,7 @@ export interface TranslationMessages {
     parts: string;
     tasks: string;
     accounting: string;
+    greenInvoiceQueries: string;
     reports: string;
     messages: string;
     default: string;

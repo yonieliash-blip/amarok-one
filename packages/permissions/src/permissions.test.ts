@@ -109,6 +109,27 @@ describe("navigation generation", () => {
     expect(labels).not.toContain("serviceDashboard");
   });
 
+  it("gives office staff only their dedicated navigation", () => {
+    const labels = buildNavigationItems(getDefaultRolePermissions("accounting"), "accounting").map(
+      (item) => item.labelKey,
+    );
+
+    expect(labels).toEqual(
+      expect.arrayContaining([
+        "officeDashboard",
+        "customers",
+        "completedServiceCalls",
+        "chat",
+        "tasks",
+        "greenInvoiceQueries",
+      ]),
+    );
+    expect(labels).not.toContain("serviceCalls");
+    expect(labels).not.toContain("accounting");
+    expect(labels).not.toContain("equipment");
+    expect(labels).not.toContain("myEquipment");
+  });
+
   it("returns unauthorized landing when no permissions match", () => {
     expect(getDefaultLandingPath([])).toBe("/unauthorized");
   });

@@ -9,11 +9,13 @@ export type NavLabelKey =
   | "serviceDashboard"
   | "warehouseDashboard"
   | "accountingDashboard"
+  | "officeDashboard"
   | "readOnlyDashboard"
   | "dashboard"
   | "customers"
   | "equipment"
   | "serviceCalls"
+  | "completedServiceCalls"
   | "myServiceCalls"
   | "myEquipment"
   | "mySchedule"
@@ -23,7 +25,9 @@ export type NavLabelKey =
   | "purchaseOrders"
   | "parts"
   | "tasks"
+  | "chat"
   | "accounting"
+  | "greenInvoiceQueries"
   | "reports"
   | "messages"
   | "memberAccess";
@@ -37,6 +41,10 @@ export interface NavigationItemDefinition {
   permissions: readonly PermissionSlug[];
   /** When true the route exists but shows a coming-soon placeholder. */
   placeholder?: boolean;
+  /** Restrict an item to named primary roles when the workspace needs a dedicated flow. */
+  roleSlugs?: readonly string[];
+  /** Hide a generic item for roles that receive a more specific replacement. */
+  excludeRoleSlugs?: readonly string[];
 }
 
 export const NAVIGATION_ITEMS: readonly NavigationItemDefinition[] = [
@@ -45,6 +53,14 @@ export const NAVIGATION_ITEMS: readonly NavigationItemDefinition[] = [
     to: "/service-calls",
     labelKey: "serviceCalls",
     permissions: [PERMISSIONS.SERVICE_CALLS_READ],
+    excludeRoleSlugs: ["accounting"],
+  },
+  {
+    id: "completed-service-calls",
+    to: "/service-calls?view=completed",
+    labelKey: "completedServiceCalls",
+    permissions: [PERMISSIONS.SERVICE_CALLS_READ],
+    roleSlugs: ["accounting"],
   },
   {
     id: "my-service-calls",
@@ -99,6 +115,7 @@ export const NAVIGATION_ITEMS: readonly NavigationItemDefinition[] = [
     to: "/purchase-orders",
     labelKey: "purchaseOrders",
     permissions: [PERMISSIONS.PURCHASE_ORDERS_READ],
+    excludeRoleSlugs: ["accounting"],
   },
   {
     id: "parts",
@@ -117,18 +134,35 @@ export const NAVIGATION_ITEMS: readonly NavigationItemDefinition[] = [
     to: "/messages",
     labelKey: "messages",
     permissions: [PERMISSIONS.MESSAGES_READ],
+    excludeRoleSlugs: ["accounting"],
+  },
+  {
+    id: "office-chat",
+    to: "/messages",
+    labelKey: "chat",
+    permissions: [PERMISSIONS.MESSAGES_READ],
+    roleSlugs: ["accounting"],
   },
   {
     id: "accounting",
     to: "/accounting",
     labelKey: "accounting",
     permissions: [PERMISSIONS.ACCOUNTING_READ],
+    excludeRoleSlugs: ["accounting"],
+  },
+  {
+    id: "green-invoice-queries",
+    to: "/green-invoice-queries",
+    labelKey: "greenInvoiceQueries",
+    permissions: [PERMISSIONS.ACCOUNTING_READ],
+    roleSlugs: ["accounting"],
   },
   {
     id: "reports",
     to: "/reports",
     labelKey: "reports",
     permissions: [PERMISSIONS.REPORTS_READ],
+    excludeRoleSlugs: ["accounting"],
   },
   {
     id: "member-access",
@@ -155,7 +189,10 @@ export function buildNavigationItems(
     ...item,
     enabled:
       hasAnyPermission(granted, item.permissions) &&
-      (item.id !== "member-access" || options?.isOrganizationOwner === true),
+      (item.id !== "member-access" || options?.isOrganizationOwner === true) &&
+      (!item.roleSlugs ||
+        (activeRoleSlug !== undefined && item.roleSlugs.includes(activeRoleSlug))) &&
+      !item.excludeRoleSlugs?.includes(activeRoleSlug ?? ""),
   })).filter((item) => item.enabled);
 
   const roleDashboard = getDashboardForRole(activeRoleSlug);
