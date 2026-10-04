@@ -23,6 +23,7 @@ on:
           - apply_customer_identifier_preservation
           - apply_technician_availability
           - apply_service_context_and_inspiration
+          - apply_repair_order_reporting
 
 permissions:
   contents: read
@@ -301,6 +302,31 @@ jobs:
                   test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = \$\$public\$\$ AND table_name = \$\$service_calls\$\$ AND column_name IN (\$\$equipmentModel\$\$, \$\$equipmentLicensePlate\$\$, \$\$equipmentChassisNumber\$\$, \$\$purchaseOrderNumber\$\$);")" = "4"
                   test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT to_regclass(\$\$public.inspiration_quotes\$\$) IS NOT NULL;")" = "t"
                   test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT to_regclass(\$\$public.employee_inspiration_messages\$\$) IS NOT NULL;")" = "t"
+                '
+                compose up -d --no-deps --force-recreate api web
+                curl --fail --show-error --retry 12 --retry-all-errors \
+                  https://staging-api.amarok-ce.com/health
+                curl --fail --show-error --retry 12 --retry-all-errors \
+                  https://staging.amarok-ce.com/health
+                ;;
+              apply_repair_order_reporting)
+                git fetch --no-tags origin main
+                git merge --ff-only origin/main
+                test -f apps/api/prisma/migrations/20261003130000_repair_order_manual_parts/migration.sql
+                compose exec -T postgres sh -ec '
+                  set -eu
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM \"_prisma_migrations\" WHERE migration_name = \$\$20261003130000_repair_order_manual_parts\$\$ AND finished_at IS NOT NULL AND rolled_back_at IS NULL;")" = "0"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = \$\$public\$\$ AND table_name = \$\$service_call_work_report_parts\$\$ AND column_name IN (\$\$manualName\$\$, \$\$manualPartNumber\$\$);")" = "0"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT to_regclass(\$\$public.service_call_work_report_attachments\$\$) IS NULL;")" = "t"
+                '
+                compose build --no-cache api web
+                compose run --rm --no-deps --entrypoint sh api -ec \
+                  'prisma migrate deploy --schema=./prisma/schema.prisma'
+                compose exec -T postgres sh -ec '
+                  set -eu
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM \"_prisma_migrations\" WHERE migration_name = \$\$20261003130000_repair_order_manual_parts\$\$ AND finished_at IS NOT NULL AND rolled_back_at IS NULL;")" = "1"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = \$\$public\$\$ AND table_name = \$\$service_call_work_report_parts\$\$ AND column_name IN (\$\$manualName\$\$, \$\$manualPartNumber\$\$);")" = "2"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT to_regclass(\$\$public.service_call_work_report_attachments\$\$) IS NOT NULL;")" = "t"
                 '
                 compose up -d --no-deps --force-recreate api web
                 curl --fail --show-error --retry 12 --retry-all-errors \
