@@ -105,6 +105,10 @@ export function App() {
                   path="accounting"
                   element={<ModulePlaceholderPage titleKey="accounting" />}
                 />
+                <Route
+                  path="green-invoice-queries"
+                  element={<ModulePlaceholderPage titleKey="greenInvoiceQueries" />}
+                />
                 <Route path="reports" element={<AttendanceReportPage />} />
                 <Route path="administration/member-access" element={<MemberAccessPage />} />
                 <Route path="administration/inspiration" element={<InspirationPage />} />

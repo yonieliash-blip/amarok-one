@@ -93,6 +93,10 @@ export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine"
     [isMine, searchParams],
   );
   const dashboardBucket = urlFilters.bucket ?? "";
+  const isCompletedView = !isMine && searchParams.get("view") === "completed";
+  const activeLifecycleFilter: "" | ServiceCallLifecycleState = isCompletedView
+    ? "closed"
+    : lifecycleFilter;
 
   const todayStart = useMemo(() => startOfLocalDay(new Date()), []);
   const todayEnd = useMemo(() => endOfLocalDay(new Date()), []);
@@ -204,7 +208,7 @@ export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine"
         const result = await listServiceCallsRequest(user.organization.id, accessToken, {
           search: debouncedSearch,
           status: statusFilter,
-          lifecycleState: lifecycleFilter,
+          lifecycleState: activeLifecycleFilter,
           priority: priorityFilter,
           customerId: customerFilter || undefined,
           assignedUserId,
@@ -242,7 +246,7 @@ export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine"
     accessToken,
     debouncedSearch,
     statusFilter,
-    lifecycleFilter,
+    activeLifecycleFilter,
     priorityFilter,
     customerFilter,
     assigneeFilter,
@@ -292,7 +296,7 @@ export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine"
       const result = await listServiceCallsRequest(user.organization.id, accessToken, {
         search: debouncedSearch,
         status: statusFilter,
-        lifecycleState: lifecycleFilter,
+        lifecycleState: activeLifecycleFilter,
         priority: priorityFilter,
         customerId: customerFilter || undefined,
         assignedUserId,
@@ -320,7 +324,7 @@ export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine"
     accessToken,
     debouncedSearch,
     statusFilter,
-    lifecycleFilter,
+    activeLifecycleFilter,
     priorityFilter,
     customerFilter,
     assigneeFilter,
@@ -346,7 +350,11 @@ export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine"
             {isMine ? t("serviceCalls", "myCallsEyebrow") : t("serviceCalls", "callsEyebrow")}
           </p>
           <h2 className="customers-page__title">
-            {isMine ? t("serviceCalls", "myTitle") : t("serviceCalls", "title")}
+            {isMine
+              ? t("serviceCalls", "myTitle")
+              : isCompletedView
+                ? t("nav", "completedServiceCalls")
+                : t("serviceCalls", "title")}
           </h2>
           <p className="customers-page__subtitle">
             {t("serviceCalls", "subtitle", { organization: user.organization.name })}
@@ -398,7 +406,7 @@ export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine"
           </select>
         </label>
 
-        {!isMine ? (
+        {!isMine && !isCompletedView ? (
           <label className="customers-toolbar__filter">
             <span>{t("serviceCalls", "lifecycleFilter")}</span>
             <select
@@ -499,6 +507,7 @@ export function ServiceCallsListPage({ scope = "all" }: { scope?: "all" | "mine"
           message={
             debouncedSearch ||
             statusFilter ||
+            activeLifecycleFilter ||
             priorityFilter ||
             customerFilter ||
             assigneeFilter ||

@@ -6,6 +6,7 @@ import { useTranslation } from "../i18n/useTranslation";
 import { NavIcon } from "./nav-icons";
 
 const MOBILE_NAV_PRIORITY = ["service-calls", "messages", "tasks"];
+const OFFICE_MOBILE_NAV_PRIORITY = ["customers", "completed-service-calls", "office-chat"];
 
 interface MobileNavigationProps {
   onOpenMenu: () => void;
@@ -19,10 +20,16 @@ export function MobileNavigation({ onOpenMenu, unreadMessageCount = 0 }: MobileN
     isOrganizationOwner: user?.isOrganizationOwner,
   });
   const dashboardItem = navigationItems.find((item) => item.id.startsWith("dashboard-"));
-  const primaryItems = MOBILE_NAV_PRIORITY.flatMap((id) => {
-    const item = navigationItems.find((candidate) => candidate.id === id && !candidate.placeholder);
-    return item ? [item] : [];
-  }).slice(0, 3);
+  const priority =
+    user?.role.slug === "accounting" ? OFFICE_MOBILE_NAV_PRIORITY : MOBILE_NAV_PRIORITY;
+  const primaryItems = priority
+    .flatMap((id) => {
+      const item = navigationItems.find(
+        (candidate) => candidate.id === id && !candidate.placeholder,
+      );
+      return item ? [item] : [];
+    })
+    .slice(0, 3);
 
   return (
     <nav className="mobile-navigation" aria-label={t("common", "mainNavigation")}>
@@ -46,7 +53,7 @@ export function MobileNavigation({ onOpenMenu, unreadMessageCount = 0 }: MobileN
         >
           <NavIcon itemId={item.id} />
           <span>{t("nav", item.labelKey)}</span>
-          {item.id === "messages" && unreadMessageCount > 0 ? (
+          {(item.id === "messages" || item.id === "office-chat") && unreadMessageCount > 0 ? (
             <span
               className="mobile-navigation__unread"
               aria-label={`${unreadMessageCount} ${t("messages", "unread")}`}

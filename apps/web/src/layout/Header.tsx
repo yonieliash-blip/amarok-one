@@ -12,12 +12,16 @@ import { useTranslation } from "../i18n/useTranslation";
 
 const PRIMARY_NAV_ITEM_IDS = new Set([
   "service-calls",
+  "completed-service-calls",
   "customers",
   "equipment",
   "technicians",
   "reports",
   "member-access",
   "messages",
+  "office-chat",
+  "tasks",
+  "green-invoice-queries",
 ]);
 
 interface HeaderProps {
@@ -67,7 +71,7 @@ export function Header({
             }
           >
             {t("nav", item.labelKey)}
-            {item.id === "messages" && unreadMessageCount > 0 ? (
+            {(item.id === "messages" || item.id === "office-chat") && unreadMessageCount > 0 ? (
               <span
                 className="app-header__unread"
                 aria-label={`${unreadMessageCount} ${t("messages", "unread")}`}

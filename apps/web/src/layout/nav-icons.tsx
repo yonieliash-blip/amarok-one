@@ -22,6 +22,7 @@ const NAV_ICON_MAP: Record<string, LucideIcon> = {
   "dashboard-accounting": LayoutDashboard,
   "dashboard-read-only": LayoutDashboard,
   "service-calls": ClipboardList,
+  "completed-service-calls": ClipboardList,
   "my-service-calls": Wrench,
   customers: Users,
   equipment: Truck,
@@ -34,7 +35,9 @@ const NAV_ICON_MAP: Record<string, LucideIcon> = {
   parts: Package,
   tasks: ClipboardList,
   messages: MessageCircle,
+  "office-chat": MessageCircle,
   accounting: FileText,
+  "green-invoice-queries": FileText,
   reports: BarChart3,
   "member-access": UserCog,
 };
