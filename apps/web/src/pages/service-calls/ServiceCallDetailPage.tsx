@@ -243,6 +243,7 @@ export function ServiceCallDetailPage() {
         <ServiceCallWorkReportPanel
           organizationId={user.organization.id}
           serviceCallId={serviceCall.id}
+          serviceCall={serviceCall}
           accessToken={accessToken}
           lifecycle={lifecycle}
           canEdit={canWrite || canUpdateAssignedVisit}

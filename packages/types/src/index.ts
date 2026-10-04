@@ -579,8 +579,10 @@ export interface MyVanInventory {
 
 export interface WorkReportPartUsage {
   id: EntityId;
-  inventoryItemId: EntityId;
-  catalogPartId: EntityId;
+  inventoryItemId?: EntityId;
+  catalogPartId?: EntityId;
+  manualName?: string;
+  manualPartNumber?: string;
   quantity: number;
   inventoryItem?: InventoryItem;
   catalogPart?: CatalogPart;
@@ -597,8 +599,30 @@ export interface ServiceCallWorkReport {
   customerSignatureData?: string;
   signedAt?: ISODateString;
   parts: WorkReportPartUsage[];
+  attachments?: RepairOrderAttachment[];
   createdAt: ISODateString;
   updatedAt: ISODateString;
+}
+
+export const REPAIR_ORDER_PHOTO_CATEGORIES = [
+  "equipment",
+  "hour_meter",
+  "license_plate",
+  "fault",
+  "old_parts",
+  "new_parts_installed",
+  "old_and_new_parts",
+] as const;
+
+export type RepairOrderPhotoCategory = (typeof REPAIR_ORDER_PHOTO_CATEGORIES)[number];
+
+export interface RepairOrderAttachment {
+  id: EntityId;
+  category: RepairOrderPhotoCategory;
+  fileName: string;
+  contentType: string;
+  byteSize: number;
+  createdAt: ISODateString;
 }
 
 export interface WorkReportInventoryOption {
@@ -614,7 +638,7 @@ export interface WorkReportPartGroup {
 }
 
 export interface WorkReportEditorData {
-  assignedVan: InventoryLocationSummary;
+  assignedVan?: InventoryLocationSummary;
   report?: ServiceCallWorkReport;
   partGroups: WorkReportPartGroup[];
 }

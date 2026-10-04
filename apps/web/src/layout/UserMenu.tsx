@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { ChevronDown, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getDefaultLandingPath } from "@amarok-one/permissions";
 import { useAuth } from "../auth/useAuth";
@@ -87,6 +88,17 @@ export function UserMenu() {
           <span className="user-menu__name">{user.displayName}</span>
           <span className="user-menu__role">{user.role.name}</span>
         </span>
+        <ChevronDown className="user-menu__chevron" size={16} aria-hidden="true" />
+      </button>
+
+      <button
+        type="button"
+        className="user-menu__sign-out"
+        disabled={signingOut}
+        onClick={() => void handleLogout()}
+      >
+        <LogOut size={17} aria-hidden="true" />
+        <span>{signingOut ? t("auth", "signingOut") : t("auth", "signOut")}</span>
       </button>
 
       {open ? (
@@ -130,6 +142,7 @@ export function UserMenu() {
             disabled={signingOut}
             onClick={() => void handleLogout()}
           >
+            <LogOut size={17} aria-hidden="true" />
             {signingOut ? t("auth", "signingOut") : t("auth", "signOut")}
           </button>
         </div>

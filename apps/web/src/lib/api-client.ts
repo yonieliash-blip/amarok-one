@@ -110,7 +110,7 @@ export async function apiRequest<T>(
   const response = await fetch(url, {
     ...rest,
     headers: {
-      "Content-Type": "application/json",
+      ...(rest.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...headers,
     },

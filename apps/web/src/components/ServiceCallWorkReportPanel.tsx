@@ -1,23 +1,137 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@amarok-one/ui";
-import type { ServiceCallLifecycleView, WorkReportEditorData } from "@amarok-one/types";
+import type {
+  RepairOrderAttachment,
+  RepairOrderPhotoCategory,
+  ServiceCall,
+  ServiceCallLifecycleView,
+  WorkReportEditorData,
+} from "@amarok-one/types";
 import { getApiErrorMessage } from "../lib/auth-errors";
 import {
   getServiceCallWorkReportRequest,
   saveServiceCallWorkReportRequest,
+  uploadServiceCallWorkReportPhotoRequest,
 } from "../lib/service-calls-api";
+import { printRepairOrder } from "../lib/repair-order-pdf";
 
 interface Props {
   organizationId: string;
   serviceCallId: string;
+  serviceCall: ServiceCall;
   accessToken: string;
   lifecycle: ServiceCallLifecycleView;
   canEdit: boolean;
 }
 
+type SignaturePoint = { x: number; y: number };
+type SignatureStroke = SignaturePoint[];
+type ManualPart = { name: string; partNumber: string; quantity: number };
+
+const photoCategories: Array<{ id: RepairOrderPhotoCategory; label: string }> = [
+  { id: "equipment", label: "צילום הכלי" },
+  { id: "hour_meter", label: "צילום שעון שעות" },
+  { id: "license_plate", label: "צילום מספר רישוי" },
+  { id: "fault", label: "צילום התקלה" },
+  { id: "old_parts", label: "צילום חלפים ישנים" },
+  { id: "new_parts_installed", label: "צילום חלפים חדשים על הכלי" },
+  { id: "old_and_new_parts", label: "חלק ישן ליד חלק חדש מחוץ לכלי" },
+];
+
+function parseSignatureData(value: string | null): SignatureStroke[] {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter(Array.isArray)
+      .map((stroke) =>
+        stroke.filter(
+          (point): point is SignaturePoint =>
+            typeof point === "object" &&
+            point !== null &&
+            typeof (point as SignaturePoint).x === "number" &&
+            typeof (point as SignaturePoint).y === "number",
+        ),
+      )
+      .filter((stroke) => stroke.length > 0);
+  } catch {
+    return [];
+  }
+}
+
+function SignaturePad({
+  value,
+  disabled,
+  onChange,
+}: {
+  value: string | null;
+  disabled: boolean;
+  onChange: (value: string | null) => void;
+}) {
+  const [strokes, setStrokes] = useState<SignatureStroke[]>(() => parseSignatureData(value));
+  const [activeStroke, setActiveStroke] = useState<SignatureStroke | null>(null);
+
+  function pointFromEvent(event: React.PointerEvent<SVGSVGElement>): SignaturePoint {
+    const rect = event.currentTarget.getBoundingClientRect();
+    return {
+      x: ((event.clientX - rect.left) / rect.width) * 1000,
+      y: ((event.clientY - rect.top) / rect.height) * 320,
+    };
+  }
+
+  function commit(next: SignatureStroke[]): void {
+    setStrokes(next);
+    onChange(next.length > 0 ? JSON.stringify(next) : null);
+  }
+
+  return (
+    <div className="repair-order-signature">
+      <svg
+        className="repair-order-signature__canvas"
+        viewBox="0 0 1000 320"
+        role="img"
+        aria-label="אזור חתימה דיגיטלית"
+        onPointerDown={(event) => {
+          if (disabled) return;
+          event.currentTarget.setPointerCapture(event.pointerId);
+          setActiveStroke([pointFromEvent(event)]);
+        }}
+        onPointerMove={(event) => {
+          if (disabled || !activeStroke) return;
+          setActiveStroke([...activeStroke, pointFromEvent(event)]);
+        }}
+        onPointerUp={() => {
+          if (!activeStroke || disabled) return;
+          commit([...strokes, activeStroke]);
+          setActiveStroke(null);
+        }}
+      >
+        {[...strokes, ...(activeStroke ? [activeStroke] : [])].map((stroke, index) => (
+          <polyline
+            key={`${index}-${stroke.length}`}
+            points={stroke.map((point) => `${point.x},${point.y}`).join(" ")}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="12"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ))}
+      </svg>
+      {!disabled ? (
+        <Button type="button" variant="secondary" onClick={() => commit([])}>
+          ניקוי חתימה
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
 export function ServiceCallWorkReportPanel({
   organizationId,
   serviceCallId,
+  serviceCall,
   accessToken,
   lifecycle,
   canEdit,
@@ -34,6 +148,9 @@ export function ServiceCallWorkReportPanel({
   const [customerName, setCustomerName] = useState("");
   const [signatureData, setSignatureData] = useState<string | null>(null);
   const [selectedParts, setSelectedParts] = useState<Record<string, number>>({});
+  const [manualParts, setManualParts] = useState<ManualPart[]>([]);
+  const [attachments, setAttachments] = useState<RepairOrderAttachment[]>([]);
+  const [uploadingCategory, setUploadingCategory] = useState<RepairOrderPhotoCategory | null>(null);
   const activeVisitId = visits.some((visit) => visit.id === selectedVisitId)
     ? selectedVisitId
     : (visits[0]?.id ?? "");
@@ -66,6 +183,16 @@ export function ServiceCallWorkReportPanel({
             nextEditor.report?.parts.map((part) => [part.inventoryItemId, part.quantity]) ?? [],
           ),
         );
+        setManualParts(
+          nextEditor.report?.parts
+            .filter((part) => part.manualName)
+            .map((part) => ({
+              name: part.manualName ?? "",
+              partNumber: part.manualPartNumber ?? "",
+              quantity: part.quantity,
+            })) ?? [],
+        );
+        setAttachments(nextEditor.report?.attachments ?? []);
       } catch (cause) {
         if (!cancelled) setError(getApiErrorMessage(cause, "לא ניתן לטעון את דוח העבודה."));
       } finally {
@@ -102,9 +229,18 @@ export function ServiceCallWorkReportPanel({
           workPerformed: workPerformed.trim() || null,
           customerName: customerName.trim() || null,
           customerSignatureData: signatureData,
-          parts: Object.entries(selectedParts)
-            .filter(([, quantity]) => quantity > 0)
-            .map(([inventoryItemId, quantity]) => ({ inventoryItemId, quantity })),
+          parts: [
+            ...Object.entries(selectedParts)
+              .filter(([, quantity]) => quantity > 0)
+              .map(([inventoryItemId, quantity]) => ({ inventoryItemId, quantity })),
+            ...manualParts
+              .filter((part) => part.name.trim() && part.quantity > 0)
+              .map((part) => ({
+                manualName: part.name.trim(),
+                manualPartNumber: part.partNumber.trim() || null,
+                quantity: part.quantity,
+              })),
+          ],
         },
       );
       const nextEditor: WorkReportEditorData = {
@@ -120,12 +256,35 @@ export function ServiceCallWorkReportPanel({
     }
   }
 
+  async function handlePhotoUpload(category: RepairOrderPhotoCategory, file?: File): Promise<void> {
+    if (!file || !activeVisitId || !editor?.report) return;
+    setUploadingCategory(category);
+    setError(null);
+    try {
+      const attachment = await uploadServiceCallWorkReportPhotoRequest(
+        organizationId,
+        serviceCallId,
+        activeVisitId,
+        accessToken,
+        category,
+        file,
+      );
+      setAttachments((current) => [...current, attachment]);
+    } catch (cause) {
+      setError(getApiErrorMessage(cause, "לא ניתן להעלות את הצילום."));
+    } finally {
+      setUploadingCategory(null);
+    }
+  }
+
   return (
     <section className="customer-detail-card customer-detail-card--wide">
       <div className="customers-page__header">
         <div>
-          <h3>דוח עבודה</h3>
-          <p className="customers-page__subtitle">עריכת חלקים וחתימת לקוח עבור הביקור שנבחר.</p>
+          <h3>הזמנת תיקון</h3>
+          <p className="customers-page__subtitle">
+            הזמנת תיקון, חלפים וחתימת לקוח עבור הביקור שנבחר.
+          </p>
         </div>
         {visits.length > 1 ? (
           <select
@@ -146,6 +305,28 @@ export function ServiceCallWorkReportPanel({
         <p className="customers-table__muted">טוען דוח עבודה...</p>
       ) : editor ? (
         <>
+          <div className="repair-order-summary">
+            <div>
+              <span>פרטי הכלי</span>
+              <strong>
+                {serviceCall.equipmentModel ??
+                  serviceCall.equipment?.model ??
+                  serviceCall.equipment?.name ??
+                  "לא נמסר"}
+              </strong>
+              {serviceCall.equipmentLicensePlate ? (
+                <small dir="ltr">רישוי: {serviceCall.equipmentLicensePlate}</small>
+              ) : null}
+              {serviceCall.equipmentChassisNumber ? (
+                <small dir="ltr">שלדה: {serviceCall.equipmentChassisNumber}</small>
+              ) : null}
+            </div>
+            <div>
+              <span>פירוט ותיאור התקלה</span>
+              <strong>{serviceCall.title}</strong>
+              {serviceCall.description ? <small>{serviceCall.description}</small> : null}
+            </div>
+          </div>
           <div className="customer-form__grid">
             <label className="customer-form__field customer-form__field--wide">
               <span>עבודה שבוצעה</span>
@@ -166,11 +347,20 @@ export function ServiceCallWorkReportPanel({
             </label>
             <div className="customer-form__field">
               <span>חתימה</span>
-              <div className="customers-alert customers-alert--info">
-                {signatureData ? "קיימת חתימה שמורה." : "טרם נשמרה חתימה."}
-              </div>
+              <SignaturePad
+                key={signatureData ?? "empty"}
+                value={signatureData}
+                disabled={!canEdit}
+                onChange={setSignatureData}
+              />
             </div>
           </div>
+
+          {editor.assignedVan ? (
+            <p className="customers-table__muted">חלפים מניידת: {editor.assignedVan.name}</p>
+          ) : (
+            <p className="customers-table__muted">אין ניידת משויכת; אפשר להוסיף חלפים ידניים.</p>
+          )}
 
           <div className="inventory-report-groups">
             {editor.partGroups.map((group) => (
@@ -210,6 +400,120 @@ export function ServiceCallWorkReportPanel({
             ))}
           </div>
 
+          <section className="repair-order-manual-parts">
+            <div className="customers-page__header">
+              <div>
+                <h3>חלפים שהורכבו ידנית</h3>
+                <p className="customers-page__subtitle">הוספת חלק שלא נמצא במאגר או בניידת.</p>
+              </div>
+              {canEdit ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() =>
+                    setManualParts((parts) => [...parts, { name: "", partNumber: "", quantity: 1 }])
+                  }
+                >
+                  הוספת חלק ידני
+                </Button>
+              ) : null}
+            </div>
+            {manualParts.map((part, index) => (
+              <div className="repair-order-manual-parts__row" key={index}>
+                <input
+                  aria-label="שם החלק"
+                  placeholder="שם החלק"
+                  value={part.name}
+                  disabled={!canEdit}
+                  onChange={(event) =>
+                    setManualParts((parts) =>
+                      parts.map((entry, rowIndex) =>
+                        rowIndex === index ? { ...entry, name: event.target.value } : entry,
+                      ),
+                    )
+                  }
+                />
+                <input
+                  aria-label="מק״ט"
+                  placeholder="מק״ט (אופציונלי)"
+                  value={part.partNumber}
+                  disabled={!canEdit}
+                  onChange={(event) =>
+                    setManualParts((parts) =>
+                      parts.map((entry, rowIndex) =>
+                        rowIndex === index ? { ...entry, partNumber: event.target.value } : entry,
+                      ),
+                    )
+                  }
+                />
+                <input
+                  aria-label="כמות"
+                  type="number"
+                  min={1}
+                  value={part.quantity}
+                  disabled={!canEdit}
+                  onChange={(event) =>
+                    setManualParts((parts) =>
+                      parts.map((entry, rowIndex) =>
+                        rowIndex === index
+                          ? { ...entry, quantity: Number(event.target.value) }
+                          : entry,
+                      ),
+                    )
+                  }
+                />
+                {canEdit ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() =>
+                      setManualParts((parts) => parts.filter((_, rowIndex) => rowIndex !== index))
+                    }
+                  >
+                    הסרה
+                  </Button>
+                ) : null}
+              </div>
+            ))}
+          </section>
+
+          <section className="repair-order-photos">
+            <div>
+              <h3>העלאת תמונות</h3>
+              <p className="customers-page__subtitle">
+                כל הצילומים אופציונליים. יש לשמור את ההזמנה לפני ההעלאה.
+              </p>
+            </div>
+            <div className="repair-order-photos__grid">
+              {photoCategories.map((photo) => {
+                const count = attachments.filter(
+                  (attachment) => attachment.category === photo.id,
+                ).length;
+                return (
+                  <label key={photo.id} className="repair-order-photos__field">
+                    <span>{photo.label}</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/heic"
+                      capture="environment"
+                      disabled={!canEdit || !editor.report || uploadingCategory !== null}
+                      onChange={(event) =>
+                        void handlePhotoUpload(photo.id, event.target.files?.[0])
+                      }
+                    />
+                    <small>
+                      {uploadingCategory === photo.id
+                        ? "מעלה..."
+                        : count
+                          ? `${count} צילום/ים הועלו`
+                          : "לא חובה"}
+                    </small>
+                  </label>
+                );
+              })}
+            </div>
+          </section>
+
           {selectedPartRows.length > 0 ? (
             <div className="customers-table-wrap">
               <table className="customers-table">
@@ -236,10 +540,27 @@ export function ServiceCallWorkReportPanel({
           {canEdit ? (
             <div className="customer-form__actions">
               <Button onClick={() => void handleSave()} disabled={saving}>
-                {saving ? "שומר..." : "שמירת דוח עבודה"}
+                {saving ? "שומר..." : "שמירת הזמנת תיקון"}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => printRepairOrder(serviceCall, editor.report)}
+              >
+                הפקה / שיתוף PDF
               </Button>
             </div>
-          ) : null}
+          ) : (
+            <div className="customer-form__actions">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => printRepairOrder(serviceCall, editor.report)}
+              >
+                הפקה / שיתוף PDF
+              </Button>
+            </div>
+          )}
         </>
       ) : (
         <p className="customers-table__muted">אין ביקורים להצגת דוח עבודה.</p>
