@@ -16,6 +16,5 @@ export { ManagementDashboardPage } from "./ManagementDashboardPage";
 // dashboard here so the default landing page has the same data-driven design.
 export { ManagementDashboardPage as ExecutiveDashboardPage } from "./ManagementDashboardPage";
 export const WarehouseDashboardPage = createDashboardRoute("warehouse");
-// Office staff use the same live greeting and inspiration feed as the management view.
-export { ManagementDashboardPage as AccountingDashboardPage } from "./ManagementDashboardPage";
+export { OfficeDashboardPage as AccountingDashboardPage } from "./OfficeDashboardPage";
 export const ReadOnlyDashboardPage = createDashboardRoute("read-only");

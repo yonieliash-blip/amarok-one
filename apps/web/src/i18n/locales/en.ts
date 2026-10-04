@@ -853,6 +853,23 @@ export const en: TranslationMessages = {
     partNumber: "Part number",
     noParts: "No parts have been added to the catalog yet.",
   },
+  officeDashboard: {
+    loading: "Loading office management dashboard…",
+    loadError: "The office data is currently unavailable.",
+    workspace: "Office overview",
+    quickActions: "Quick actions",
+    completedCalls: "Completed service calls",
+    completedCallsNote: "Completed reports ready for office handling",
+    tasks: "My tasks",
+    tasksNote: "Open or in-progress tasks",
+    managerReview: "Manager review and correction",
+    managerReviewNote: "Documents awaiting approval or returned for correction",
+    sendAndArchive: "Send and archive",
+    sendAndArchiveNote: "Documents to send or purchase orders awaiting receipt",
+    messages: "Chat",
+    messagesNote: "Unread messages",
+    documentCases: "Document cases",
+  },
   unauthorized: {
     message:
       "You do not have permission to view this page. Contact your administrator if you believe this is a mistake.",

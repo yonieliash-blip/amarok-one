@@ -846,6 +846,23 @@ export interface TranslationMessages {
     partNumber: string;
     noParts: string;
   };
+  officeDashboard: {
+    loading: string;
+    loadError: string;
+    workspace: string;
+    quickActions: string;
+    completedCalls: string;
+    completedCallsNote: string;
+    tasks: string;
+    tasksNote: string;
+    managerReview: string;
+    managerReviewNote: string;
+    sendAndArchive: string;
+    sendAndArchiveNote: string;
+    messages: string;
+    messagesNote: string;
+    documentCases: string;
+  };
   userMenu: {
     fullName: string;
     email: string;

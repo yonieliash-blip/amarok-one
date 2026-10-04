@@ -661,6 +661,7 @@ a {
 .messages-page__layout {
   display: grid;
   grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr);
+  height: min(42rem, calc(100dvh - 12rem));
   min-height: 34rem;
   overflow: hidden;
   border: 1px solid var(--amarok-border);
@@ -670,7 +671,8 @@ a {
 
 .messages-page__people {
   border-inline-end: 1px solid var(--amarok-border);
-  background: var(--amarok-bg);
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--amarok-bg) 88%, var(--amarok-surface));
 }
 
 .messages-page__search {
@@ -693,7 +695,7 @@ a {
 
 .messages-page__member-list {
   display: grid;
-  gap: 0.35rem;
+  gap: 0.55rem;
   margin: 0;
   padding: 0.5rem;
   list-style: none;
@@ -701,12 +703,15 @@ a {
 
 .messages-page__member {
   position: relative;
-  display: grid;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid transparent;
-  border-radius: 0.5rem;
-  background: transparent;
+  padding: 0.75rem 2.75rem 0.75rem 0.75rem;
+  border: 1px solid var(--amarok-border);
+  border-radius: 0.75rem;
+  background: var(--amarok-surface);
+  box-shadow: 0 1px 1px rgb(15 23 42 / 4%);
   color: var(--amarok-text);
   cursor: pointer;
   text-align: start;
@@ -714,8 +719,30 @@ a {
 
 .messages-page__member:hover,
 .messages-page__member--selected {
-  border-color: var(--amarok-border);
-  background: var(--amarok-bg-hover);
+  border-color: color-mix(in srgb, var(--amarok-accent) 48%, var(--amarok-border));
+  background: color-mix(in srgb, var(--amarok-accent) 8%, var(--amarok-surface));
+}
+
+.messages-page__avatar {
+  display: grid;
+  flex: 0 0 auto;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    var(--amarok-accent),
+    color-mix(in srgb, var(--amarok-accent) 56%, #1e3a5f)
+  );
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.messages-page__member-copy {
+  display: grid;
+  min-width: 0;
 }
 
 .messages-page__member-name {
@@ -747,8 +774,9 @@ a {
 
 .messages-page__conversation {
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   min-width: 0;
+  min-height: 0;
 }
 
 .messages-page__conversation-header {
@@ -777,23 +805,30 @@ a {
   gap: 0.7rem;
   padding: 1rem;
   overflow-y: auto;
-  background: color-mix(in srgb, var(--amarok-bg) 64%, var(--amarok-surface));
+  background:
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--amarok-accent) 9%, transparent),
+      transparent 35%
+    ),
+    color-mix(in srgb, var(--amarok-bg) 68%, var(--amarok-surface));
 }
 
 .messages-page__message {
   align-self: flex-start;
   max-width: min(78%, 34rem);
   padding: 0.7rem 0.85rem;
-  border: 1px solid var(--amarok-border);
-  border-radius: 0.75rem 0.75rem 0.75rem 0.15rem;
+  border: 1px solid color-mix(in srgb, var(--amarok-border) 82%, white);
+  border-radius: 1rem 1rem 1rem 0.25rem;
   background: var(--amarok-surface);
+  box-shadow: 0 0.25rem 0.8rem rgb(15 23 42 / 5%);
 }
 
 .messages-page__message--mine {
   align-self: flex-end;
   border-color: color-mix(in srgb, var(--amarok-accent) 30%, var(--amarok-border));
-  border-radius: 0.75rem 0.75rem 0.15rem 0.75rem;
-  background: color-mix(in srgb, var(--amarok-accent) 10%, var(--amarok-surface));
+  border-radius: 1rem 1rem 0.25rem 1rem;
+  background: color-mix(in srgb, var(--amarok-accent) 15%, var(--amarok-surface));
 }
 
 .messages-page__message p,
@@ -844,6 +879,7 @@ a {
 @media (max-width: 700px) {
   .messages-page__layout {
     grid-template-columns: 1fr;
+    height: auto;
     min-height: 0;
   }
 
@@ -860,6 +896,7 @@ a {
 
   .messages-page__conversation {
     min-height: 28rem;
+    height: min(38rem, calc(100dvh - 9rem));
   }
 }
 
