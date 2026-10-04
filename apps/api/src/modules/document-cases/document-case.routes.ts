@@ -19,6 +19,7 @@ import {
   createDocumentCase,
   decideDocumentVersion,
   getDocumentCase,
+  listDocumentCaseAssignees,
   listDocumentCases,
   recordDelivery,
   submitForReview,
@@ -50,6 +51,17 @@ export const documentCaseRoutes = new Hono()
           ),
         ),
         201,
+      ),
+  )
+  .get(
+    "/assignees",
+    requirePermission("document_cases:write"),
+    zValidator("param", organizationIdParamSchema),
+    async (context) =>
+      context.json(
+        createApiResponse(
+          await listDocumentCaseAssignees(context.req.valid("param").organizationId),
+        ),
       ),
   )
   .get(

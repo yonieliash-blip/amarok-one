@@ -126,6 +126,7 @@ async function ensureWorkflowTask(input: {
   documentVersionId?: string;
   taskKind: "MANAGER_REVIEW" | "SECRETARY_SEND" | "SECRETARY_PURCHASE_ORDER";
   assignedToId: string;
+  createdById: string;
   title: string;
 }) {
   const deduplicationKey = `${input.documentCaseId}:${input.taskKind}:${input.documentVersionId ?? "case"}`;
@@ -139,6 +140,7 @@ async function ensureWorkflowTask(input: {
       organizationId: input.organizationId,
       title: input.title,
       assignedToId: input.assignedToId,
+      createdById: input.createdById,
       priority: "HIGH",
       linkUrl: `/document-cases/${input.documentCaseId}`,
       linkedEntityType: "DocumentCase",
@@ -155,6 +157,43 @@ async function ensureWorkflowTask(input: {
       deduplicationKey,
     },
   });
+}
+
+async function resolveWorkflowTasks(input: {
+  organizationId: string;
+  documentCaseId: string;
+  actorId: string;
+  taskKind: "MANAGER_REVIEW" | "SECRETARY_SEND" | "SECRETARY_PURCHASE_ORDER";
+  documentVersionId?: string;
+  note: string;
+}) {
+  const links = await prisma.documentCaseTaskLink.findMany({
+    where: {
+      organizationId: input.organizationId,
+      documentCaseId: input.documentCaseId,
+      taskKind: input.taskKind,
+      documentVersionId: input.documentVersionId,
+      resolvedAt: null,
+    },
+    select: { id: true, taskId: true },
+  });
+  if (links.length === 0) return;
+  const now = new Date();
+  await prisma.$transaction([
+    prisma.documentCaseTaskLink.updateMany({
+      where: { id: { in: links.map((link) => link.id) } },
+      data: { resolvedAt: now },
+    }),
+    prisma.task.updateMany({
+      where: { id: { in: links.map((link) => link.taskId) }, status: { not: "COMPLETED" } },
+      data: {
+        status: "COMPLETED",
+        completedAt: now,
+        completedById: input.actorId,
+        completionNote: input.note,
+      },
+    }),
+  ]);
 }
 
 function latestVersion(row: DocumentCaseRow, type: keyof typeof typeToModel) {
@@ -177,6 +216,21 @@ export async function listDocumentCases(organizationId: string) {
     orderBy: [{ archivedAt: "asc" }, { updatedAt: "desc" }],
   });
   return rows.map(toDto);
+}
+
+export async function listDocumentCaseAssignees(organizationId: string) {
+  return prisma.organizationMember
+    .findMany({
+      where: {
+        organizationId,
+        deletedAt: null,
+        status: "ACTIVE",
+        user: { isActive: true, deletedAt: null },
+      },
+      select: { user: { select: { id: true, displayName: true, email: true } } },
+      orderBy: { user: { displayName: "asc" } },
+    })
+    .then((rows) => rows.map((row) => row.user));
 }
 
 export async function getDocumentCase(organizationId: string, documentCaseId: string) {
@@ -230,6 +284,25 @@ export async function appendDocumentVersion(
 ) {
   const row = await getCase(organizationId, documentCaseId);
   if (row.archivedAt) throw conflict("Archived document cases cannot be changed");
+  const type = typeToModel[input.type];
+  if (type === "QUOTE") {
+    if (row.workflow !== "QUOTE_AND_PURCHASE_ORDER")
+      throw badRequest("Quotes are only valid in the quote and purchase-order workflow");
+    if (!["DRAFT", "QUOTE_CORRECTION_REQUIRED"].includes(row.status))
+      throw conflict("The document case is not ready for a quote version");
+  }
+  if (type === "PURCHASE_ORDER") {
+    if (row.workflow !== "QUOTE_AND_PURCHASE_ORDER")
+      throw badRequest("Purchase orders are only valid in the quote and purchase-order workflow");
+    if (row.status !== "WAITING_PURCHASE_ORDER")
+      throw conflict("The document case is not waiting for a purchase order");
+  }
+  if (type === "INVOICE") {
+    if (!["DRAFT", "INVOICE_CORRECTION_REQUIRED"].includes(row.status))
+      throw conflict("The document case is not ready for an invoice version");
+    if (row.workflow === "QUOTE_AND_PURCHASE_ORDER" && !latestVersion(row, "purchase_order"))
+      throw badRequest("A purchase order version is required before an invoice version");
+  }
   let source: "METADATA_ONLY" | "EXISTING_WORK_REPORT" = "METADATA_ONLY";
   if (input.sourceWorkReportId) {
     const report = await prisma.serviceCallWorkReport.findFirst({
@@ -239,7 +312,6 @@ export async function appendDocumentVersion(
     if (!report) throw notFound("Work report", input.sourceWorkReportId);
     source = "EXISTING_WORK_REPORT";
   }
-  const type = typeToModel[input.type];
   const document = await prisma.documentCaseDocument.upsert({
     where: { documentCaseId_type: { documentCaseId, type } },
     create: { organizationId, documentCaseId, type },
@@ -274,6 +346,16 @@ export async function appendDocumentVersion(
     entityId: documentCaseId,
     metadata: { type },
   });
+  if (type === "PURCHASE_ORDER") {
+    await resolveWorkflowTasks({
+      organizationId,
+      documentCaseId,
+      actorId,
+      taskKind: "SECRETARY_PURCHASE_ORDER",
+      note: "הזמנת הרכש צורפה לתיק.",
+    });
+    await prisma.documentCase.update({ where: { id: row.id }, data: { status: "DRAFT" } });
+  }
   return getDocumentCase(organizationId, documentCaseId);
 }
 
@@ -287,15 +369,26 @@ export async function submitForReview(
   const found = findVersion(row, documentVersionId);
   if (!found) throw notFound("Document version", documentVersionId);
   const { document, version } = found;
-  if (version !== latestVersion(row, document.type === "QUOTE" ? "quote" : "invoice"))
-    throw conflict("Only the latest document version can be submitted");
-  const hasWorkReport = Boolean(latestVersion(row, "work_report"));
-  if (!hasWorkReport) throw badRequest("A work report version is required before review");
   const isQuote = document.type === "QUOTE";
   if (isQuote && row.workflow !== "QUOTE_AND_PURCHASE_ORDER")
     throw badRequest("Quotes are only valid in the quote and purchase-order workflow");
   if (!isQuote && document.type !== "INVOICE")
     throw badRequest("Only quote or invoice versions can be submitted for review");
+  if (version !== latestVersion(row, isQuote ? "quote" : "invoice"))
+    throw conflict("Only the latest document version can be submitted");
+  const hasWorkReport = Boolean(latestVersion(row, "work_report"));
+  if (!hasWorkReport) throw badRequest("A work report version is required before review");
+  const expectedStatus = isQuote
+    ? ["DRAFT", "QUOTE_CORRECTION_REQUIRED"]
+    : ["DRAFT", "INVOICE_CORRECTION_REQUIRED"];
+  if (!expectedStatus.includes(row.status))
+    throw conflict("The document case is not ready for this review");
+  if (
+    !isQuote &&
+    row.workflow === "QUOTE_AND_PURCHASE_ORDER" &&
+    !latestVersion(row, "purchase_order")
+  )
+    throw badRequest("A purchase order version is required before invoice review");
   await prisma.documentCase.update({
     where: { id: row.id },
     data: { status: isQuote ? "QUOTE_REVIEW_REQUIRED" : "INVOICE_REVIEW_REQUIRED" },
@@ -313,6 +406,7 @@ export async function submitForReview(
     documentVersionId,
     taskKind: "MANAGER_REVIEW",
     assignedToId: row.managerAssigneeId,
+    createdById: actorId,
     title: `אישור מסמך לתיק ${row.repairReportNumber}`,
   });
   return getDocumentCase(organizationId, documentCaseId);
@@ -368,6 +462,14 @@ export async function decideDocumentVersion(
     entityId: version.id,
     metadata: { decision: input.decision },
   });
+  await resolveWorkflowTasks({
+    organizationId,
+    documentCaseId,
+    actorId,
+    documentVersionId,
+    taskKind: "MANAGER_REVIEW",
+    note: input.decision === "approved" ? "המסמך אושר." : "המסמך הוחזר לתיקון.",
+  });
   if (input.decision === "approved") {
     await ensureWorkflowTask({
       organizationId,
@@ -375,6 +477,7 @@ export async function decideDocumentVersion(
       documentVersionId,
       taskKind: "SECRETARY_SEND",
       assignedToId: row.secretaryAssigneeId,
+      createdById: actorId,
       title: `תיעוד שליחה לתיק ${row.repairReportNumber}`,
     });
   }
@@ -396,12 +499,15 @@ export async function recordDelivery(
         : undefined;
   if (!expectedType) throw conflict("The document case is not waiting for a delivery record");
   const versions = input.documentVersionIds.map((id) => findVersion(row, id));
+  if (new Set(input.documentVersionIds).size !== input.documentVersionIds.length)
+    throw badRequest("Each delivered document version may be recorded once");
   if (
     versions.some(
       (entry) =>
         !entry ||
         entry.document.type !== expectedType ||
-        entry.version.approval?.decision !== "APPROVED",
+        entry.version.approval?.decision !== "APPROVED" ||
+        entry.version !== latestVersion(row, expectedType === "QUOTE" ? "quote" : "invoice"),
     )
   ) {
     throw badRequest("Only the exact approved version that is ready to send may be recorded");
@@ -445,12 +551,25 @@ export async function recordDelivery(
     entityId: documentCaseId,
     metadata: { documentVersionIds: input.documentVersionIds },
   });
+  await Promise.all(
+    input.documentVersionIds.map((documentVersionId) =>
+      resolveWorkflowTasks({
+        organizationId,
+        documentCaseId,
+        actorId,
+        documentVersionId,
+        taskKind: "SECRETARY_SEND",
+        note: "שליחת המסמך תועדה.",
+      }),
+    ),
+  );
   if (expectedType === "QUOTE") {
     await ensureWorkflowTask({
       organizationId,
       documentCaseId,
       taskKind: "SECRETARY_PURCHASE_ORDER",
       assignedToId: row.secretaryAssigneeId,
+      createdById: actorId,
       title: `המתנה להזמנת רכש לתיק ${row.repairReportNumber}`,
     });
   }
