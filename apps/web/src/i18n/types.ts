@@ -60,6 +60,8 @@ export interface TranslationMessages {
     navGroupOperations: string;
     navGroupField: string;
     navGroupBackOffice: string;
+    navGroupOfficeManagement: string;
+    navGroupAccounting: string;
   };
   titles: {
     dashboard: string;

@@ -1,10 +1,17 @@
 import type { ResolvedNavigationItem } from "@amarok-one/permissions";
 
-export type NavGroupKey = "overview" | "operations" | "field" | "backOffice";
+export type NavGroupKey =
+  "overview" | "operations" | "field" | "backOffice" | "office" | "officeAccounting";
 
 export interface NavGroupDefinition {
   key: NavGroupKey;
-  labelKey: "navGroupOverview" | "navGroupOperations" | "navGroupField" | "navGroupBackOffice";
+  labelKey:
+    | "navGroupOverview"
+    | "navGroupOperations"
+    | "navGroupField"
+    | "navGroupBackOffice"
+    | "navGroupOfficeManagement"
+    | "navGroupAccounting";
   itemIds: readonly string[];
 }
 
@@ -41,6 +48,25 @@ const GROUPS: readonly NavGroupDefinition[] = [
   },
 ] as const;
 
+/** Office navigation keeps accounting as a work category within office management. */
+const OFFICE_GROUPS: readonly NavGroupDefinition[] = [
+  {
+    key: "overview",
+    labelKey: "navGroupOverview",
+    itemIds: [],
+  },
+  {
+    key: "office",
+    labelKey: "navGroupOfficeManagement",
+    itemIds: ["customers", "completed-service-calls", "office-chat", "tasks", "document-cases"],
+  },
+  {
+    key: "officeAccounting",
+    labelKey: "navGroupAccounting",
+    itemIds: ["green-invoice-queries"],
+  },
+] as const;
+
 function isDashboardItem(id: string): boolean {
   return id.startsWith("dashboard-");
 }
@@ -53,6 +79,7 @@ export interface NavGroupSection {
 
 /** Presentation-only grouping for sidebar navigation. */
 export function groupNavigationItems(items: ResolvedNavigationItem[]): NavGroupSection[] {
+  const groups = items.some((item) => item.id === "office-chat") ? OFFICE_GROUPS : GROUPS;
   const assigned = new Set<string>();
   const sections: NavGroupSection[] = [];
 
@@ -68,7 +95,7 @@ export function groupNavigationItems(items: ResolvedNavigationItem[]): NavGroupS
     });
   }
 
-  for (const group of GROUPS) {
+  for (const group of groups) {
     if (group.key === "overview") {
       continue;
     }
@@ -89,13 +116,15 @@ export function groupNavigationItems(items: ResolvedNavigationItem[]): NavGroupS
 
   const remainder = items.filter((item) => !assigned.has(item.id));
   if (remainder.length > 0) {
-    const operations = sections.find((section) => section.key === "operations");
-    if (operations) {
-      operations.items = [...operations.items, ...remainder];
+    const primarySection = sections.find((section) =>
+      groups === OFFICE_GROUPS ? section.key === "office" : section.key === "operations",
+    );
+    if (primarySection) {
+      primarySection.items = [...primarySection.items, ...remainder];
     } else {
       sections.push({
-        key: "operations",
-        labelKey: "navGroupOperations",
+        key: groups === OFFICE_GROUPS ? "office" : "operations",
+        labelKey: groups === OFFICE_GROUPS ? "navGroupOfficeManagement" : "navGroupOperations",
         items: remainder,
       });
     }

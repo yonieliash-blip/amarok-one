@@ -58,6 +58,8 @@ export const he: TranslationMessages = {
     navGroupOperations: "תפעול שירות",
     navGroupField: "שטח וטכנאים",
     navGroupBackOffice: "משרד אחורי",
+    navGroupOfficeManagement: "ניהול משרד",
+    navGroupAccounting: "הנהלת חשבונות",
   },
   titles: {
     dashboard: "לוח בקרה",
