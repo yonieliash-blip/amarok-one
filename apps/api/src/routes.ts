@@ -22,6 +22,7 @@ import { createMessagesRoutes } from "./modules/messages/messages.routes.js";
 import type { MessagesService } from "./modules/messages/messages.service.js";
 import { createInspirationRoutes } from "./modules/inspiration/inspiration.routes.js";
 import type { InspirationService } from "./modules/inspiration/inspiration.service.js";
+import { documentCaseRoutes } from "./modules/document-cases/document-case.routes.js";
 
 export function createApiRoutes(
   serviceCallService: ServiceCallService,
@@ -48,6 +49,7 @@ export function createApiRoutes(
     .route("/organizations/:organizationId/inventory", inventoryRoutes)
     .route("/organizations/:organizationId/parts", partsRoutes)
     .route("/organizations/:organizationId/tasks", tasksRoutes)
+    .route("/organizations/:organizationId/document-cases", documentCaseRoutes)
     .route("/organizations/:organizationId/messages", createMessagesRoutes(messagesService))
     .route(
       "/organizations/:organizationId/inspiration",

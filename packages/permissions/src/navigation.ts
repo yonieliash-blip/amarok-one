@@ -25,6 +25,7 @@ export type NavLabelKey =
   | "purchaseOrders"
   | "parts"
   | "tasks"
+  | "documentCases"
   | "chat"
   | "accounting"
   | "greenInvoiceQueries"
@@ -128,6 +129,12 @@ export const NAVIGATION_ITEMS: readonly NavigationItemDefinition[] = [
     to: "/tasks",
     labelKey: "tasks",
     permissions: [PERMISSIONS.TASKS_READ],
+  },
+  {
+    id: "document-cases",
+    to: "/document-cases",
+    labelKey: "documentCases",
+    permissions: [PERMISSIONS.DOCUMENT_CASES_READ],
   },
   {
     id: "messages",
