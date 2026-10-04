@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DirectConversationSummary, DirectMessageMember } from "@amarok-one/types";
 import { Button } from "@amarok-one/ui";
 import { MessageCircle, Search } from "lucide-react";
@@ -33,6 +33,7 @@ export function MessagesPage() {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const threadRef = useRef<HTMLDivElement | null>(null);
 
   const refreshLists = useCallback(async (): Promise<void> => {
     if (!user || !accessToken) return;
@@ -105,6 +106,12 @@ export function MessagesPage() {
     };
   }, [accessToken, refreshLists, selectedConversationId, t, user]);
 
+  useEffect(() => {
+    const thread = threadRef.current;
+    if (!thread) return;
+    thread.scrollTop = thread.scrollHeight;
+  }, [messages, selectedConversationId]);
+
   const visibleMembers = useMemo(() => {
     const term = search.trim().toLocaleLowerCase("he");
     if (!term) return members;
@@ -143,7 +150,8 @@ export function MessagesPage() {
         accessToken,
       );
       setMessages(nextMessages);
-      await refreshLists();
+      // The conversation list has no message preview. Avoid a second list refresh here so
+      // sending a message only updates the fixed-height thread, not the surrounding page.
     } catch (cause) {
       setError(getApiErrorMessage(cause, t("messages", "sendError")));
     } finally {
@@ -196,8 +204,13 @@ export function MessagesPage() {
                       className={`messages-page__member${selectedMember?.id === member.id ? " messages-page__member--selected" : ""}`}
                       onClick={() => selectMember(member)}
                     >
-                      <span className="messages-page__member-name">{member.displayName}</span>
-                      <span className="messages-page__member-role">{member.role.name}</span>
+                      <span className="messages-page__avatar" aria-hidden="true">
+                        {member.displayName.trim().slice(0, 1).toUpperCase()}
+                      </span>
+                      <span className="messages-page__member-copy">
+                        <span className="messages-page__member-name">{member.displayName}</span>
+                        <span className="messages-page__member-role">{member.role.name}</span>
+                      </span>
                       {conversation?.unreadCount ? (
                         <span
                           className="messages-page__unread"
@@ -225,7 +238,7 @@ export function MessagesPage() {
                   <p>{selectedMember.role.name}</p>
                 </div>
               </header>
-              <div className="messages-page__thread">
+              <div className="messages-page__thread" ref={threadRef}>
                 {messages.length ? (
                   messages.map((message) => (
                     <article
