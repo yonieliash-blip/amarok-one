@@ -1,0 +1,61 @@
+name: Automatic Staging deployment
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-auto-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy main to Staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # The staging environment supplies only the Staging SSH credentials.
+    # Its approval protection must be disabled once in GitHub settings for unattended deploys.
+    environment: staging
+
+    steps:
+      - name: Configure Staging SSH
+        env:
+          STAGING_SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          STAGING_SSH_KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$STAGING_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$STAGING_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+
+      - name: Update API, apply migrations, and update web
+        run: |
+          ssh -o BatchMode=yes -o IdentitiesOnly=yes ubuntu@staging.amarok-ce.com 'bash -s' <<'REMOTE'
+            set -euo pipefail
+
+            cd /home/ubuntu/amarok-one
+            test "$(git branch --show-current)" = "main"
+            git fetch --no-tags origin main
+            git merge --ff-only origin/main
+
+            compose() {
+              sudo docker compose \
+                --env-file infrastructure/staging/staging.env \
+                -f infrastructure/staging/docker-compose.yml "$@"
+            }
+
+            compose build --no-cache api
+            compose run --rm --no-deps --entrypoint sh api -ec \
+              'prisma migrate deploy --schema=./prisma/schema.prisma'
+            compose up -d --no-deps --force-recreate api
+            curl --fail --show-error --retry 12 --retry-all-errors \
+              https://staging-api.amarok-ce.com/health
+
+            compose build --no-cache web
+            compose up -d --no-deps --force-recreate web
+            curl --fail --show-error --retry 5 --retry-all-errors \
+              https://staging.amarok-ce.com/health
+          REMOTE
