@@ -1,5 +1,6 @@
-import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { Link, Outlet, useLocation } from "react-router-dom";
+import { X } from "lucide-react";
 import { Header } from "./Header";
 import { MobileNavigation } from "./MobileNavigation";
 import { Sidebar } from "./Sidebar";
@@ -71,6 +72,8 @@ function resolvePageTitle(pathname: string, t: ReturnType<typeof useTranslation>
 export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const [newMessageCount, setNewMessageCount] = useState(0);
+  const unreadCountLoaded = useRef(false);
   const isMobileNav = useMobileNav(setSidebarOpen);
   const location = useLocation();
   const { accessToken, user } = useAuth();
@@ -84,7 +87,18 @@ export function AppLayout() {
     const refreshUnreadMessages = async (): Promise<void> => {
       try {
         const count = await getUnreadMessageCountRequest(user.organization.id, accessToken);
-        if (!cancelled) setUnreadMessageCount(count);
+        if (cancelled) return;
+        setUnreadMessageCount((previousCount) => {
+          if (
+            unreadCountLoaded.current &&
+            count > previousCount &&
+            location.pathname !== "/messages"
+          ) {
+            setNewMessageCount(count - previousCount);
+          }
+          unreadCountLoaded.current = true;
+          return count;
+        });
       } catch {
         // A temporary notification refresh failure must not interrupt the active screen.
       }
@@ -127,6 +141,29 @@ export function AppLayout() {
           unreadMessageCount={user ? unreadMessageCount : 0}
         />
       </div>
+
+      {newMessageCount > 0 && location.pathname !== "/messages" ? (
+        <aside className="message-notice" role="status" aria-live="polite">
+          <div>
+            <strong>
+              {newMessageCount === 1
+                ? t("messages", "newMessageNotice")
+                : t("messages", "newMessagesNotice", { count: newMessageCount })}
+            </strong>
+            <Link to="/messages" onClick={() => setNewMessageCount(0)}>
+              {t("messages", "openMessages")}
+            </Link>
+          </div>
+          <button
+            type="button"
+            className="message-notice__dismiss"
+            onClick={() => setNewMessageCount(0)}
+            aria-label={t("messages", "dismissNewMessages")}
+          >
+            <X size={18} aria-hidden="true" />
+          </button>
+        </aside>
+      ) : null}
 
       {isMobileNav && sidebarOpen ? (
         <button

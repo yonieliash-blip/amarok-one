@@ -24,6 +24,7 @@ on:
           - apply_technician_availability
           - apply_service_context_and_inspiration
           - apply_repair_order_reporting
+          - rename_amarok_organization
 
 permissions:
   contents: read
@@ -327,6 +328,22 @@ jobs:
                   test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM \"_prisma_migrations\" WHERE migration_name = \$\$20261003130000_repair_order_manual_parts\$\$ AND finished_at IS NOT NULL AND rolled_back_at IS NULL;")" = "1"
                   test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = \$\$public\$\$ AND table_name = \$\$service_call_work_report_parts\$\$ AND column_name IN (\$\$manualName\$\$, \$\$manualPartNumber\$\$);")" = "2"
                   test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT to_regclass(\$\$public.service_call_work_report_attachments\$\$) IS NOT NULL;")" = "t"
+                '
+                compose up -d --no-deps --force-recreate api web
+                curl --fail --show-error --retry 12 --retry-all-errors \
+                  https://staging-api.amarok-ce.com/health
+                curl --fail --show-error --retry 12 --retry-all-errors \
+                  https://staging.amarok-ce.com/health
+                ;;
+              rename_amarok_organization)
+                git fetch --no-tags origin main
+                git merge --ff-only origin/main
+                compose exec -T postgres sh -ec '
+                  set -eu
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM organizations WHERE \"deletedAt\" IS NULL AND name = \$\$Demo Organization\$\$;")" = "1"
+                  psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+                    -c "UPDATE organizations SET name = \$\$אמארוק\$\$, \"updatedAt\" = now() WHERE \"deletedAt\" IS NULL AND name = \$\$Demo Organization\$\$;"
+                  test "$(psql -X -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) FROM organizations WHERE \"deletedAt\" IS NULL AND name = \$\$אמארוק\$\$;")" = "1"
                 '
                 compose up -d --no-deps --force-recreate api web
                 curl --fail --show-error --retry 12 --retry-all-errors \

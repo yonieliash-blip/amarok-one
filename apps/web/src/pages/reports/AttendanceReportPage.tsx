@@ -336,6 +336,7 @@ export function AttendanceReportPage() {
                 <th>{t("attendanceReport", "gross")}</th>
                 <th>{t("attendanceReport", "breaks")}</th>
                 <th>{t("attendanceReport", "net")}</th>
+                <th>{t("attendanceReport", "systemInactive")}</th>
                 <th>{t("attendanceReport", "status")}</th>
               </tr>
             </thead>
@@ -353,6 +354,7 @@ export function AttendanceReportPage() {
                   <td>
                     <strong>{hours(employee.netMinutes)}</strong>
                   </td>
+                  <td>{hours(employee.systemInactiveMinutes)}</td>
                   <td>
                     {employee.days.some((day) => day.status === "ACTIVE")
                       ? t("attendanceReport", "active")
@@ -367,6 +369,7 @@ export function AttendanceReportPage() {
                 <th>{hours(dailyReport.totalGrossMinutes)}</th>
                 <th>{hours(dailyReport.totalBreakMinutes)}</th>
                 <th>{hours(dailyReport.totalNetMinutes)}</th>
+                <th>{hours(dailyReport.totalSystemInactiveMinutes)}</th>
                 <th />
               </tr>
             </tfoot>
@@ -389,6 +392,7 @@ export function AttendanceReportPage() {
                 <th>{t("attendanceReport", "gross")}</th>
                 <th>{t("attendanceReport", "breaks")}</th>
                 <th>{t("attendanceReport", "net")}</th>
+                <th>{t("attendanceReport", "systemInactive")}</th>
                 <th>{t("attendanceReport", "route")}</th>
               </tr>
             </thead>
@@ -428,7 +432,8 @@ export function AttendanceReportPage() {
                                   </button>
                                 </>
                               ) : null}
-                              .{" "}
+                              ; {t("attendanceReport", "systemInactive")}:{" "}
+                              {hours(day.systemInactiveMinutes)} .{" "}
                               {day.reviewStatus === "APPROVED"
                                 ? t("attendanceReport", "approved")
                                 : t("attendanceReport", "pending")}
@@ -467,6 +472,7 @@ export function AttendanceReportPage() {
                     <td>
                       <strong>{hours(employee.netMinutes)}</strong>
                     </td>
+                    <td>{hours(employee.systemInactiveMinutes)}</td>
                     <td>
                       {routeDay ? (
                         <button

@@ -193,7 +193,7 @@ export function InspirationPage() {
       <header className="customers-page__header">
         <div>
           <p className="customers-page__eyebrow">ניהול</p>
-          <h2 className="customers-page__title">השראה</h2>
+          <h2 className="customers-page__title">ניהול פתגמים והודעות</h2>
           <p className="customers-page__subtitle">
             פתגמים כלליים והודעה אישית שמוצגת לעובד במקום הפתגם הכללי.
           </p>

@@ -248,6 +248,10 @@ export const en: TranslationMessages = {
     sending: "Sending…",
     sendError: "Unable to send the message.",
     unread: "Unread",
+    newMessageNotice: "You have a new message",
+    newMessagesNotice: "You have {{count}} new messages",
+    openMessages: "Open messages",
+    dismissNewMessages: "Dismiss new message notification",
   },
   mySchedulePage: {
     eyebrow: "Field",
@@ -311,6 +315,7 @@ export const en: TranslationMessages = {
     gross: "Gross",
     breaks: "Breaks",
     net: "Net",
+    systemInactive: "No system activity",
     route: "Location",
     active: "Still active",
     yes: "Yes",
@@ -358,6 +363,8 @@ export const en: TranslationMessages = {
     loadError: "Unable to load the current work day.",
     actionError: "Unable to update the work day.",
     locationHint: "Location is saved only when starting and ending the work day.",
+    activityHint:
+      "The manager report measures AMAROK activity only; it does not change work hours.",
   },
   customers: {
     accountsEyebrow: "Accounts",

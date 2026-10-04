@@ -10,6 +10,8 @@ export interface AttendanceDay {
   grossMinutes: number;
   breakMinutes: number;
   netMinutes: number;
+  systemInactiveMinutes: number;
+  activitySampleCount: number;
   locationCaptured: boolean;
   locationSampleCount: number;
 }
@@ -35,6 +37,7 @@ export interface AttendanceEmployee {
   grossMinutes: number;
   breakMinutes: number;
   netMinutes: number;
+  systemInactiveMinutes: number;
   days: AttendanceDay[];
 }
 
@@ -44,6 +47,7 @@ export interface MonthlyAttendanceReport {
   employeeCount: number;
   totalWorkDays: number;
   totalNetMinutes: number;
+  totalSystemInactiveMinutes: number;
   locked: boolean;
   periodLock: {
     id: string;
@@ -67,6 +71,7 @@ export interface DailyAttendanceReport {
   totalGrossMinutes: number;
   totalBreakMinutes: number;
   totalNetMinutes: number;
+  totalSystemInactiveMinutes: number;
   employees: DailyAttendanceEmployee[];
 }
 
@@ -125,6 +130,16 @@ export async function getCurrentWorkDayRequest(
     { accessToken },
   );
   return response.data;
+}
+
+export async function recordWorkDayActivityRequest(
+  organizationId: string,
+  accessToken: string,
+): Promise<void> {
+  await apiRequest(`/organizations/${organizationId}/attendance/activity`, {
+    method: "POST",
+    accessToken,
+  });
 }
 
 async function submitWorkDayActionRequest(
