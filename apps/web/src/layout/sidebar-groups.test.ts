@@ -29,6 +29,28 @@ describe("groupNavigationItems", () => {
     const sections = groupNavigationItems(items);
     expect(sections.some((section) => section.key === "operations")).toBe(true);
   });
+
+  it("keeps accounting as a category within the office workspace", () => {
+    const items = [
+      item("dashboard-accounting", "/dashboard/accounting"),
+      item("customers", "/customers"),
+      item("completed-service-calls", "/service-calls?view=completed"),
+      item("office-chat", "/messages"),
+      item("tasks", "/tasks"),
+      item("green-invoice-queries", "/green-invoice-queries"),
+    ];
+
+    const sections = groupNavigationItems(items);
+
+    expect(
+      sections.find((section) => section.key === "office")?.items.map((entry) => entry.id),
+    ).toEqual(["customers", "completed-service-calls", "office-chat", "tasks"]);
+    expect(
+      sections
+        .find((section) => section.key === "officeAccounting")
+        ?.items.map((entry) => entry.id),
+    ).toEqual(["green-invoice-queries"]);
+  });
 });
 
 describe("pickDashboardQuickLinks", () => {
