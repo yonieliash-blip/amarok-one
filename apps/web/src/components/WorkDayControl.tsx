@@ -175,7 +175,7 @@ export function WorkDayControl({ onActiveChange }: WorkDayControlProps) {
         type="button"
         className={`work-day-control__button${
           isActive ? " work-day-control__button--active" : ""
-        `}
+        }`}
         variant={isActive ? "secondary" : "primary"}
         disabled={busy}
         onClick={() => void handleAction()}
