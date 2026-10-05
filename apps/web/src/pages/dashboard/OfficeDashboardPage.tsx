@@ -80,35 +80,42 @@ export function OfficeDashboardPage() {
     async function load(): Promise<void> {
       if (!user || !accessToken) return;
       setStatus("loading");
-      const results = await Promise.allSettled([
-        canReadServiceCalls
-          ? fetchAllServiceCalls(user.organization.id, accessToken)
-          : Promise.resolve([]),
-        listTasksRequest(user.organization.id, accessToken),
-        canReadDocumentCases
-          ? listDocumentCasesRequest(user.organization.id, accessToken)
-          : Promise.resolve([]),
-        getUnreadMessageCountRequest(user.organization.id, accessToken),
-        getCurrentInspirationRequest(user.organization.id, accessToken),
+      let hasLoadError = false;
+      async function safe<T>(promise: Promise<T>, fallback: T): Promise<T> {
+        try {
+          return await promise;
+        } catch {
+          hasLoadError = true;
+          return fallback;
+        }
+      }
+      const [calls, taskResponse, cases, messages, nextInspiration] = await Promise.all([
+        safe(
+          canReadServiceCalls
+            ? fetchAllServiceCalls(user.organization.id, accessToken)
+            : Promise.resolve([]),
+          [],
+        ),
+        safe(listTasksRequest(user.organization.id, accessToken), { data: [] }),
+        safe(
+          canReadDocumentCases
+            ? listDocumentCasesRequest(user.organization.id, accessToken)
+            : Promise.resolve([]),
+          [],
+        ),
+        safe(getUnreadMessageCountRequest(user.organization.id, accessToken), 0),
+        safe(
+          getCurrentInspirationRequest(user.organization.id, accessToken),
+          { kind: "none" } satisfies InspirationCurrent,
+        ),
       ]);
       if (cancelled) return;
-      const [callsResult, tasksResult, casesResult, messagesResult, inspirationResult] = results;
-      if (callsResult.status === "fulfilled") {
-        setCompletedCalls(callsResult.value.filter(isClosedServiceCall).length);
-      }
-      if (tasksResult.status === "fulfilled") {
-        setTasks(tasksResult.value.data ?? []);
-      }
-      if (casesResult.status === "fulfilled") {
-        setDocumentCases(casesResult.value);
-      }
-      if (messagesResult.status === "fulfilled") {
-        setUnreadMessages(messagesResult.value);
-      }
-      if (inspirationResult.status === "fulfilled") {
-        setInspiration(inspirationResult.value);
-      }
-      setStatus(results.some((result) => result.status === "rejected") ? "error" : "ready");
+      setCompletedCalls(calls.filter(isClosedServiceCall).length);
+      setTasks(taskResponse.data ?? []);
+      setDocumentCases(cases);
+      setUnreadMessages(messages);
+      setInspiration(nextInspiration);
+      setStatus(hasLoadError ? "error" : "ready");
     }
     void load();
     const refreshInterval = window.setInterval(() => {
