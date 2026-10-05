@@ -981,6 +981,7 @@ a {
 
 .messages-page__composer textarea {
   width: 100%;
+  font-size: 16px;
   min-height: 3rem;
   max-height: 6rem;
   resize: none;

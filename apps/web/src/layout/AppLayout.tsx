@@ -1,10 +1,17 @@
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type KeyboardEvent,
+  type MouseEvent,
+  type SetStateAction,
+} from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { X } from "lucide-react";
 import { Header } from "./Header";
 import { MobileNavigation } from "./MobileNavigation";
 import { Sidebar } from "./Sidebar";
-import { WorkDayControl } from "../components/WorkDayControl";
 import { useAuth } from "../auth/useAuth";
 import { useTranslation } from "../i18n/useTranslation";
 import { getUnreadMessageCountRequest } from "../lib/messages-api";
@@ -74,12 +81,32 @@ export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [newMessageCount, setNewMessageCount] = useState(0);
+  const [workDayActive, setWorkDayActive] = useState<boolean | null>(null);
+  const [workDayNotice, setWorkDayNotice] = useState(false);
   const unreadCountLoaded = useRef(false);
   const isMobileNav = useMobileNav(setSidebarOpen);
   const location = useLocation();
   const { accessToken, user } = useAuth();
   const { t } = useTranslation();
   const title = resolvePageTitle(location.pathname, t);
+
+  const blockBeforeWorkDay = (target: EventTarget | null): boolean =>
+    workDayActive === false &&
+    !(target instanceof Element && target.closest("[data-allow-before-workday]"));
+
+  const handleShellClickCapture = (event: MouseEvent<HTMLDivElement>): void => {
+    if (!blockBeforeWorkDay(event.target)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setWorkDayNotice(true);
+  };
+
+  const handleShellKeyDownCapture = (event: KeyboardEvent<HTMLDivElement>): void => {
+    if (!["Enter", " "].includes(event.key) || !blockBeforeWorkDay(event.target)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setWorkDayNotice(true);
+  };
 
   useEffect(() => {
     if (!user || !accessToken) return;
@@ -114,7 +141,11 @@ export function AppLayout() {
   }, [accessToken, location.pathname, user]);
 
   return (
-    <div className="app-shell">
+    <div
+      className="app-shell"
+      onClickCapture={handleShellClickCapture}
+      onKeyDownCapture={handleShellKeyDownCapture}
+    >
       <aside
         id="app-sidebar"
         className={`sidebar${isMobileNav && sidebarOpen ? " sidebar--open" : ""}${isMobileNav ? " sidebar--drawer" : " sidebar--docked"}`}
@@ -130,10 +161,11 @@ export function AppLayout() {
           menuOpen={isMobileNav && sidebarOpen}
           onMenuToggle={() => setSidebarOpen((value) => !value)}
           unreadMessageCount={user ? unreadMessageCount : 0}
+          onWorkDayStatusChange={(active) => {
+            setWorkDayActive(active);
+            if (active) setWorkDayNotice(false);
+          }}
         />
-        <div className="app-shell__work-day">
-          <WorkDayControl />
-        </div>
         <main className="app-shell__content">
           <Outlet />
         </main>
@@ -142,6 +174,12 @@ export function AppLayout() {
           unreadMessageCount={user ? unreadMessageCount : 0}
         />
       </div>
+
+      {workDayNotice && workDayActive === false ? (
+        <aside className="work-day-required-notice" role="alert" aria-live="assertive">
+          קודם עליך להתחיל עבודה
+        </aside>
+      ) : null}
 
       {newMessageCount > 0 && location.pathname !== "/messages" ? (
         <aside className="message-notice" role="status" aria-live="polite">

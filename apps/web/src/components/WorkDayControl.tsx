@@ -17,6 +17,10 @@ import {
 
 type WorkDayControlStatus = "loading" | "ready" | "submitting" | "error";
 
+interface WorkDayControlProps {
+  onActiveChange?: (active: boolean) => void;
+}
+
 function getCurrentLocation(): Promise<AttendanceLocationInput | null> {
   if (typeof navigator === "undefined" || !navigator.geolocation) {
     return Promise.resolve(null);
@@ -36,7 +40,7 @@ function getCurrentLocation(): Promise<AttendanceLocationInput | null> {
   });
 }
 
-export function WorkDayControl() {
+export function WorkDayControl({ onActiveChange }: WorkDayControlProps) {
   const { accessToken, user } = useAuth();
   const { locale, t } = useTranslation();
   const [status, setStatus] = useState<WorkDayControlStatus>("loading");
@@ -54,13 +58,15 @@ export function WorkDayControl() {
     setStatus("loading");
     setError(null);
     try {
-      setWorkDay(await getCurrentWorkDayRequest(user.organization.id, accessToken));
+      const nextWorkDay = await getCurrentWorkDayRequest(user.organization.id, accessToken);
+      setWorkDay(nextWorkDay);
+      onActiveChange?.(nextWorkDay?.status === "ACTIVE");
       setStatus("ready");
     } catch (cause) {
       setError(getApiErrorMessage(cause, t("workDay", "loadError")));
       setStatus("error");
     }
-  }, [accessToken, canRead, t, user]);
+  }, [accessToken, canRead, onActiveChange, t, user]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0);
@@ -117,7 +123,9 @@ export function WorkDayControl() {
       const nextWorkDay = workDay
         ? await endWorkDayRequest(user.organization.id, accessToken, location)
         : await startWorkDayRequest(user.organization.id, accessToken, location);
-      setWorkDay(nextWorkDay.status === "ACTIVE" ? nextWorkDay : null);
+      const activeWorkDay = nextWorkDay.status === "ACTIVE" ? nextWorkDay : null;
+      setWorkDay(activeWorkDay);
+      onActiveChange?.(activeWorkDay !== null);
       setStatus("ready");
     } catch (cause) {
       setError(getApiErrorMessage(cause, t("workDay", "actionError")));
@@ -129,7 +137,11 @@ export function WorkDayControl() {
   const busy = status === "loading" || status === "submitting";
 
   return (
-    <section className="work-day-control" aria-label={t("workDay", "title")}>
+    <section
+      className="work-day-control work-day-control--header"
+      data-allow-before-workday="true"
+      aria-label={t("workDay", "title")}
+    >
       <div className="work-day-control__icon" aria-hidden="true">
         {shouldCaptureLocation ? <MapPin size={20} /> : <Clock3 size={20} />}
       </div>
@@ -158,6 +170,7 @@ export function WorkDayControl() {
       </div>
       <Button
         type="button"
+        className={`work-day-control__button${isActive ? " work-day-control__button--active" : ""}`}
         variant={isActive ? "secondary" : "primary"}
         disabled={busy}
         onClick={() => void handleAction()}
