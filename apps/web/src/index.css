@@ -663,7 +663,7 @@ a {
   color: var(--amarok-text-muted);
 }
 
- .messages-page {
+.messages-page {
   min-width: 0;
   max-width: 100%;
   overflow-x: hidden;
@@ -1055,8 +1055,7 @@ a {
   .messages-page__message-row {
     max-width: 92%;
   }
-
- }
+}
 
 .customers-table-wrap {
   overflow-x: auto;
