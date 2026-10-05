@@ -80,30 +80,41 @@ export function OfficeDashboardPage() {
     async function load(): Promise<void> {
       if (!user || !accessToken) return;
       setStatus("loading");
-      try {
-        const [calls, taskResponse, cases, messages, nextInspiration] = await Promise.all([
+      let hasLoadError = false;
+      async function safe<T>(promise: Promise<T>, fallback: T): Promise<T> {
+        try {
+          return await promise;
+        } catch {
+          hasLoadError = true;
+          return fallback;
+        }
+      }
+      const [calls, taskResponse, cases, messages, nextInspiration] = await Promise.all([
+        safe(
           canReadServiceCalls
             ? fetchAllServiceCalls(user.organization.id, accessToken)
             : Promise.resolve([]),
-          listTasksRequest(user.organization.id, accessToken),
+          [],
+        ),
+        safe(listTasksRequest(user.organization.id, accessToken), { data: [] }),
+        safe(
           canReadDocumentCases
             ? listDocumentCasesRequest(user.organization.id, accessToken)
             : Promise.resolve([]),
-          getUnreadMessageCountRequest(user.organization.id, accessToken).catch(() => 0),
-          getCurrentInspirationRequest(user.organization.id, accessToken).catch(
-            (): InspirationCurrent => ({ kind: "none" }),
-          ),
-        ]);
-        if (cancelled) return;
-        setCompletedCalls(calls.filter(isClosedServiceCall).length);
-        setTasks(taskResponse.data ?? []);
-        setDocumentCases(cases);
-        setUnreadMessages(messages);
-        setInspiration(nextInspiration);
-        setStatus("ready");
-      } catch {
-        if (!cancelled) setStatus("error");
-      }
+          [],
+        ),
+        safe(getUnreadMessageCountRequest(user.organization.id, accessToken), 0),
+        safe(getCurrentInspirationRequest(user.organization.id, accessToken), {
+          kind: "none",
+        } satisfies InspirationCurrent),
+      ]);
+      if (cancelled) return;
+      setCompletedCalls(calls.filter(isClosedServiceCall).length);
+      setTasks(taskResponse.data ?? []);
+      setDocumentCases(cases);
+      setUnreadMessages(messages);
+      setInspiration(nextInspiration);
+      setStatus(hasLoadError ? "error" : "ready");
     }
     void load();
     const refreshInterval = window.setInterval(() => {
