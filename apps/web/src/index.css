@@ -801,8 +801,8 @@ a {
   min-height: 4.3rem;
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--ds-color-chat-sand);
-  background: var(--ds-color-chat-charcoal);
-  color: var(--ds-color-chat-surface);
+  background: var(--ds-color-chat-surface);
+  color: var(--ds-color-chat-charcoal);
 }
 
 .messages-page__conversation-header h3,
@@ -812,7 +812,7 @@ a {
 
 .messages-page__conversation-header p {
   margin-top: 0.15rem;
-  color: color-mix(in srgb, var(--ds-color-chat-surface) 68%, transparent);
+  color: var(--ds-color-chat-recipient);
   font-size: 0.85rem;
 }
 
@@ -854,7 +854,7 @@ a {
   width: min(74%, 32rem);
   max-height: 14rem;
   object-fit: contain;
-  opacity: 0.08;
+  opacity: 0.1;
   filter: grayscale(1) sepia(0.35) saturate(0.65);
   pointer-events: none;
   transform: translate(-50%, -50%);
@@ -864,7 +864,7 @@ a {
   position: absolute;
   z-index: 0;
   color: var(--ds-color-chat-charcoal);
-  opacity: 0.12;
+  opacity: 0.14;
   pointer-events: none;
 }
 
@@ -947,11 +947,11 @@ a {
 .messages-page__message {
   max-width: 100%;
   padding: 0.7rem 0.85rem;
-  border: 1px solid var(--ds-color-primary);
+  border: 1px solid var(--ds-color-chat-sand);
   border-radius: 1rem 1rem 1rem 0.25rem;
-  background: var(--ds-color-chat-charcoal);
+  background: var(--ds-color-chat-surface);
   box-shadow: 0 0.25rem 0.8rem color-mix(in srgb, var(--ds-color-chat-charcoal) 7%, transparent);
-  color: var(--ds-color-primary);
+  color: var(--ds-color-chat-charcoal);
 }
 
 .messages-page__message--mine {
@@ -973,7 +973,7 @@ a {
 .messages-page__message time {
   display: block;
   margin-top: 0.35rem;
-  color: var(--ds-color-primary);
+  color: var(--ds-color-chat-recipient);
   font-size: 0.75rem;
   opacity: 0.72;
 }
@@ -993,6 +993,7 @@ a {
 
 .messages-page__composer textarea {
   width: 100%;
+  min-width: 0;
   font-size: 16px;
   min-height: 3rem;
   max-height: 6rem;
