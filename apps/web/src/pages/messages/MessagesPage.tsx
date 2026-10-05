@@ -136,14 +136,10 @@ export function MessagesPage() {
     if (!composerFocused || !window.matchMedia("(max-width: 700px)").matches) return;
 
     const { body, documentElement } = document;
-    const scrollY = window.scrollY;
     const bodyStyles = {
-      position: body.style.position,
-      top: body.style.top,
-      insetInlineStart: body.style.insetInlineStart,
-      width: body.style.width,
       overflow: body.style.overflow,
       overflowX: body.style.overflowX,
+      overscrollBehavior: body.style.overscrollBehavior,
       touchAction: body.style.touchAction,
     };
     const rootStyles = {
@@ -156,12 +152,9 @@ export function MessagesPage() {
     body.classList.add("messages-page-scroll-locked");
     documentElement.classList.add("messages-page-scroll-locked");
     Object.assign(body.style, {
-      position: "fixed",
-      top: `-${scrollY}px`,
-      insetInlineStart: "0",
-      width: "100%",
       overflow: "hidden",
       overflowX: "hidden",
+      overscrollBehavior: "none",
       touchAction: "none",
     });
     Object.assign(documentElement.style, {
@@ -176,7 +169,6 @@ export function MessagesPage() {
       documentElement.classList.remove("messages-page-scroll-locked");
       Object.assign(body.style, bodyStyles);
       Object.assign(documentElement.style, rootStyles);
-      window.scrollTo(0, scrollY);
     };
   }, [composerFocused]);
 
