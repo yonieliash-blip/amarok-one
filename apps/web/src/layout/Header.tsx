@@ -9,6 +9,7 @@ import { BrandLogo } from "../components/BrandLogo";
 import { UserMenu } from "./UserMenu";
 import { useAuth } from "../auth/useAuth";
 import { useTranslation } from "../i18n/useTranslation";
+import { WorkDayControl } from "../components/WorkDayControl";
 
 const PRIMARY_NAV_ITEM_IDS = new Set([
   "service-calls",
@@ -29,6 +30,7 @@ interface HeaderProps {
   onMenuToggle: () => void;
   menuOpen?: boolean;
   unreadMessageCount?: number;
+  onWorkDayStatusChange?: (active: boolean) => void;
 }
 
 export function Header({
@@ -36,6 +38,7 @@ export function Header({
   onMenuToggle,
   menuOpen = false,
   unreadMessageCount = 0,
+  onWorkDayStatusChange,
 }: HeaderProps) {
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -109,6 +112,9 @@ export function Header({
       </div>
 
       <div className="app-header__end">
+        <div className="app-header__work-day">
+          <WorkDayControl onActiveChange={onWorkDayStatusChange} />
+        </div>
         <UserMenu />
       </div>
     </header>
