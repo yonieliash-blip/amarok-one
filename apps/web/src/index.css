@@ -664,6 +664,7 @@ a {
   height: min(42rem, calc(100dvh - 12rem));
   min-height: 34rem;
   overflow: hidden;
+  overscroll-behavior: contain;
   border: 1px solid var(--ds-color-chat-sand);
   border-radius: var(--ds-radius-xl);
   background: var(--ds-color-chat-surface);
@@ -774,6 +775,7 @@ a {
   grid-template-rows: auto minmax(0, 1fr) auto;
   min-width: 0;
   min-height: 0;
+  overflow: hidden;
 }
 
 .messages-page__conversation-header {
@@ -805,6 +807,9 @@ a {
   gap: 0.7rem;
   padding: 1rem;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   isolation: isolate;
   background: var(--ds-color-chat-canvas);
 }
@@ -822,9 +827,59 @@ a {
   transform: translate(-50%, -50%);
 }
 
-.messages-page__thread > :not(.messages-page__watermark) {
+.messages-page__thread > :not(.messages-page__watermark):not(.messages-page__decoration) {
   position: relative;
   z-index: 1;
+}
+
+.messages-page__decoration {
+  position: absolute;
+  z-index: 0;
+  color: var(--ds-color-chat-charcoal);
+  opacity: 0.065;
+  pointer-events: none;
+}
+
+.messages-page__decoration svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  stroke-width: 1.2;
+}
+
+.messages-page__decoration--tractor {
+  inset: 8% auto auto 7%;
+  width: 5.75rem;
+  height: 5.75rem;
+  transform: rotate(-7deg);
+}
+
+.messages-page__decoration--excavator {
+  inset: auto 7% 10% auto;
+  width: 6rem;
+  height: 6rem;
+  transform: rotate(5deg);
+}
+
+.messages-page__decoration--forklift {
+  inset: 42% 6% auto auto;
+  width: 4.75rem;
+  height: 4.75rem;
+  transform: rotate(-4deg);
+}
+
+.messages-page__decoration--wrench {
+  inset: auto auto 10% 11%;
+  width: 4.25rem;
+  height: 4.25rem;
+  transform: rotate(-28deg);
+}
+
+.messages-page__decoration--gear {
+  inset: 48% auto auto 13%;
+  width: 3.75rem;
+  height: 3.75rem;
+  transform: rotate(14deg);
 }
 
 .messages-page__message-row {
@@ -864,16 +919,18 @@ a {
 .messages-page__message {
   max-width: 100%;
   padding: 0.7rem 0.85rem;
-  border: 1px solid var(--ds-color-chat-sand);
+  border: 1px solid var(--ds-color-primary);
   border-radius: 1rem 1rem 1rem 0.25rem;
-  background: var(--ds-color-chat-surface);
+  background: var(--ds-color-chat-charcoal);
   box-shadow: 0 0.25rem 0.8rem color-mix(in srgb, var(--ds-color-chat-charcoal) 7%, transparent);
+  color: var(--ds-color-primary);
 }
 
 .messages-page__message--mine {
-  border-color: var(--ds-color-primary);
+  border-color: var(--ds-color-chat-charcoal);
   border-radius: 1rem 1rem 0.25rem 1rem;
-  background: color-mix(in srgb, var(--ds-color-primary) 17%, var(--ds-color-chat-surface));
+  background: var(--ds-color-primary);
+  color: var(--ds-color-chat-charcoal);
 }
 
 .messages-page__message p,
@@ -888,8 +945,13 @@ a {
 .messages-page__message time {
   display: block;
   margin-top: 0.35rem;
-  color: var(--ds-color-chat-recipient);
+  color: var(--ds-color-primary);
   font-size: 0.75rem;
+  opacity: 0.72;
+}
+
+.messages-page__message--mine time {
+  color: var(--ds-color-chat-charcoal);
 }
 
 .messages-page__composer {
@@ -903,7 +965,9 @@ a {
 
 .messages-page__composer textarea {
   width: 100%;
-  resize: vertical;
+  min-height: 3rem;
+  max-height: 6rem;
+  resize: none;
   padding: 0.65rem 0.75rem;
   border: 1px solid var(--ds-color-chat-sand);
   border-radius: var(--amarok-radius);
@@ -925,28 +989,48 @@ a {
 @media (max-width: 700px) {
   .messages-page__layout {
     grid-template-columns: 1fr;
-    height: auto;
+    grid-template-rows: minmax(8rem, 13rem) minmax(0, 1fr);
+    height: calc(100dvh - 8rem);
     min-height: 0;
   }
 
   .messages-page__people {
     border-inline-end: 0;
     border-bottom: 1px solid var(--ds-color-chat-sand);
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    min-height: 0;
+    overflow: hidden;
   }
 
   .messages-page__member-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    max-height: 13rem;
+    min-height: 0;
+    max-height: none;
     overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .messages-page__conversation {
-    min-height: 28rem;
-    height: min(38rem, calc(100dvh - 9rem));
+    min-height: 0;
+    height: auto;
+  }
+
+  .messages-page__layout--composing {
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .messages-page__layout--composing .messages-page__people {
+    display: none;
   }
 
   .messages-page__message-row {
     max-width: 92%;
+  }
+
+  .messages-page__decoration--forklift,
+  .messages-page__decoration--gear {
+    display: none;
   }
 }
 
