@@ -1,4 +1,8 @@
-import { hasPermission, permissionSlugsFromCarrier, PERMISSIONS } from "@amarok-one/permissions";
+import {
+  hasPermission,
+  permissionSlugsFromCarrier,
+  PERMISSIONS,
+} from "@amarok-one/permissions";
 import { Button } from "@amarok-one/ui";
 import { Clock3, MapPin } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -32,7 +36,9 @@ function getCurrentLocation(): Promise<AttendanceLocationInput | null> {
         resolve({
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
-          accuracy: Number.isFinite(position.coords.accuracy) ? position.coords.accuracy : null,
+          accuracy: Number.isFinite(position.coords.accuracy)
+            ? position.coords.accuracy
+            : null,
         }),
       () => resolve(null),
       { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
@@ -49,8 +55,14 @@ export function WorkDayControl({ onActiveChange }: WorkDayControlProps) {
   const lastInteractionAt = useRef(0);
   const lastActivitySampleAt = useRef(0);
 
-  const canRead = hasPermission(permissionSlugsFromCarrier(user), PERMISSIONS.MY_ATTENDANCE_READ);
-  const canWrite = hasPermission(permissionSlugsFromCarrier(user), PERMISSIONS.MY_ATTENDANCE_WRITE);
+  const canRead = hasPermission(
+    permissionSlugsFromCarrier(user),
+    PERMISSIONS.MY_ATTENDANCE_READ,
+  );
+  const canWrite = hasPermission(
+    permissionSlugsFromCarrier(user),
+    PERMISSIONS.MY_ATTENDANCE_WRITE,
+  );
   const shouldCaptureLocation = user?.role.slug === "technician";
 
   const load = useCallback(async (): Promise<void> => {
@@ -58,7 +70,10 @@ export function WorkDayControl({ onActiveChange }: WorkDayControlProps) {
     setStatus("loading");
     setError(null);
     try {
-      const nextWorkDay = await getCurrentWorkDayRequest(user.organization.id, accessToken);
+      const nextWorkDay = await getCurrentWorkDayRequest(
+        user.organization.id,
+        accessToken,
+      );
       setWorkDay(nextWorkDay);
       onActiveChange?.(nextWorkDay?.status === "ACTIVE");
       setStatus("ready");
@@ -87,7 +102,10 @@ export function WorkDayControl({ onActiveChange }: WorkDayControlProps) {
         return;
       }
       lastActivitySampleAt.current = now;
-      void recordWorkDayActivityRequest(user.organization.id, accessToken).catch(() => {
+      void recordWorkDayActivityRequest(
+        user.organization.id,
+        accessToken,
+      ).catch(() => {
         lastActivitySampleAt.current = 0;
       });
     };
@@ -119,11 +137,18 @@ export function WorkDayControl({ onActiveChange }: WorkDayControlProps) {
     setStatus("submitting");
     setError(null);
     try {
-      const location = shouldCaptureLocation ? await getCurrentLocation() : null;
+      const location = shouldCaptureLocation
+        ? await getCurrentLocation()
+        : null;
       const nextWorkDay = workDay
         ? await endWorkDayRequest(user.organization.id, accessToken, location)
-        : await startWorkDayRequest(user.organization.id, accessToken, location);
-      const activeWorkDay = nextWorkDay.status === "ACTIVE" ? nextWorkDay : null;
+        : await startWorkDayRequest(
+            user.organization.id,
+            accessToken,
+            location,
+          );
+      const activeWorkDay =
+        nextWorkDay.status === "ACTIVE" ? nextWorkDay : null;
       setWorkDay(activeWorkDay);
       onActiveChange?.(activeWorkDay !== null);
       setStatus("ready");
@@ -159,7 +184,9 @@ export function WorkDayControl({ onActiveChange }: WorkDayControlProps) {
             : t("workDay", "notStarted")}
         </p>
         {shouldCaptureLocation ? (
-          <p className="work-day-control__hint">{t("workDay", "locationHint")}</p>
+          <p className="work-day-control__hint">
+            {t("workDay", "locationHint")}
+          </p>
         ) : null}
         <p className="work-day-control__hint">{t("workDay", "activityHint")}</p>
         {error ? (
