@@ -816,37 +816,48 @@ a {
   font-size: 0.85rem;
 }
 
+.messages-page__thread-shell {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--ds-color-chat-canvas);
+}
+
+.messages-page__thread-background {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .messages-page__thread {
   position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
+  height: 100%;
   padding: 1rem;
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
-  isolation: isolate;
-  background: var(--ds-color-chat-canvas);
+  background: transparent;
+  scrollbar-gutter: stable;
 }
 
 .messages-page__watermark {
   position: absolute;
-  z-index: 0;
   inset: 50% auto auto 50%;
   width: min(74%, 32rem);
   max-height: 14rem;
   object-fit: contain;
-  opacity: 0.04;
+  opacity: 0.08;
   filter: grayscale(1) sepia(0.35) saturate(0.65);
   pointer-events: none;
   transform: translate(-50%, -50%);
-}
-
-.messages-page__thread > :not(.messages-page__watermark):not(.messages-page__decoration) {
-  position: relative;
-  z-index: 1;
 }
 
 .messages-page__decoration {
@@ -1032,29 +1043,6 @@ a {
   .messages-page__conversation {
     min-height: 0;
     height: auto;
-  }
-
-  .messages-page__layout--composing {
-    position: relative;
-    inset: auto;
-    width: 100%;
-    max-width: 100%;
-    z-index: auto;
-    grid-template-rows: minmax(0, 1fr);
-    height: calc(100dvh - 8rem);
-    max-height: calc(100dvh - 8rem);
-    border-radius: 0;
-    overscroll-behavior-y: contain;
-    touch-action: pan-y;
-  }
-
-  .messages-page__layout--composing .messages-page__people {
-    display: none;
-  }
-
-  .messages-page__layout--composing .messages-page__thread {
-    overscroll-behavior-y: contain;
-    touch-action: pan-y;
   }
 
   .messages-page__message-row {
