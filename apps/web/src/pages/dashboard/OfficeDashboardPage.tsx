@@ -106,8 +106,17 @@ export function OfficeDashboardPage() {
       }
     }
     void load();
+    const refreshInterval = window.setInterval(() => {
+      if (document.visibilityState === "visible") void load();
+    }, 15_000);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") void load();
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
       cancelled = true;
+      window.clearInterval(refreshInterval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [accessToken, canReadDocumentCases, canReadServiceCalls, user]);
 
