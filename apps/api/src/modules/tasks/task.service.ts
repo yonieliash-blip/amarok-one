@@ -69,10 +69,7 @@ function toTaskDto(row: TaskRow): Task {
   };
 }
 
-async function resolveAssigneeUserId(
-  organizationId: string,
-  candidateId: string,
-): Promise<string> {
+async function resolveAssigneeUserId(organizationId: string, candidateId: string): Promise<string> {
   const member = await prisma.organizationMember.findFirst({
     where: {
       organizationId,
