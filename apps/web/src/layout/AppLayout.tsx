@@ -1,4 +1,12 @@
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction, type MouseEvent, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type KeyboardEvent,
+  type MouseEvent,
+  type SetStateAction,
+} from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { X } from "lucide-react";
 import { Header } from "./Header";
@@ -133,7 +141,11 @@ export function AppLayout() {
   }, [accessToken, location.pathname, user]);
 
   return (
-    <div className="app-shell" onClickCapture={handleShellClickCapture} onKeyDownCapture={handleShellKeyDownCapture}>
+    <div
+      className="app-shell"
+      onClickCapture={handleShellClickCapture}
+      onKeyDownCapture={handleShellKeyDownCapture}
+    >
       <aside
         id="app-sidebar"
         className={`sidebar${isMobileNav && sidebarOpen ? " sidebar--open" : ""}${isMobileNav ? " sidebar--drawer" : " sidebar--docked"}`}
