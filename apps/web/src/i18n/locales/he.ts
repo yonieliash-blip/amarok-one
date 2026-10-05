@@ -366,7 +366,7 @@ export const he: TranslationMessages = {
     title: "יום עבודה",
     notStarted: "טרם התחלת יום עבודה",
     activeSince: "יום העבודה התחיל ב־{{time}}",
-    start: "התחל עבודה",
+    start: "תחילת עבודה",
     end: "סיים עבודה",
     updating: "מעדכן…",
     loadError: "לא ניתן לטעון את מצב יום העבודה.",

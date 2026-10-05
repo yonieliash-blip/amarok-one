@@ -133,13 +133,14 @@
 }
 
 .work-day-control__button {
-  min-height: 2.35rem;
-  padding-inline: var(--ds-space-3);
-  border: 0;
-  border-radius: var(--ds-radius-md);
+  min-height: 2.75rem;
+  padding: var(--ds-space-2) var(--ds-space-3);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: var(--ds-radius-lg);
   color: #fff;
   font-size: var(--ds-text-body-sm-size);
   font-weight: var(--ds-font-weight-bold);
+  white-space: nowrap;
 }
 
 .work-day-control__button:not(.work-day-control__button--active) {
