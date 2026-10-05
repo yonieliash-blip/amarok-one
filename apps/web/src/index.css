@@ -39,6 +39,11 @@ body {
   overscroll-behavior-x: none;
 }
 
+html.messages-page-scroll-locked,
+body.messages-page-scroll-locked {
+  overscroll-behavior: none;
+}
+
 #root {
   width: 100%;
   max-width: 100%;
@@ -1024,10 +1029,16 @@ a {
     height: 100dvh;
     border-radius: 0;
     overscroll-behavior-y: contain;
+    touch-action: none;
   }
 
   .messages-page__layout--composing .messages-page__people {
     display: none;
+  }
+
+  .messages-page__layout--composing .messages-page__thread {
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
   }
 
   .messages-page__message-row {
