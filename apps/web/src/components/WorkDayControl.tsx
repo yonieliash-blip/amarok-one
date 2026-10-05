@@ -49,7 +49,10 @@ export function WorkDayControl({ onActiveChange }: WorkDayControlProps) {
   const lastInteractionAt = useRef(0);
   const lastActivitySampleAt = useRef(0);
 
-  const canRead = hasPermission(permissionSlugsFromCarrier(user), PERMISSIONS.MY_ATTENDANCE_READ);
+  const canRead = hasPermission(
+    permissionSlugsFromCarrier(user),
+    PERMISSIONS.MY_ATTENDANCE_READ,
+  );
   const canWrite = hasPermission(permissionSlugsFromCarrier(user), PERMISSIONS.MY_ATTENDANCE_WRITE);
   const shouldCaptureLocation = user?.role.slug === "technician";
 
@@ -137,7 +140,11 @@ export function WorkDayControl({ onActiveChange }: WorkDayControlProps) {
   const busy = status === "loading" || status === "submitting";
 
   return (
-    <section className="work-day-control work-day-control--header" data-allow-before-workday="true" aria-label={t("workDay", "title")}>
+    <section
+      className="work-day-control work-day-control--header"
+      data-allow-before-workday="true"
+      aria-label={t("workDay", "title")}
+    >
       <div className="work-day-control__icon" aria-hidden="true">
         {shouldCaptureLocation ? <MapPin size={20} /> : <Clock3 size={20} />}
       </div>
