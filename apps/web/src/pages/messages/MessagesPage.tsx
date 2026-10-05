@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DirectConversationSummary, DirectMessageMember } from "@amarok-one/types";
 import { Button } from "@amarok-one/ui";
-import { Search } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { Construction, Forklift, Search, Settings2, Tractor, Wrench } from "lucide-react";
 import amarokLogo from "../../assets/amarok-service-platform-logo.png";
 import { useAuth } from "../../auth/useAuth";
 import { ErrorState } from "../../components/ErrorState";
@@ -18,6 +19,19 @@ import {
 } from "../../lib/messages-api";
 
 type PageStatus = "loading" | "ready" | "error";
+
+interface ChatDecoration {
+  Icon: LucideIcon;
+  position: string;
+}
+
+const CHAT_DECORATIONS: ChatDecoration[] = [
+  { Icon: Tractor, position: "tractor" },
+  { Icon: Construction, position: "excavator" },
+  { Icon: Forklift, position: "forklift" },
+  { Icon: Wrench, position: "wrench" },
+  { Icon: Settings2, position: "gear" },
+];
 
 function initial(name: string): string {
   return name.trim().slice(0, 1).toLocaleUpperCase("he");
@@ -37,6 +51,7 @@ export function MessagesPage() {
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [composerFocused, setComposerFocused] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const threadRef = useRef<HTMLDivElement | null>(null);
 
@@ -186,7 +201,9 @@ export function MessagesPage() {
         </div>
       </header>
       {error ? <p className="form-error">{error}</p> : null}
-      <div className="messages-page__layout">
+      <div
+        className={`messages-page__layout${composerFocused ? " messages-page__layout--composing" : ""}`}
+      >
         <aside className="messages-page__people" aria-label={t("messages", "employees")}>
           <label className="messages-page__search">
             <Search size={18} aria-hidden="true" />
@@ -255,6 +272,15 @@ export function MessagesPage() {
                   alt=""
                   aria-hidden="true"
                 />
+                {CHAT_DECORATIONS.map(({ Icon, position }) => (
+                  <span
+                    key={position}
+                    className={`messages-page__decoration messages-page__decoration--${position}`}
+                    aria-hidden="true"
+                  >
+                    <Icon />
+                  </span>
+                ))}
                 {messages.length ? (
                   messages.map((message) => {
                     const mine = message.senderId === user.id;
@@ -300,6 +326,8 @@ export function MessagesPage() {
                   value={draft}
                   placeholder={t("messages", "writeMessage")}
                   onChange={(event) => setDraft(event.target.value)}
+                  onFocus={() => setComposerFocused(true)}
+                  onBlur={() => setComposerFocused(false)}
                   maxLength={2000}
                 />
                 <Button type="submit" disabled={sending || !draft.trim()}>
