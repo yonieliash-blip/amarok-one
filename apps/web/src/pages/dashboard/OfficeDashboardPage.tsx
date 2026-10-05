@@ -80,30 +80,35 @@ export function OfficeDashboardPage() {
     async function load(): Promise<void> {
       if (!user || !accessToken) return;
       setStatus("loading");
-      try {
-        const [calls, taskResponse, cases, messages, nextInspiration] = await Promise.all([
-          canReadServiceCalls
-            ? fetchAllServiceCalls(user.organization.id, accessToken)
-            : Promise.resolve([]),
-          listTasksRequest(user.organization.id, accessToken),
-          canReadDocumentCases
-            ? listDocumentCasesRequest(user.organization.id, accessToken)
-            : Promise.resolve([]),
-          getUnreadMessageCountRequest(user.organization.id, accessToken).catch(() => 0),
-          getCurrentInspirationRequest(user.organization.id, accessToken).catch(
-            (): InspirationCurrent => ({ kind: "none" }),
-          ),
-        ]);
-        if (cancelled) return;
-        setCompletedCalls(calls.filter(isClosedServiceCall).length);
-        setTasks(taskResponse.data ?? []);
-        setDocumentCases(cases);
-        setUnreadMessages(messages);
-        setInspiration(nextInspiration);
-        setStatus("ready");
-      } catch {
-        if (!cancelled) setStatus("error");
+      const results = await Promise.allSettled([
+        canReadServiceCalls
+          ? fetchAllServiceCalls(user.organization.id, accessToken)
+          : Promise.resolve([]),
+        listTasksRequest(user.organization.id, accessToken),
+        canReadDocumentCases
+          ? listDocumentCasesRequest(user.organization.id, accessToken)
+          : Promise.resolve([]),
+        getUnreadMessageCountRequest(user.organization.id, accessToken),
+        getCurrentInspirationRequest(user.organization.id, accessToken),
+      ]);
+      if (cancelled) return;
+      const [callsResult, tasksResult, casesResult, messagesResult, inspirationResult] = results;
+      if (callsResult.status === "fulfilled") {
+        setCompletedCalls(callsResult.value.filter(isClosedServiceCall).length);
       }
+      if (tasksResult.status === "fulfilled") {
+        setTasks(tasksResult.value.data ?? []);
+      }
+      if (casesResult.status === "fulfilled") {
+        setDocumentCases(casesResult.value);
+      }
+      if (messagesResult.status === "fulfilled") {
+        setUnreadMessages(messagesResult.value);
+      }
+      if (inspirationResult.status === "fulfilled") {
+        setInspiration(inspirationResult.value);
+      }
+      setStatus(results.some((result) => result.status === "rejected") ? "error" : "ready");
     }
     void load();
     const refreshInterval = window.setInterval(() => {
