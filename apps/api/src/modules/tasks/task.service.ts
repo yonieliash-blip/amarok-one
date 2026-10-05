@@ -69,18 +69,19 @@ function toTaskDto(row: TaskRow): Task {
   };
 }
 
-async function assertAssignee(organizationId: string, userId: string): Promise<void> {
+async function resolveAssigneeUserId(organizationId: string, candidateId: string): Promise<string> {
   const member = await prisma.organizationMember.findFirst({
     where: {
       organizationId,
-      userId,
+      OR: [{ userId: candidateId }, { id: candidateId }],
       deletedAt: null,
       status: "ACTIVE",
       user: { deletedAt: null, isActive: true },
     },
-    select: { id: true },
+    select: { userId: true },
   });
-  if (!member) throw notFound("Active organization member", userId);
+  if (!member) throw notFound("Active organization member", candidateId);
+  return member.userId;
 }
 
 export async function listTaskAssignees(organizationId: string) {
@@ -129,13 +130,13 @@ export async function createTask(
   input: CreateTaskInput,
 ): Promise<Task> {
   await assertOrganizationExists(organizationId);
-  await assertAssignee(organizationId, input.assignedToId);
+  const assignedToId = await resolveAssigneeUserId(organizationId, input.assignedToId);
   const task = await prisma.task.create({
     data: {
       organizationId,
       title: input.title.trim(),
       description: input.description?.trim() || null,
-      assignedToId: input.assignedToId,
+      assignedToId,
       createdById: actorId,
       priority: priorityToModel[input.priority],
       dueAt: input.dueAt ? new Date(input.dueAt) : null,
@@ -177,8 +178,9 @@ export async function updateTask(input: {
   ) {
     throw forbidden("Only a task manager may change task details");
   }
-  if (input.values.assignedToId)
-    await assertAssignee(input.organizationId, input.values.assignedToId);
+  const assignedToId = input.values.assignedToId
+    ? await resolveAssigneeUserId(input.organizationId, input.values.assignedToId)
+    : undefined;
 
   const nextStatus = input.values.status ? statusToModel[input.values.status] : existing.status;
   const isCompleting = nextStatus === "COMPLETED" && existing.status !== "COMPLETED";
@@ -191,7 +193,7 @@ export async function updateTask(input: {
         input.values.description === undefined
           ? undefined
           : input.values.description?.trim() || null,
-      assignedToId: input.values.assignedToId,
+      assignedToId,
       priority: input.values.priority ? priorityToModel[input.values.priority] : undefined,
       dueAt:
         input.values.dueAt === undefined

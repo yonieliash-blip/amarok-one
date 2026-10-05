@@ -143,11 +143,13 @@ export function MessagesPage() {
       insetInlineStart: body.style.insetInlineStart,
       width: body.style.width,
       overflow: body.style.overflow,
+      overflowX: body.style.overflowX,
       touchAction: body.style.touchAction,
     };
     const rootStyles = {
       overflow: documentElement.style.overflow,
       overscrollBehavior: documentElement.style.overscrollBehavior,
+      overflowX: documentElement.style.overflowX,
       touchAction: documentElement.style.touchAction,
     };
 
@@ -159,11 +161,13 @@ export function MessagesPage() {
       insetInlineStart: "0",
       width: "100%",
       overflow: "hidden",
+      overflowX: "hidden",
       touchAction: "none",
     });
     Object.assign(documentElement.style, {
       overflow: "hidden",
       overscrollBehavior: "none",
+      overflowX: "hidden",
       touchAction: "none",
     });
 

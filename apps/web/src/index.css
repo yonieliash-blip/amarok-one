@@ -663,13 +663,23 @@ a {
   color: var(--amarok-text-muted);
 }
 
+.messages-page {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 .messages-page__layout {
   display: grid;
   grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr);
   height: min(42rem, calc(100dvh - 12rem));
   min-height: 34rem;
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
+  overflow-x: hidden;
   overscroll-behavior: contain;
+  touch-action: pan-y;
   border: 1px solid var(--ds-color-chat-sand);
   border-radius: var(--ds-radius-xl);
   background: var(--ds-color-chat-surface);
@@ -812,6 +822,7 @@ a {
   gap: 0.7rem;
   padding: 1rem;
   overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
@@ -826,7 +837,7 @@ a {
   width: min(74%, 32rem);
   max-height: 14rem;
   object-fit: contain;
-  opacity: 0.1;
+  opacity: 0.04;
   filter: grayscale(1) sepia(0.35) saturate(0.65);
   pointer-events: none;
   transform: translate(-50%, -50%);
@@ -841,7 +852,7 @@ a {
   position: absolute;
   z-index: 0;
   color: var(--ds-color-chat-charcoal);
-  opacity: 0.065;
+  opacity: 0.12;
   pointer-events: none;
 }
 
@@ -1043,11 +1054,6 @@ a {
 
   .messages-page__message-row {
     max-width: 92%;
-  }
-
-  .messages-page__decoration--forklift,
-  .messages-page__decoration--gear {
-    display: none;
   }
 }
 
