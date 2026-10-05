@@ -121,6 +121,7 @@ describe("navigation generation", () => {
         "completedServiceCalls",
         "chat",
         "tasks",
+        "documentCases",
         "greenInvoiceQueries",
       ]),
     );

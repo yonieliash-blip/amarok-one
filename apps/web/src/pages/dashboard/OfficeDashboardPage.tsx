@@ -4,15 +4,18 @@ import type { InspirationCurrent } from "@amarok-one/types";
 import {
   CheckCircle2,
   ClipboardCheck,
+  ChevronLeft,
   FileCheck2,
   MessageCircle,
+  Plus,
   Send,
   type LucideIcon,
 } from "lucide-react";
+import { Button } from "@amarok-one/ui";
 import { hasPermission, permissionSlugsFromCarrier, PERMISSIONS } from "@amarok-one/permissions";
 import { useAuth } from "../../auth/useAuth";
 import { LoadingState } from "../../components/LoadingState";
-import { formatNumber } from "../../i18n/format";
+import { formatDate, formatNumber } from "../../i18n/format";
 import { useTranslation } from "../../i18n/useTranslation";
 import { getCurrentInspirationRequest } from "../../lib/inspiration-api";
 import { getUnreadMessageCountRequest } from "../../lib/messages-api";
@@ -36,6 +39,20 @@ interface OfficeMetric {
   to: string;
 }
 
+const documentCaseStatusLabels: Record<string, string> = {
+  direct_invoice_draft: "טיוטת חשבונית",
+  quote_draft: "טיוטת הצעת מחיר",
+  quote_review_required: "ממתין לאישור הצעה",
+  quote_correction_required: "הצעה לתיקון",
+  quote_send_required: "הצעה לשליחה",
+  waiting_purchase_order: "ממתין להזמנת רכש",
+  invoice_draft: "טיוטת חשבונית",
+  invoice_review_required: "ממתין לאישור חשבונית",
+  invoice_correction_required: "חשבונית לתיקון",
+  invoice_send_required: "חשבונית לשליחה",
+  archived: "בארכיון",
+};
+
 function isOpenTask(status: string): boolean {
   return status !== "completed";
 }
@@ -49,7 +66,7 @@ export function OfficeDashboardPage() {
   const { t, locale } = useTranslation();
   const [status, setStatus] = useState<PageStatus>("loading");
   const [completedCalls, setCompletedCalls] = useState(0);
-  const [openTasks, setOpenTasks] = useState(0);
+  const [tasks, setTasks] = useState<Awaited<ReturnType<typeof listTasksRequest>>["data"]>([]);
   const [documentCases, setDocumentCases] = useState<DocumentCaseSummary[]>([]);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [inspiration, setInspiration] = useState<InspirationCurrent>({ kind: "none" });
@@ -79,7 +96,7 @@ export function OfficeDashboardPage() {
         ]);
         if (cancelled) return;
         setCompletedCalls(calls.filter(isClosedServiceCall).length);
-        setOpenTasks((taskResponse.data ?? []).filter((task) => isOpenTask(task.status)).length);
+        setTasks(taskResponse.data ?? []);
         setDocumentCases(cases);
         setUnreadMessages(messages);
         setInspiration(nextInspiration);
@@ -118,7 +135,7 @@ export function OfficeDashboardPage() {
         titleKey: "tasks",
         noteKey: "tasksNote",
         icon: ClipboardCheck,
-        value: openTasks,
+        value: tasks.filter((task) => isOpenTask(task.status)).length,
         to: "/tasks",
       },
       {
@@ -155,7 +172,24 @@ export function OfficeDashboardPage() {
         to: "/messages",
       },
     ],
-    [completedCalls, documentCases, openTasks, unreadMessages],
+    [completedCalls, documentCases, tasks, unreadMessages],
+  );
+
+  const recentDocumentCases = useMemo(
+    () =>
+      documentCases
+        .filter((entry) => !entry.archivedAt)
+        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+        .slice(0, 5),
+    [documentCases],
+  );
+  const recentTasks = useMemo(
+    () =>
+      tasks
+        .filter((task) => isOpenTask(task.status))
+        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+        .slice(0, 4),
+    [tasks],
   );
 
   if (!user || !accessToken || status === "loading") {
@@ -163,48 +197,161 @@ export function OfficeDashboardPage() {
   }
 
   return (
-    <div className="office-dashboard">
-      <header className="office-dashboard__hero">
-        <h2>{greeting}</h2>
-        {inspiration.text ? (
-          <p>
-            {inspiration.text}
-            {inspiration.author ? ` — ${inspiration.author}` : ""}
-          </p>
-        ) : null}
+    <div className="management-dashboard office-dashboard">
+      <header className="management-dashboard__header">
+        <div>
+          <h2 className="management-dashboard__title">{greeting}</h2>
+          {inspiration.text ? (
+            <p className="management-dashboard__subtitle">
+              {inspiration.text}
+              {inspiration.author ? ` — ${inspiration.author}` : ""}
+            </p>
+          ) : null}
+        </div>
+        <div className="management-dashboard__actions">
+          <Link to="/document-cases" className="customers-page__action-link">
+            <Button variant="primary" className="management-dashboard__new-call">
+              <Plus size={20} aria-hidden="true" />
+              {t("officeDashboard", "documentCases")}
+            </Button>
+          </Link>
+        </div>
       </header>
 
       {status === "error" ? (
-        <p className="office-dashboard__notice">{t("officeDashboard", "loadError")}</p>
+        <p className="management-dashboard__notice">{t("officeDashboard", "loadError")}</p>
       ) : null}
 
-      <section className="office-dashboard__metrics" aria-label={t("officeDashboard", "workspace")}>
+      <section
+        className="management-dashboard__metrics"
+        aria-label={t("officeDashboard", "workspace")}
+      >
         {metrics.map((metric) => {
           const Icon = metric.icon;
           return (
-            <Link key={metric.id} to={metric.to} className="office-dashboard__metric">
-              <span className="office-dashboard__metric-icon">
-                <Icon size={23} aria-hidden="true" />
-              </span>
-              <span className="office-dashboard__metric-copy">
-                <strong>{t("officeDashboard", metric.titleKey)}</strong>
-                <small>{t("officeDashboard", metric.noteKey)}</small>
-              </span>
-              <span className="office-dashboard__metric-value">
-                {formatNumber(metric.value, locale)}
-              </span>
+            <Link key={metric.id} to={metric.to} className="management-metric__link">
+              <article className={`management-metric management-metric--${metric.id}`}>
+                <div className="management-metric__icon">
+                  <Icon size={27} aria-hidden="true" />
+                </div>
+                <div>
+                  <p className="management-metric__label">
+                    {t("officeDashboard", metric.titleKey)}
+                  </p>
+                  <p className="management-metric__value">{formatNumber(metric.value, locale)}</p>
+                  <p className="management-metric__note">{t("officeDashboard", metric.noteKey)}</p>
+                </div>
+                <span className="management-metric__spark" aria-hidden="true">
+                  <i />
+                  <i />
+                  <i />
+                </span>
+              </article>
             </Link>
           );
         })}
       </section>
 
-      <section
-        className="office-dashboard__actions"
-        aria-label={t("officeDashboard", "quickActions")}
-      >
-        <Link to="/document-cases">{t("officeDashboard", "documentCases")}</Link>
-        <Link to="/tasks">{t("officeDashboard", "tasks")}</Link>
-        <Link to="/messages">{t("officeDashboard", "messages")}</Link>
+      <section className="management-dashboard__grid">
+        <article className="management-panel management-panel--calls">
+          <header className="management-panel__header">
+            <h3>{t("officeDashboard", "recentDocumentCases")}</h3>
+            <Link to="/document-cases">
+              {t("managementDashboard", "viewAll")} <ChevronLeft size={17} />
+            </Link>
+          </header>
+          {recentDocumentCases.length ? (
+            <div className="management-dashboard__table-wrap">
+              <table className="management-dashboard__table">
+                <thead>
+                  <tr>
+                    <th>{t("officeDashboard", "repairReport")}</th>
+                    <th>{t("managementDashboard", "customer")}</th>
+                    <th>{t("officeDashboard", "caseStatus")}</th>
+                    <th>{t("managementDashboard", "date")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentDocumentCases.map((documentCase) => (
+                    <tr key={documentCase.id}>
+                      <td>
+                        <Link to="/document-cases">{documentCase.repairReportNumber}</Link>
+                      </td>
+                      <td>{documentCase.customer.name}</td>
+                      <td>
+                        {documentCaseStatusLabels[documentCase.status] ?? documentCase.status}
+                      </td>
+                      <td>{formatDate(documentCase.updatedAt, locale)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="management-panel__empty">{t("officeDashboard", "noDocumentCases")}</p>
+          )}
+        </article>
+
+        <div className="management-dashboard__aside">
+          <article className="management-panel management-panel--overview">
+            <header className="management-panel__header">
+              <h3>{t("officeDashboard", "officeOverview")}</h3>
+            </header>
+            <div className="management-overview">
+              <div className="management-overview__donut">
+                <div className="management-overview__total">
+                  <strong>
+                    {formatNumber(
+                      documentCases.filter((entry) => !entry.archivedAt).length,
+                      locale,
+                    )}
+                  </strong>
+                  <span>{t("officeDashboard", "activeCases")}</span>
+                </div>
+              </div>
+              <ul className="management-overview__list">
+                {metrics.map((metric) => (
+                  <li key={metric.id} className={`management-overview__item--${metric.id}`}>
+                    <span className="management-overview__dot" aria-hidden="true" />
+                    <span>{t("officeDashboard", metric.titleKey)}</span>
+                    <strong>{formatNumber(metric.value, locale)}</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </article>
+
+          <article className="management-panel management-panel--parts">
+            <header className="management-panel__header">
+              <h3>{t("officeDashboard", "recentTasks")}</h3>
+              <Link to="/tasks">
+                {t("managementDashboard", "viewAll")} <ChevronLeft size={17} />
+              </Link>
+            </header>
+            {recentTasks.length ? (
+              <div className="management-dashboard__table-wrap">
+                <table className="management-dashboard__table management-dashboard__table--compact">
+                  <thead>
+                    <tr>
+                      <th>{t("officeDashboard", "task")}</th>
+                      <th>{t("officeDashboard", "taskStatus")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentTasks.map((task) => (
+                      <tr key={task.id}>
+                        <td>{task.title}</td>
+                        <td>{t("officeDashboard", `taskStatus_${task.status}`)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="management-panel__empty">{t("officeDashboard", "noTasks")}</p>
+            )}
+          </article>
+        </div>
       </section>
     </div>
   );
