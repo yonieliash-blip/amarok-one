@@ -1,17 +1,9 @@
 name: Deploy staging web
 
 on:
+  # Main pushes are deployed by staging-auto-deploy.yml, which updates both API and web.
+  # Keep this workflow for an explicitly requested web-only recovery or rebuild.
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - "apps/web/**"
-      - "packages/**"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "infrastructure/staging/**"
-      - ".github/workflows/deploy-staging-web.yml"
 
 permissions:
   contents: read
