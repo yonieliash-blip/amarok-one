@@ -73,7 +73,7 @@ export function UserMenu() {
   }
 
   return (
-    <div className="user-menu" ref={containerRef}>
+    <div className="user-menu" ref={containerRef} data-allow-before-workday="true">
       <button
         type="button"
         className="user-menu__trigger"
