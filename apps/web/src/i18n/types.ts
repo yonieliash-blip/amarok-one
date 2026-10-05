@@ -862,6 +862,19 @@ export interface TranslationMessages {
     messages: string;
     messagesNote: string;
     documentCases: string;
+    recentDocumentCases: string;
+    repairReport: string;
+    caseStatus: string;
+    noDocumentCases: string;
+    officeOverview: string;
+    activeCases: string;
+    recentTasks: string;
+    task: string;
+    taskStatus: string;
+    taskStatus_open: string;
+    taskStatus_in_progress: string;
+    taskStatus_waiting: string;
+    taskStatus_completed: string;
   };
   userMenu: {
     fullName: string;

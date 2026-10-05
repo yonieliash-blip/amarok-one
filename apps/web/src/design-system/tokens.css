@@ -11,6 +11,7 @@
   --ds-color-primary: #feba1b;
   --ds-color-primary-hover: #e8a900;
   --ds-color-primary-on: #17223b;
+  --ds-color-primary-muted: #fff3d9;
 
   --ds-color-secondary: #eef3f8;
   --ds-color-secondary-hover: #e2e9f0;
@@ -61,6 +62,15 @@
   --ds-color-text: #111b4b;
   --ds-color-text-muted: #75819a;
   --ds-color-text-disabled: #aab3c2;
+
+  /* ── Chat: warm neutral workspace ───────────────────────────── */
+  --ds-color-chat-canvas: #f7f2e8;
+  --ds-color-chat-surface: #fffdf7;
+  --ds-color-chat-charcoal: #292724;
+  --ds-color-chat-sand: #e6d2a1;
+  --ds-color-chat-olive: #68745b;
+  --ds-color-chat-recipient: #6d6a64;
+  --ds-color-chat-watermark: #d9ceb7;
 
   /* ── Typography ─────────────────────────────────────────────── */
   --ds-font-family:

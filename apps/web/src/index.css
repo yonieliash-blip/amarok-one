@@ -664,15 +664,16 @@ a {
   height: min(42rem, calc(100dvh - 12rem));
   min-height: 34rem;
   overflow: hidden;
-  border: 1px solid var(--amarok-border);
-  border-radius: 0.75rem;
-  background: var(--amarok-surface);
+  border: 1px solid var(--ds-color-chat-sand);
+  border-radius: var(--ds-radius-xl);
+  background: var(--ds-color-chat-surface);
+  box-shadow: 0 0.75rem 2rem color-mix(in srgb, var(--ds-color-chat-charcoal) 8%, transparent);
 }
 
 .messages-page__people {
-  border-inline-end: 1px solid var(--amarok-border);
+  border-inline-end: 1px solid var(--ds-color-chat-sand);
   overflow-y: auto;
-  background: color-mix(in srgb, var(--amarok-bg) 88%, var(--amarok-surface));
+  background: var(--ds-color-chat-canvas);
 }
 
 .messages-page__search {
@@ -680,17 +681,17 @@ a {
   align-items: center;
   gap: 0.5rem;
   padding: 0.875rem;
-  border-bottom: 1px solid var(--amarok-border);
-  color: var(--amarok-text-muted);
+  border-bottom: 1px solid var(--ds-color-chat-sand);
+  color: var(--ds-color-chat-recipient);
 }
 
 .messages-page__search input {
   width: 100%;
   padding: 0.55rem 0.65rem;
-  border: 1px solid var(--amarok-border);
+  border: 1px solid var(--ds-color-chat-sand);
   border-radius: var(--amarok-radius);
-  background: var(--amarok-surface);
-  color: var(--amarok-text);
+  background: var(--ds-color-chat-surface);
+  color: var(--ds-color-chat-charcoal);
 }
 
 .messages-page__member-list {
@@ -708,19 +709,19 @@ a {
   gap: 0.65rem;
   width: 100%;
   padding: 0.75rem 2.75rem 0.75rem 0.75rem;
-  border: 1px solid var(--amarok-border);
-  border-radius: 0.75rem;
-  background: var(--amarok-surface);
-  box-shadow: 0 1px 1px rgb(15 23 42 / 4%);
-  color: var(--amarok-text);
+  border: 1px solid transparent;
+  border-radius: var(--ds-radius-xl);
+  background: color-mix(in srgb, var(--ds-color-chat-surface) 74%, transparent);
+  box-shadow: none;
+  color: var(--ds-color-chat-charcoal);
   cursor: pointer;
   text-align: start;
 }
 
 .messages-page__member:hover,
 .messages-page__member--selected {
-  border-color: color-mix(in srgb, var(--amarok-accent) 48%, var(--amarok-border));
-  background: color-mix(in srgb, var(--amarok-accent) 8%, var(--amarok-surface));
+  border-color: var(--ds-color-chat-sand);
+  background: var(--ds-color-chat-surface);
 }
 
 .messages-page__avatar {
@@ -730,12 +731,8 @@ a {
   height: 2.25rem;
   place-items: center;
   border-radius: 50%;
-  background: linear-gradient(
-    135deg,
-    var(--amarok-accent),
-    color-mix(in srgb, var(--amarok-accent) 56%, #1e3a5f)
-  );
-  color: white;
+  background: var(--ds-color-chat-recipient);
+  color: var(--ds-color-primary);
   font-size: 0.9rem;
   font-weight: 800;
 }
@@ -785,7 +782,9 @@ a {
   gap: 0.75rem;
   min-height: 4.3rem;
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--amarok-border);
+  border-bottom: 1px solid var(--ds-color-chat-sand);
+  background: var(--ds-color-chat-charcoal);
+  color: var(--ds-color-chat-surface);
 }
 
 .messages-page__conversation-header h3,
@@ -795,40 +794,86 @@ a {
 
 .messages-page__conversation-header p {
   margin-top: 0.15rem;
-  color: var(--amarok-text-muted);
+  color: color-mix(in srgb, var(--ds-color-chat-surface) 68%, transparent);
   font-size: 0.85rem;
 }
 
 .messages-page__thread {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
   padding: 1rem;
   overflow-y: auto;
-  background:
-    radial-gradient(
-      circle at top right,
-      color-mix(in srgb, var(--amarok-accent) 9%, transparent),
-      transparent 35%
-    ),
-    color-mix(in srgb, var(--amarok-bg) 68%, var(--amarok-surface));
+  isolation: isolate;
+  background: var(--ds-color-chat-canvas);
+}
+
+.messages-page__watermark {
+  position: absolute;
+  z-index: 0;
+  inset: 50% auto auto 50%;
+  width: min(74%, 32rem);
+  max-height: 14rem;
+  object-fit: contain;
+  opacity: 0.1;
+  filter: grayscale(1) sepia(0.35) saturate(0.65);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.messages-page__thread > :not(.messages-page__watermark) {
+  position: relative;
+  z-index: 1;
+}
+
+.messages-page__message-row {
+  display: flex;
+  align-items: flex-end;
+  align-self: flex-start;
+  gap: var(--ds-space-2);
+  max-width: min(84%, 38rem);
+}
+
+.messages-page__message-row--mine {
+  flex-direction: row-reverse;
+  align-self: flex-end;
+}
+
+.messages-page__message-avatar {
+  display: grid;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 50%;
+  font-size: var(--ds-text-caption-size);
+  font-weight: var(--ds-font-weight-bold);
+}
+
+.messages-page__message-avatar--sender {
+  background: var(--ds-color-primary);
+  color: var(--ds-color-chat-charcoal);
+}
+
+.messages-page__message-avatar--recipient {
+  background: var(--ds-color-chat-recipient);
+  color: var(--ds-color-primary);
 }
 
 .messages-page__message {
-  align-self: flex-start;
-  max-width: min(78%, 34rem);
+  max-width: 100%;
   padding: 0.7rem 0.85rem;
-  border: 1px solid color-mix(in srgb, var(--amarok-border) 82%, white);
+  border: 1px solid var(--ds-color-chat-sand);
   border-radius: 1rem 1rem 1rem 0.25rem;
-  background: var(--amarok-surface);
-  box-shadow: 0 0.25rem 0.8rem rgb(15 23 42 / 5%);
+  background: var(--ds-color-chat-surface);
+  box-shadow: 0 0.25rem 0.8rem color-mix(in srgb, var(--ds-color-chat-charcoal) 7%, transparent);
 }
 
 .messages-page__message--mine {
-  align-self: flex-end;
-  border-color: color-mix(in srgb, var(--amarok-accent) 30%, var(--amarok-border));
+  border-color: var(--ds-color-primary);
   border-radius: 1rem 1rem 0.25rem 1rem;
-  background: color-mix(in srgb, var(--amarok-accent) 15%, var(--amarok-surface));
+  background: color-mix(in srgb, var(--ds-color-primary) 17%, var(--ds-color-chat-surface));
 }
 
 .messages-page__message p,
@@ -843,7 +888,7 @@ a {
 .messages-page__message time {
   display: block;
   margin-top: 0.35rem;
-  color: var(--amarok-text-muted);
+  color: var(--ds-color-chat-recipient);
   font-size: 0.75rem;
 }
 
@@ -852,23 +897,24 @@ a {
   align-items: end;
   gap: 0.75rem;
   padding: 0.875rem;
-  border-top: 1px solid var(--amarok-border);
+  border-top: 1px solid var(--ds-color-chat-sand);
+  background: var(--ds-color-chat-surface);
 }
 
 .messages-page__composer textarea {
   width: 100%;
   resize: vertical;
   padding: 0.65rem 0.75rem;
-  border: 1px solid var(--amarok-border);
+  border: 1px solid var(--ds-color-chat-sand);
   border-radius: var(--amarok-radius);
-  background: var(--amarok-bg);
-  color: var(--amarok-text);
+  background: var(--ds-color-chat-canvas);
+  color: var(--ds-color-chat-charcoal);
 }
 
 .messages-page__empty {
   margin: 0;
   padding: 1rem;
-  color: var(--amarok-text-muted);
+  color: var(--ds-color-chat-recipient);
 }
 
 .messages-page__empty--center {
@@ -885,7 +931,7 @@ a {
 
   .messages-page__people {
     border-inline-end: 0;
-    border-bottom: 1px solid var(--amarok-border);
+    border-bottom: 1px solid var(--ds-color-chat-sand);
   }
 
   .messages-page__member-list {
@@ -897,6 +943,10 @@ a {
   .messages-page__conversation {
     min-height: 28rem;
     height: min(38rem, calc(100dvh - 9rem));
+  }
+
+  .messages-page__message-row {
+    max-width: 92%;
   }
 }
 

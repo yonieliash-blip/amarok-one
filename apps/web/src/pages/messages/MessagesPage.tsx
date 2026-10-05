@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DirectConversationSummary, DirectMessageMember } from "@amarok-one/types";
 import { Button } from "@amarok-one/ui";
-import { MessageCircle, Search } from "lucide-react";
+import { Search } from "lucide-react";
+import amarokLogo from "../../assets/amarok-service-platform-logo.png";
 import { useAuth } from "../../auth/useAuth";
 import { ErrorState } from "../../components/ErrorState";
 import { LoadingState } from "../../components/LoadingState";
@@ -17,6 +18,10 @@ import {
 } from "../../lib/messages-api";
 
 type PageStatus = "loading" | "ready" | "error";
+
+function initial(name: string): string {
+  return name.trim().slice(0, 1).toLocaleUpperCase("he");
+}
 
 export function MessagesPage() {
   const { user, accessToken } = useAuth();
@@ -205,7 +210,7 @@ export function MessagesPage() {
                       onClick={() => selectMember(member)}
                     >
                       <span className="messages-page__avatar" aria-hidden="true">
-                        {member.displayName.trim().slice(0, 1).toUpperCase()}
+                        {initial(member.displayName)}
                       </span>
                       <span className="messages-page__member-copy">
                         <span className="messages-page__member-name">{member.displayName}</span>
@@ -232,28 +237,53 @@ export function MessagesPage() {
           {selectedMember ? (
             <>
               <header className="messages-page__conversation-header">
-                <MessageCircle size={22} aria-hidden="true" />
+                <span
+                  className="messages-page__avatar messages-page__avatar--recipient"
+                  aria-hidden="true"
+                >
+                  {initial(selectedMember.displayName)}
+                </span>
                 <div>
                   <h3>{selectedMember.displayName}</h3>
                   <p>{selectedMember.role.name}</p>
                 </div>
               </header>
               <div className="messages-page__thread" ref={threadRef}>
+                <img
+                  className="messages-page__watermark"
+                  src={amarokLogo}
+                  alt=""
+                  aria-hidden="true"
+                />
                 {messages.length ? (
-                  messages.map((message) => (
-                    <article
-                      key={message.id}
-                      className={`messages-page__message${message.senderId === user.id ? " messages-page__message--mine" : ""}`}
-                    >
-                      <p>{message.body}</p>
-                      <time dateTime={message.createdAt}>
-                        {formatDate(message.createdAt, locale, {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </time>
-                    </article>
-                  ))
+                  messages.map((message) => {
+                    const mine = message.senderId === user.id;
+                    const senderName = mine ? user.displayName : selectedMember.displayName;
+                    return (
+                      <div
+                        key={message.id}
+                        className={`messages-page__message-row${mine ? " messages-page__message-row--mine" : ""}`}
+                      >
+                        <span
+                          className={`messages-page__message-avatar${mine ? " messages-page__message-avatar--sender" : " messages-page__message-avatar--recipient"}`}
+                          aria-hidden="true"
+                        >
+                          {initial(senderName)}
+                        </span>
+                        <article
+                          className={`messages-page__message${mine ? " messages-page__message--mine" : ""}`}
+                        >
+                          <p>{message.body}</p>
+                          <time dateTime={message.createdAt}>
+                            {formatDate(message.createdAt, locale, {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </time>
+                        </article>
+                      </div>
+                    );
+                  })
                 ) : (
                   <p className="messages-page__empty">{t("messages", "noConversation")}</p>
                 )}
