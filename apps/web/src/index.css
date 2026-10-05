@@ -1017,7 +1017,13 @@ a {
   }
 
   .messages-page__layout--composing {
+    position: fixed;
+    inset: 0;
+    z-index: var(--ds-z-modal);
     grid-template-rows: minmax(0, 1fr);
+    height: 100dvh;
+    border-radius: 0;
+    overscroll-behavior-y: contain;
   }
 
   .messages-page__layout--composing .messages-page__people {
