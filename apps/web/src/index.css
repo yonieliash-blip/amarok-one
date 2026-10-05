@@ -1035,17 +1035,17 @@ a {
   }
 
   .messages-page__layout--composing {
-    position: fixed;
-    inset: 0;
-    inset-inline: 0;
-    width: 100vw;
-    max-width: 100vw;
-    z-index: var(--ds-z-modal);
+    position: relative;
+    inset: auto;
+    width: 100%;
+    max-width: 100%;
+    z-index: auto;
     grid-template-rows: minmax(0, 1fr);
-    height: 100dvh;
+    height: calc(100dvh - 8rem);
+    max-height: calc(100dvh - 8rem);
     border-radius: 0;
     overscroll-behavior-y: contain;
-    touch-action: none;
+    touch-action: pan-y;
   }
 
   .messages-page__layout--composing .messages-page__people {

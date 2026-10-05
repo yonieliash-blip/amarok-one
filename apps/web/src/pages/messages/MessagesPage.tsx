@@ -132,46 +132,6 @@ export function MessagesPage() {
     thread.scrollTop = thread.scrollHeight;
   }, [messages, selectedConversationId]);
 
-  useEffect(() => {
-    if (!composerFocused || !window.matchMedia("(max-width: 700px)").matches) return;
-
-    const { body, documentElement } = document;
-    const bodyStyles = {
-      overflow: body.style.overflow,
-      overflowX: body.style.overflowX,
-      overscrollBehavior: body.style.overscrollBehavior,
-      touchAction: body.style.touchAction,
-    };
-    const rootStyles = {
-      overflow: documentElement.style.overflow,
-      overscrollBehavior: documentElement.style.overscrollBehavior,
-      overflowX: documentElement.style.overflowX,
-      touchAction: documentElement.style.touchAction,
-    };
-
-    body.classList.add("messages-page-scroll-locked");
-    documentElement.classList.add("messages-page-scroll-locked");
-    Object.assign(body.style, {
-      overflow: "hidden",
-      overflowX: "hidden",
-      overscrollBehavior: "none",
-      touchAction: "none",
-    });
-    Object.assign(documentElement.style, {
-      overflow: "hidden",
-      overscrollBehavior: "none",
-      overflowX: "hidden",
-      touchAction: "none",
-    });
-
-    return () => {
-      body.classList.remove("messages-page-scroll-locked");
-      documentElement.classList.remove("messages-page-scroll-locked");
-      Object.assign(body.style, bodyStyles);
-      Object.assign(documentElement.style, rootStyles);
-    };
-  }, [composerFocused]);
-
   const visibleMembers = useMemo(() => {
     const term = search.trim().toLocaleLowerCase("he");
     if (!term) return members;
