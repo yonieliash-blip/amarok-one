@@ -104,10 +104,9 @@ export function OfficeDashboardPage() {
           [],
         ),
         safe(getUnreadMessageCountRequest(user.organization.id, accessToken), 0),
-        safe(
-          getCurrentInspirationRequest(user.organization.id, accessToken),
-          { kind: "none" } satisfies InspirationCurrent,
-        ),
+        safe(getCurrentInspirationRequest(user.organization.id, accessToken), {
+          kind: "none",
+        } satisfies InspirationCurrent),
       ]);
       if (cancelled) return;
       setCompletedCalls(calls.filter(isClosedServiceCall).length);
