@@ -49,10 +49,7 @@ export function WorkDayControl({ onActiveChange }: WorkDayControlProps) {
   const lastInteractionAt = useRef(0);
   const lastActivitySampleAt = useRef(0);
 
-  const canRead = hasPermission(
-    permissionSlugsFromCarrier(user),
-    PERMISSIONS.MY_ATTENDANCE_READ,
-  );
+  const canRead = hasPermission(permissionSlugsFromCarrier(user), PERMISSIONS.MY_ATTENDANCE_READ);
   const canWrite = hasPermission(permissionSlugsFromCarrier(user), PERMISSIONS.MY_ATTENDANCE_WRITE);
   const shouldCaptureLocation = user?.role.slug === "technician";
 
