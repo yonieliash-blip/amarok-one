@@ -51,7 +51,6 @@ export function MessagesPage() {
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
-  const [composerFocused, setComposerFocused] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const threadRef = useRef<HTMLDivElement | null>(null);
 
@@ -201,9 +200,7 @@ export function MessagesPage() {
         </div>
       </header>
       {error ? <p className="form-error">{error}</p> : null}
-      <div
-        className={`messages-page__layout${composerFocused ? " messages-page__layout--composing" : ""}`}
-      >
+      <div className="messages-page__layout">
         <aside className="messages-page__people" aria-label={t("messages", "employees")}>
           <label className="messages-page__search">
             <Search size={18} aria-hidden="true" />
@@ -265,54 +262,52 @@ export function MessagesPage() {
                   <p>{selectedMember.role.name}</p>
                 </div>
               </header>
-              <div className="messages-page__thread" ref={threadRef}>
-                <img
-                  className="messages-page__watermark"
-                  src={amarokLogo}
-                  alt=""
-                  aria-hidden="true"
-                />
-                {CHAT_DECORATIONS.map(({ Icon, position }) => (
-                  <span
-                    key={position}
-                    className={`messages-page__decoration messages-page__decoration--${position}`}
-                    aria-hidden="true"
-                  >
-                    <Icon />
-                  </span>
-                ))}
-                {messages.length ? (
-                  messages.map((message) => {
-                    const mine = message.senderId === user.id;
-                    const senderName = mine ? user.displayName : selectedMember.displayName;
-                    return (
-                      <div
-                        key={message.id}
-                        className={`messages-page__message-row${mine ? " messages-page__message-row--mine" : ""}`}
-                      >
-                        <span
-                          className={`messages-page__message-avatar${mine ? " messages-page__message-avatar--sender" : " messages-page__message-avatar--recipient"}`}
-                          aria-hidden="true"
+              <div className="messages-page__thread-shell">
+                <div className="messages-page__thread-background" aria-hidden="true">
+                  <img className="messages-page__watermark" src={amarokLogo} alt="" />
+                  {CHAT_DECORATIONS.map(({ Icon, position }) => (
+                    <span
+                      key={position}
+                      className={`messages-page__decoration messages-page__decoration--${position}`}
+                    >
+                      <Icon />
+                    </span>
+                  ))}
+                </div>
+                <div className="messages-page__thread" ref={threadRef}>
+                  {messages.length ? (
+                    messages.map((message) => {
+                      const mine = message.senderId === user.id;
+                      const senderName = mine ? user.displayName : selectedMember.displayName;
+                      return (
+                        <div
+                          key={message.id}
+                          className={`messages-page__message-row${mine ? " messages-page__message-row--mine" : ""}`}
                         >
-                          {initial(senderName)}
-                        </span>
-                        <article
-                          className={`messages-page__message${mine ? " messages-page__message--mine" : ""}`}
-                        >
-                          <p>{message.body}</p>
-                          <time dateTime={message.createdAt}>
-                            {formatDate(message.createdAt, locale, {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </time>
-                        </article>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <p className="messages-page__empty">{t("messages", "noConversation")}</p>
-                )}
+                          <span
+                            className={`messages-page__message-avatar${mine ? " messages-page__message-avatar--sender" : " messages-page__message-avatar--recipient"}`}
+                            aria-hidden="true"
+                          >
+                            {initial(senderName)}
+                          </span>
+                          <article
+                            className={`messages-page__message${mine ? " messages-page__message--mine" : ""}`}
+                          >
+                            <p>{message.body}</p>
+                            <time dateTime={message.createdAt}>
+                              {formatDate(message.createdAt, locale, {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </time>
+                          </article>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="messages-page__empty">{t("messages", "noConversation")}</p>
+                  )}
+                </div>
               </div>
               <form
                 className="messages-page__composer"
@@ -326,8 +321,6 @@ export function MessagesPage() {
                   value={draft}
                   placeholder={t("messages", "writeMessage")}
                   onChange={(event) => setDraft(event.target.value)}
-                  onFocus={() => setComposerFocused(true)}
-                  onBlur={() => setComposerFocused(false)}
                   maxLength={2000}
                 />
                 <Button type="submit" disabled={sending || !draft.trim()}>
