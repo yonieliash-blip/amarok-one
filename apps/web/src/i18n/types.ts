@@ -366,6 +366,7 @@ export interface TranslationMessages {
   workDay: {
     title: string;
     notStarted: string;
+    requiredNotice: string;
     activeSince: string;
     start: string;
     end: string;
