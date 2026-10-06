@@ -245,7 +245,6 @@ export const he: TranslationMessages = {
   messages: {
     eyebrow: "תקשורת פנימית",
     title: "מערכת הודעות",
-    subtitle: "התכתבות פרטית עם עובדי הארגון.",
     loading: "טוען הודעות…",
     loadError: "לא ניתן לטעון את מערכת ההודעות.",
     employees: "עובדים",

@@ -15,6 +15,7 @@ export const listTasksQuerySchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional(),
+  includeArchived: z.coerce.boolean().optional(),
 });
 
 export const createTaskSchema = z.object({

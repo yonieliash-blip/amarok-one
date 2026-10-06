@@ -50,6 +50,7 @@ export const PERMISSIONS = {
   DOCUMENT_CASES_SEND: "document_cases:send",
   MESSAGES_READ: "messages:read",
   MESSAGES_WRITE: "messages:write",
+  MESSAGES_MANAGE: "messages:manage",
 } as const;
 
 export type PermissionSlug = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -305,6 +306,11 @@ export const ALL_PERMISSIONS: readonly PermissionDefinition[] = [
     slug: PERMISSIONS.MESSAGES_WRITE,
     name: "Write Messages",
     description: "Send private organization messages",
+  },
+  {
+    slug: PERMISSIONS.MESSAGES_MANAGE,
+    name: "Manage Messages",
+    description: "Delete organization conversations",
   },
 ] as const;
 

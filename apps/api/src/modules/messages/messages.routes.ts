@@ -88,6 +88,23 @@ export function createMessagesRoutes(messagesService: MessagesService): Hono {
         );
       },
     )
+    .delete(
+      "/conversations/:conversationId",
+      requirePermission("messages:manage"),
+      zValidator("param", conversationIdParamSchema),
+      async (context) => {
+        const { organizationId, conversationId } = context.req.valid("param");
+        return context.json(
+          createApiResponse(
+            await messagesService.deleteConversation(
+              organizationId,
+              conversationId,
+              getAuth(context).user.sub,
+            ),
+          ),
+        );
+      },
+    )
     .post(
       "/members/:memberId/messages",
       requirePermission("messages:write"),

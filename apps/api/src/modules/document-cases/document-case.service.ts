@@ -190,6 +190,8 @@ async function resolveWorkflowTasks(input: {
         status: "COMPLETED",
         completedAt: now,
         completedById: input.actorId,
+        archivedAt: now,
+        archivedById: input.actorId,
         completionNote: input.note,
       },
     }),

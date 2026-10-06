@@ -246,7 +246,6 @@ export const en: TranslationMessages = {
   messages: {
     eyebrow: "Internal communication",
     title: "Messages",
-    subtitle: "Private conversations with organization employees.",
     loading: "Loading messages…",
     loadError: "Unable to load the messaging system.",
     employees: "Employees",
