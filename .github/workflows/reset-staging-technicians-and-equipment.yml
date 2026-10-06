@@ -43,12 +43,9 @@ jobs:
             git fetch --no-tags origin main
             test "$(git rev-parse origin/main)" = "$TARGET_SHA"
             git merge --ff-only origin/main
-            set -a
-            . infrastructure/staging/staging.env
-            set +a
             sudo docker compose \
               --env-file infrastructure/staging/staging.env \
               -f infrastructure/staging/docker-compose.yml \
-              exec -T postgres psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+              exec -T postgres sh -lc 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
               < infrastructure/staging/reset-technicians-and-equipment.sql
           REMOTE
