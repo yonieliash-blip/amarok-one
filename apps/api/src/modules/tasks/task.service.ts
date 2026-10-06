@@ -60,6 +60,7 @@ function toTaskDto(row: TaskRow): Task {
     createdBy: row.createdBy ?? undefined,
     completedAt: row.completedAt?.toISOString(),
     completedBy: row.completedBy ?? undefined,
+    archivedAt: row.archivedAt?.toISOString(),
     completionNote: row.completionNote ?? undefined,
     linkUrl: row.linkUrl ?? undefined,
     linkedEntityType: row.linkedEntityType ?? undefined,
@@ -107,6 +108,7 @@ export async function listTasks(input: {
   status?: TaskStatus;
   assignedToId?: string;
   dueOn?: string;
+  includeArchived?: boolean;
 }): Promise<Task[]> {
   await assertOrganizationExists(input.organizationId);
   const dueOn = input.dueOn ? new Date(`${input.dueOn}T00:00:00.000Z`) : undefined;
@@ -116,6 +118,7 @@ export async function listTasks(input: {
       organizationId: input.organizationId,
       assignedToId: input.canManage ? input.assignedToId : input.actorId,
       ...(input.status ? { status: statusToModel[input.status] } : {}),
+      ...(input.includeArchived ? {} : { archivedAt: null }),
       ...(dueOn && nextDay ? { dueAt: { gte: dueOn, lt: nextDay } } : {}),
     },
     include: taskInclude,
@@ -210,6 +213,8 @@ export async function updateTask(input: {
         input.values.linkUrl === undefined ? undefined : input.values.linkUrl?.trim() || null,
       completedAt: isCompleting ? new Date() : isReopening ? null : undefined,
       completedById: isCompleting ? input.actorId : isReopening ? null : undefined,
+      archivedAt: isCompleting ? new Date() : isReopening ? null : undefined,
+      archivedById: isCompleting ? input.actorId : isReopening ? null : undefined,
     },
     include: taskInclude,
   });

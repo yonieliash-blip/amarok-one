@@ -246,7 +246,6 @@ export interface TranslationMessages {
   messages: {
     eyebrow: string;
     title: string;
-    subtitle: string;
     loading: string;
     loadError: string;
     employees: string;

@@ -52,6 +52,7 @@ export interface Task {
   createdBy?: TaskAssignee;
   completedAt?: ISODateString;
   completedBy?: TaskAssignee;
+  archivedAt?: ISODateString;
   completionNote?: string;
   linkUrl?: string;
   linkedEntityType?: string;

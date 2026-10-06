@@ -4,6 +4,7 @@ import type {
   DirectMessageMember,
 } from "@amarok-one/types";
 import { Prisma } from "@prisma/client";
+import { writeAuditLog } from "../../lib/audit.js";
 import { badRequest, forbidden, notFound } from "../../lib/errors.js";
 import { prisma } from "../../lib/prisma.js";
 import { canonicalParticipants } from "./messages.helpers.js";
@@ -79,6 +80,7 @@ async function loadConversationForParticipant(
     where: {
       id: conversationId,
       organizationId,
+      deletedAt: null,
       OR: [{ participantOneId: userId }, { participantTwoId: userId }],
     },
   });
@@ -115,6 +117,7 @@ export function createMessagesService() {
     const rows = await prisma.directConversation.findMany({
       where: {
         organizationId,
+        deletedAt: null,
         OR: [{ participantOneId: actorId }, { participantTwoId: actorId }],
       },
       include: conversationInclude,
@@ -209,6 +212,7 @@ export function createMessagesService() {
         senderId: { not: actorId },
         readAt: null,
         conversation: {
+          deletedAt: null,
           OR: [{ participantOneId: actorId }, { participantTwoId: actorId }],
         },
       },
@@ -255,7 +259,7 @@ export function createMessagesService() {
           },
         },
         create: { organizationId, participantOneId, participantTwoId, lastMessageAt: now },
-        update: { lastMessageAt: now },
+        update: { lastMessageAt: now, deletedAt: null, deletedById: null },
       });
       const message = await tx.directMessage.create({
         data: {
@@ -271,6 +275,32 @@ export function createMessagesService() {
     return { conversationId: result.conversation.id, message: toMessage(result.message) };
   }
 
+  async function deleteConversation(
+    organizationId: string,
+    conversationId: string,
+    actorId: string,
+  ) {
+    await loadActiveMember(organizationId, actorId);
+    const conversation = await prisma.directConversation.findFirst({
+      where: { id: conversationId, organizationId, deletedAt: null },
+    });
+    if (!conversation) throw notFound("Conversation", conversationId);
+    const deletedAt = new Date();
+    await prisma.directConversation.update({
+      where: { id: conversation.id },
+      data: { deletedAt, deletedById: actorId },
+    });
+    await writeAuditLog({
+      organizationId,
+      actorId,
+      action: "conversation.deleted",
+      entityType: "DirectConversation",
+      entityId: conversation.id,
+      metadata: { deletedAt: deletedAt.toISOString() },
+    });
+    return { conversationId: conversation.id, deleted: true };
+  }
+
   return {
     listRecipients,
     listConversations,
@@ -278,6 +308,7 @@ export function createMessagesService() {
     markConversationRead,
     unreadCount,
     sendMessageToMember,
+    deleteConversation,
   };
 }
 

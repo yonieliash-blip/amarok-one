@@ -8,12 +8,18 @@ function base(organizationId: string): string {
 export function listTasksRequest(
   organizationId: string,
   accessToken: string,
-  filters: { status?: TaskStatus; assignedToId?: string; dueOn?: string } = {},
+  filters: {
+    status?: TaskStatus;
+    assignedToId?: string;
+    dueOn?: string;
+    includeArchived?: boolean;
+  } = {},
 ): Promise<{ data: Task[] }> {
   const params = new URLSearchParams();
   if (filters.status) params.set("status", filters.status);
   if (filters.assignedToId) params.set("assignedToId", filters.assignedToId);
   if (filters.dueOn) params.set("dueOn", filters.dueOn);
+  if (filters.includeArchived) params.set("includeArchived", "true");
   const query = params.size > 0 ? `?${params.toString()}` : "";
   return apiRequest<Task[]>(`${base(organizationId)}${query}`, { accessToken });
 }

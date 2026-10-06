@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DirectConversationSummary, DirectMessageMember } from "@amarok-one/types";
 import { Button } from "@amarok-one/ui";
+import { hasPermission, permissionSlugsFromCarrier, PERMISSIONS } from "@amarok-one/permissions";
 import { Search } from "lucide-react";
 import { useAuth } from "../../auth/useAuth";
 import { ErrorState } from "../../components/ErrorState";
@@ -13,6 +14,7 @@ import {
   listConversationsRequest,
   listMessageMembersRequest,
   markConversationReadRequest,
+  deleteConversationRequest,
   sendDirectMessageRequest,
 } from "../../lib/messages-api";
 
@@ -36,8 +38,13 @@ export function MessagesPage() {
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const threadRef = useRef<HTMLDivElement | null>(null);
+  const canManageMessages = hasPermission(
+    permissionSlugsFromCarrier(user),
+    PERMISSIONS.MESSAGES_MANAGE,
+  );
 
   const refreshLists = useCallback(async (): Promise<void> => {
     if (!user || !accessToken) return;
@@ -163,6 +170,25 @@ export function MessagesPage() {
     }
   }
 
+  async function handleDeleteConversation(): Promise<void> {
+    if (!user || !accessToken || !selectedConversationId || !canManageMessages) return;
+    if (!window.confirm("למחוק את הצ׳אט? הוא יוסר מהמערכת, וההודעות יישמרו לתיעוד.")) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      await deleteConversationRequest(user.organization.id, selectedConversationId, accessToken);
+      setConversations((current) =>
+        current.filter((conversation) => conversation.id !== selectedConversationId),
+      );
+      setSelectedConversationId(null);
+      setMessages([]);
+    } catch (cause) {
+      setError(getApiErrorMessage(cause, "לא ניתן למחוק את הצ׳אט."));
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   if (!user || !accessToken || status === "loading") {
     return <LoadingState message={t("messages", "loading")} />;
   }
@@ -181,7 +207,6 @@ export function MessagesPage() {
         <div>
           <p className="customers-page__eyebrow">{t("messages", "eyebrow")}</p>
           <h2 className="customers-page__title">{t("messages", "title")}</h2>
-          <p className="customers-page__subtitle">{t("messages", "subtitle")}</p>
         </div>
       </header>
       {error ? <p className="form-error">{error}</p> : null}
@@ -246,6 +271,16 @@ export function MessagesPage() {
                   <h3>{selectedMember.displayName}</h3>
                   <p>{selectedMember.role.name}</p>
                 </div>
+                {canManageMessages && selectedConversationId ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={deleting}
+                    onClick={() => void handleDeleteConversation()}
+                  >
+                    {deleting ? "מוחק…" : "מחיקת צ׳אט"}
+                  </Button>
+                ) : null}
               </header>
               <div className="messages-page__thread-shell">
                 <div className="messages-page__thread" ref={threadRef}>

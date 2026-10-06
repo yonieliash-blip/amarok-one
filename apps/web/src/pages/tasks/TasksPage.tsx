@@ -45,6 +45,7 @@ export function TasksPage() {
   const [status, setStatus] = useState<TaskStatus | "all">("all");
   const [assigneeFilter, setAssigneeFilter] = useState("");
   const [dueOn, setDueOn] = useState("");
+  const [includeArchived, setIncludeArchived] = useState(false);
   const [completionNotes, setCompletionNotes] = useState<Record<string, string>>({});
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
@@ -63,6 +64,7 @@ export function TasksPage() {
             status: status === "all" ? undefined : status,
             assignedToId: canManage ? assigneeFilter || undefined : undefined,
             dueOn: dueOn || undefined,
+            includeArchived,
           }),
           canManage
             ? listTaskAssigneesRequest(user.organization.id, accessToken)
@@ -82,7 +84,17 @@ export function TasksPage() {
     return () => {
       cancelled = true;
     };
-  }, [accessToken, assignedToId, assigneeFilter, canManage, dueOn, reloadToken, status, user]);
+  }, [
+    accessToken,
+    assignedToId,
+    assigneeFilter,
+    canManage,
+    dueOn,
+    includeArchived,
+    reloadToken,
+    status,
+    user,
+  ]);
 
   const taskHeading = useMemo(() => (canManage ? "כל המשימות" : "המשימות שלי"), [canManage]);
 
@@ -101,7 +113,7 @@ export function TasksPage() {
           <p className="customers-page__eyebrow">ניהול משרד</p>
           <h2 className="customers-page__title">{taskHeading}</h2>
           <p className="customers-page__subtitle">
-            משימות פתוחות, בטיפול, ממתינות וארכיון ביצוע מתועד.
+            משימות פתוחות, בטיפול וממתינות. משימה שבוצעה עוברת לארכיון.
           </p>
         </div>
       </header>
@@ -218,6 +230,17 @@ export function TasksPage() {
                 </option>
               ))}
             </select>
+          </label>
+          <label className="customer-form__field">
+            <span>ארכיון</span>
+            <span>
+              <input
+                type="checkbox"
+                checked={includeArchived}
+                onChange={(event) => setIncludeArchived(event.target.checked)}
+              />{" "}
+              הצגת משימות שבוצעו
+            </span>
           </label>
           {canManage ? (
             <label className="customer-form__field">

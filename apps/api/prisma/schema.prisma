@@ -332,6 +332,8 @@ model DirectConversation {
   participantOneId String    @db.Uuid
   participantTwoId String    @db.Uuid
   lastMessageAt    DateTime?
+  deletedAt        DateTime?
+  deletedById      String?   @db.Uuid
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -344,6 +346,7 @@ model DirectConversation {
   @@index([organizationId, lastMessageAt])
   @@index([organizationId, participantOneId])
   @@index([organizationId, participantTwoId])
+  @@index([organizationId, deletedAt])
   @@map("direct_conversations")
 }
 
@@ -448,6 +451,8 @@ model Task {
   createdById      String?      @db.Uuid
   completedAt      DateTime?
   completedById    String?      @db.Uuid
+  archivedAt       DateTime?
+  archivedById     String?      @db.Uuid
   completionNote   String?
   linkUrl          String?
   linkedEntityType String?
@@ -463,6 +468,7 @@ model Task {
 
   @@index([organizationId, assignedToId, status])
   @@index([organizationId, dueAt])
+  @@index([organizationId, archivedAt])
   @@map("tasks")
 }
 

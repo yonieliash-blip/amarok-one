@@ -51,6 +51,17 @@ export async function markConversationReadRequest(
   });
 }
 
+export async function deleteConversationRequest(
+  organizationId: string,
+  conversationId: string,
+  accessToken: string,
+): Promise<void> {
+  await apiRequest(`${basePath(organizationId)}/conversations/${conversationId}`, {
+    method: "DELETE",
+    accessToken,
+  });
+}
+
 export async function sendDirectMessageRequest(
   organizationId: string,
   memberId: string,

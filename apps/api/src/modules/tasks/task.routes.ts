@@ -37,6 +37,7 @@ export const tasksRoutes = new Hono()
             status: query.status,
             assignedToId: query.assignedToId,
             dueOn: query.dueOn,
+            includeArchived: query.includeArchived,
           }),
         ),
       );
