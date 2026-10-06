@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DirectConversationSummary, DirectMessageMember } from "@amarok-one/types";
 import { Button } from "@amarok-one/ui";
-import type { LucideIcon } from "lucide-react";
-import { Construction, Forklift, Search, Settings2, Tractor, Wrench } from "lucide-react";
-import amarokLogo from "../../assets/amarok-service-platform-logo.png";
+import { Search } from "lucide-react";
 import { useAuth } from "../../auth/useAuth";
 import { ErrorState } from "../../components/ErrorState";
 import { LoadingState } from "../../components/LoadingState";
@@ -19,19 +17,6 @@ import {
 } from "../../lib/messages-api";
 
 type PageStatus = "loading" | "ready" | "error";
-
-interface ChatDecoration {
-  Icon: LucideIcon;
-  position: string;
-}
-
-const CHAT_DECORATIONS: ChatDecoration[] = [
-  { Icon: Tractor, position: "tractor" },
-  { Icon: Construction, position: "excavator" },
-  { Icon: Forklift, position: "forklift" },
-  { Icon: Wrench, position: "wrench" },
-  { Icon: Settings2, position: "gear" },
-];
 
 function initial(name: string): string {
   return name.trim().slice(0, 1).toLocaleUpperCase("he");
@@ -263,17 +248,6 @@ export function MessagesPage() {
                 </div>
               </header>
               <div className="messages-page__thread-shell">
-                <div className="messages-page__thread-background" aria-hidden="true">
-                  <img className="messages-page__watermark" src={amarokLogo} alt="" />
-                  {CHAT_DECORATIONS.map(({ Icon, position }) => (
-                    <span
-                      key={position}
-                      className={`messages-page__decoration messages-page__decoration--${position}`}
-                    >
-                      <Icon />
-                    </span>
-                  ))}
-                </div>
                 <div className="messages-page__thread" ref={threadRef}>
                   {messages.length ? (
                     messages.map((message) => {

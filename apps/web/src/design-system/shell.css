@@ -164,8 +164,9 @@
 
 .work-day-required-notice {
   position: fixed;
-  inset-inline-start: 50%;
-  bottom: 1.25rem;
+  top: calc(4.5rem + var(--ds-space-3));
+  left: 50%;
+  right: auto;
   z-index: var(--ds-z-toast);
   max-width: min(92vw, 28rem);
   padding: 0.8rem 1.1rem;
@@ -176,6 +177,7 @@
   font-weight: var(--ds-font-weight-bold);
   box-shadow: var(--ds-shadow-lg);
   transform: translateX(-50%);
+  text-align: center;
 }
 
 /* Sidebar */
@@ -1465,6 +1467,8 @@
     min-height: 4.5rem;
     align-items: center;
     justify-content: space-between;
+    gap: 0;
+    padding-inline: 0.65rem;
     background: linear-gradient(105deg, #17263a, #243a50);
     border-bottom: 3px solid var(--ds-color-primary);
     min-width: 0;
@@ -1483,7 +1487,7 @@
   }
 
   .app-header__brand .brand-logo__image {
-    width: 7.5rem;
+    width: 7rem;
   }
 
   .app-header__navigation {
@@ -1496,6 +1500,11 @@
     flex: 0 0 auto;
     margin-inline-start: auto;
     gap: var(--ds-space-1);
+  }
+
+  .app-header__work-day .work-day-control__button {
+    padding-inline: 0.6rem;
+    font-size: 0.82rem;
   }
 
   .user-menu__trigger {
@@ -1530,6 +1539,7 @@
     border: 0;
     background: transparent;
     color: #fff;
+    margin-inline-end: 0.35rem;
   }
 
   .mobile-navigation {

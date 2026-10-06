@@ -820,7 +820,11 @@ a {
   position: relative;
   min-height: 0;
   overflow: hidden;
-  background: var(--ds-color-chat-canvas);
+  background-color: var(--ds-color-chat-canvas);
+  background-image: url("./assets/amarok-chat-wallpaper.webp");
+  background-repeat: repeat;
+  background-size: 24rem auto;
+  background-position: center top;
 }
 
 .messages-page__thread-background {
