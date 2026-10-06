@@ -1865,6 +1865,24 @@
   color: var(--ds-color-warning);
 }
 
+/* Office dashboard cards use the same vivid status palette as management. */
+.management-metric--completedCalls .management-metric__icon {
+  background: var(--ds-color-success-muted);
+  color: var(--ds-color-success);
+}
+.management-metric--tasks .management-metric__icon {
+  background: var(--ds-color-warning-muted);
+  color: var(--ds-color-warning);
+}
+.management-metric--documentReview .management-metric__icon {
+  background: var(--ds-color-error-muted);
+  color: var(--ds-color-error);
+}
+.management-metric--documentSend .management-metric__icon {
+  background: var(--ds-color-info-muted);
+  color: var(--ds-color-info);
+}
+
 .management-metric__link {
   color: inherit;
   text-decoration: none;
@@ -1946,6 +1964,18 @@
 }
 .management-metric--messages .management-metric__spark {
   color: var(--ds-color-primary);
+}
+.management-metric--completedCalls .management-metric__spark {
+  color: var(--ds-color-success);
+}
+.management-metric--tasks .management-metric__spark {
+  color: var(--ds-color-warning);
+}
+.management-metric--documentReview .management-metric__spark {
+  color: var(--ds-color-error);
+}
+.management-metric--documentSend .management-metric__spark {
+  color: var(--ds-color-info);
 }
 
 .management-dashboard__greeting {
