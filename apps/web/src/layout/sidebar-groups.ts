@@ -44,7 +44,15 @@ const GROUPS: readonly NavGroupDefinition[] = [
   {
     key: "backOffice",
     labelKey: "navGroupBackOffice",
-    itemIds: ["inventory", "purchase-orders", "parts", "accounting", "reports", "member-access"],
+    itemIds: [
+      "inventory",
+      "purchase-orders",
+      "parts",
+      "accounting",
+      "reports",
+      "member-access",
+      "inspiration",
+    ],
   },
 ] as const;
 
@@ -58,7 +66,14 @@ const OFFICE_GROUPS: readonly NavGroupDefinition[] = [
   {
     key: "office",
     labelKey: "navGroupOfficeManagement",
-    itemIds: ["customers", "completed-service-calls", "office-chat", "tasks", "document-cases"],
+    itemIds: [
+      "customers",
+      "completed-service-calls",
+      "office-chat",
+      "tasks",
+      "document-cases",
+      "inspiration",
+    ],
   },
   {
     key: "officeAccounting",

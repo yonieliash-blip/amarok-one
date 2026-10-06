@@ -4,6 +4,7 @@ import {
   Calendar,
   ClipboardList,
   FileText,
+  Quote,
   LayoutDashboard,
   MessageCircle,
   Package,
@@ -41,6 +42,7 @@ const NAV_ICON_MAP: Record<string, LucideIcon> = {
   "green-invoice-queries": FileText,
   reports: BarChart3,
   "member-access": UserCog,
+  inspiration: Quote,
 };
 
 interface NavIconProps {

@@ -1657,6 +1657,15 @@
   color: var(--ds-color-text-muted);
 }
 
+.management-dashboard__quote {
+  margin: var(--ds-space-2) 0 0;
+  color: var(--ds-color-text-muted);
+  font-family: "Gveret Levin", var(--amarok-font-family);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
 .management-dashboard__actions {
   gap: var(--ds-space-3);
 }
@@ -1850,6 +1859,10 @@
 .management-metric--messages .management-metric__icon {
   background: var(--ds-color-primary-muted);
   color: var(--ds-color-primary);
+}
+.management-metric--newCall .management-metric__icon {
+  background: var(--ds-color-warning-muted);
+  color: var(--ds-color-warning);
 }
 
 .management-metric__link {

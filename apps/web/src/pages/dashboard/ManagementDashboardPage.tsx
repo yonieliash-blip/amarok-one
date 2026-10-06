@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { CatalogPart, InspirationCurrent, ServiceCall } from "@amarok-one/types";
-import { Button } from "@amarok-one/ui";
 import {
   CalendarDays,
   ChevronLeft,
@@ -10,7 +9,6 @@ import {
   MessageCircle,
   Package,
   Plus,
-  UsersRound,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "../../auth/useAuth";
@@ -24,7 +22,6 @@ import {
   endOfLocalDay,
   fetchAllServiceCalls,
   isActiveServiceCall,
-  isInProgressServiceCall,
   isWaitingForManager,
   startOfLocalDay,
 } from "../../lib/service-manager-dashboard";
@@ -35,12 +32,22 @@ import { getCurrentInspirationRequest } from "../../lib/inspiration-api";
 type PageStatus = "loading" | "ready" | "error";
 
 interface Metric {
-  id: "open" | "inProgress" | "today" | "waitingManager" | "messages";
+  id: "open" | "newCall" | "today" | "waitingManager" | "messages";
   titleKey:
-    "openCallsTitle" | "inProgressTitle" | "todayTitle" | "waitingManagerTitle" | "messagesTitle";
-  noteKey: "openCallsNote" | "inProgressNote" | "todayNote" | "waitingManagerNote" | "messagesNote";
+    | "openCallsTitle"
+    | "newServiceCallCardTitle"
+    | "todayTitle"
+    | "waitingManagerTitle"
+    | "messagesTitle";
+  noteKey:
+    | "openCallsNote"
+    | "newServiceCallCardNote"
+    | "todayNote"
+    | "waitingManagerNote"
+    | "messagesNote";
   icon: LucideIcon;
-  value: number;
+  value: number | null;
+  to?: string;
 }
 
 function flattenParts(groups: Awaited<ReturnType<typeof listPartsCatalogRequest>>): CatalogPart[] {
@@ -120,13 +127,18 @@ export function ManagementDashboardPage() {
         icon: ClipboardList,
         value: calls.filter(isActiveServiceCall).length,
       },
-      {
-        id: "inProgress",
-        titleKey: "inProgressTitle",
-        noteKey: "inProgressNote",
-        icon: UsersRound,
-        value: calls.filter(isInProgressServiceCall).length,
-      },
+      ...(canWrite
+        ? [
+            {
+              id: "newCall" as const,
+              titleKey: "newServiceCallCardTitle" as const,
+              noteKey: "newServiceCallCardNote" as const,
+              icon: Plus,
+              value: null,
+              to: "/service-calls/new",
+            },
+          ]
+        : []),
       {
         id: "today",
         titleKey: "todayTitle",
@@ -147,9 +159,10 @@ export function ManagementDashboardPage() {
         noteKey: "messagesNote",
         icon: MessageCircle,
         value: unreadMessages,
+        to: "/messages",
       },
     ],
-    [calls, todayEnd, todayStart, unreadMessages],
+    [canWrite, calls, todayEnd, todayStart, unreadMessages],
   );
 
   const greeting = useMemo(() => {
@@ -180,29 +193,7 @@ export function ManagementDashboardPage() {
         <div>
           <h2 className="management-dashboard__title">{greeting}</h2>
           {inspiration.text ? (
-            <p className="management-dashboard__subtitle">
-              {inspiration.text}
-              {inspiration.author ? ` — ${inspiration.author}` : ""}
-            </p>
-          ) : null}
-        </div>
-        <div className="management-dashboard__actions">
-          {user.permissions.some((permission) => permission.slug === "users:write") ? (
-            <Link to="/administration/inspiration" className="customers-page__action-link">
-              <Button variant="secondary">ניהול פתגמים והודעות</Button>
-            </Link>
-          ) : null}
-          {canWrite ? (
-            <Link to="/service-calls/new" className="customers-page__action-link">
-              <Button
-                variant="primary"
-                className="management-dashboard__new-call"
-                aria-label={t("titles", "newServiceCall")}
-              >
-                <Plus size={20} aria-hidden="true" />
-                {t("managementDashboard", "newServiceCall")}
-              </Button>
-            </Link>
+            <p className="management-dashboard__quote">{inspiration.text}</p>
           ) : null}
         </div>
       </header>
@@ -230,7 +221,11 @@ export function ManagementDashboardPage() {
                     <p className="management-metric__label">
                       {t("managementDashboard", metric.titleKey)}
                     </p>
-                    <p className="management-metric__value">{formatNumber(metric.value, locale)}</p>
+                    {metric.value === null ? null : (
+                      <p className="management-metric__value">
+                        {formatNumber(metric.value, locale)}
+                      </p>
+                    )}
                     <p className="management-metric__note">
                       {t("managementDashboard", metric.noteKey)}
                     </p>
@@ -242,8 +237,8 @@ export function ManagementDashboardPage() {
                   </span>
                 </article>
               );
-              return metric.id === "messages" ? (
-                <Link key={metric.id} to="/messages" className="management-metric__link">
+              return metric.to ? (
+                <Link key={metric.id} to={metric.to} className="management-metric__link">
                   {card}
                 </Link>
               ) : (
@@ -307,13 +302,15 @@ export function ManagementDashboardPage() {
                     </div>
                   </div>
                   <ul className="management-overview__list">
-                    {metrics.map((metric) => (
-                      <li key={metric.id} className={`management-overview__item--${metric.id}`}>
-                        <span className="management-overview__dot" aria-hidden="true" />
-                        <span>{t("managementDashboard", metric.titleKey)}</span>
-                        <strong>{formatNumber(metric.value, locale)}</strong>
-                      </li>
-                    ))}
+                    {metrics
+                      .filter((metric) => metric.value !== null)
+                      .map((metric) => (
+                        <li key={metric.id} className={`management-overview__item--${metric.id}`}>
+                          <span className="management-overview__dot" aria-hidden="true" />
+                          <span>{t("managementDashboard", metric.titleKey)}</span>
+                          <strong>{formatNumber(metric.value ?? 0, locale)}</strong>
+                        </li>
+                      ))}
                   </ul>
                 </div>
               </article>

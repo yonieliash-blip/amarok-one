@@ -86,6 +86,10 @@ export const APP_ROUTE_ACCESS: readonly RouteAccessRule[] = [
     permissions: [PERMISSIONS.USERS_READ],
     writePermissions: [PERMISSIONS.USERS_WRITE],
   },
+  {
+    path: "/administration/inspiration",
+    permissions: [PERMISSIONS.USERS_WRITE],
+  },
 ];
 
 function patternToRegex(path: string): RegExp {

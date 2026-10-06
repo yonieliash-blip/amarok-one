@@ -1,6 +1,14 @@
 @import "./design-system/tokens.css";
 @import "./design-system/shell.css";
 
+@font-face {
+  font-family: "Gveret Levin";
+  src: url("./assets/fonts/gveret-levin-hebrew-400.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 :root {
   --amarok-font-family:
     "Noto Sans Hebrew", "Noto Sans", "Segoe UI", "Arial Hebrew", system-ui, -apple-system,
