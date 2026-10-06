@@ -851,10 +851,10 @@ a {
 .messages-page__watermark {
   position: absolute;
   inset: 50% auto auto 50%;
-  width: min(74%, 32rem);
-  max-height: 14rem;
+  width: min(38%, 16rem);
+  max-height: 8rem;
   object-fit: contain;
-  opacity: 0.1;
+  opacity: 0.055;
   filter: grayscale(1) sepia(0.35) saturate(0.65);
   pointer-events: none;
   transform: translate(-50%, -50%);
@@ -864,7 +864,7 @@ a {
   position: absolute;
   z-index: 0;
   color: var(--ds-color-chat-charcoal);
-  opacity: 0.14;
+  opacity: 0.075;
   pointer-events: none;
 }
 
@@ -876,37 +876,37 @@ a {
 }
 
 .messages-page__decoration--tractor {
-  inset: 8% auto auto 7%;
-  width: 5.75rem;
-  height: 5.75rem;
+  inset: 10% auto auto 9%;
+  width: 3.25rem;
+  height: 3.25rem;
   transform: rotate(-7deg);
 }
 
 .messages-page__decoration--excavator {
-  inset: auto 7% 10% auto;
-  width: 6rem;
-  height: 6rem;
+  inset: auto 10% 12% auto;
+  width: 3.5rem;
+  height: 3.5rem;
   transform: rotate(5deg);
 }
 
 .messages-page__decoration--forklift {
-  inset: 42% 6% auto auto;
-  width: 4.75rem;
-  height: 4.75rem;
+  inset: 40% 8% auto auto;
+  width: 2.75rem;
+  height: 2.75rem;
   transform: rotate(-4deg);
 }
 
 .messages-page__decoration--wrench {
-  inset: auto auto 10% 11%;
-  width: 4.25rem;
-  height: 4.25rem;
+  inset: auto auto 13% 14%;
+  width: 2.5rem;
+  height: 2.5rem;
   transform: rotate(-28deg);
 }
 
 .messages-page__decoration--gear {
-  inset: 48% auto auto 13%;
-  width: 3.75rem;
-  height: 3.75rem;
+  inset: 50% auto auto 17%;
+  width: 2.25rem;
+  height: 2.25rem;
   transform: rotate(14deg);
 }
 

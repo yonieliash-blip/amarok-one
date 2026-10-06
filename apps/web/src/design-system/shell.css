@@ -116,6 +116,7 @@
   display: flex;
   align-items: center;
   min-width: 0;
+  flex: 0 0 auto;
 }
 
 .work-day-control--header {
@@ -137,18 +138,28 @@
   padding: var(--ds-space-2) var(--ds-space-3);
   border: 1px solid rgba(255, 255, 255, 0.38);
   border-radius: var(--ds-radius-lg);
-  color: #fff;
+  color: #fff !important;
   font-size: var(--ds-text-body-sm-size);
   font-weight: var(--ds-font-weight-bold);
   white-space: nowrap;
 }
 
 .work-day-control__button:not(.work-day-control__button--active) {
-  background: #168447;
+  background: #35a85b !important;
+  color: #fff !important;
 }
 
 .work-day-control__button--active {
-  background: #c62828;
+  background: #df5b5b !important;
+  color: #fff !important;
+}
+
+.work-day-control__button:not(.work-day-control__button--active):hover:not(:disabled) {
+  background: #278f4a !important;
+}
+
+.work-day-control__button--active:hover:not(:disabled) {
+  background: #c84646 !important;
 }
 
 .work-day-required-notice {
@@ -348,6 +359,11 @@
   align-items: center;
   gap: var(--ds-space-3);
   min-width: 0;
+}
+
+.app-header__end {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
 }
 
 .app-header__titles {
@@ -1478,6 +1494,8 @@
     display: flex;
     order: 2;
     flex: 0 0 auto;
+    margin-inline-start: auto;
+    gap: var(--ds-space-1);
   }
 
   .user-menu__trigger {
@@ -1485,19 +1503,20 @@
   }
 
   .user-menu__sign-out {
-    width: auto;
+    width: 2.75rem;
     min-height: 2.75rem;
-    padding: var(--ds-space-2) var(--ds-space-3);
+    justify-content: center;
+    padding: 0;
   }
 
   .user-menu__sign-out span {
-    position: static;
-    width: auto;
-    height: auto;
+    position: absolute;
+    width: 1px;
+    height: 1px;
     padding: 0;
-    margin: 0;
-    overflow: visible;
-    clip: auto;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
   }

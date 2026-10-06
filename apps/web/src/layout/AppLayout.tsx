@@ -177,7 +177,7 @@ export function AppLayout() {
 
       {workDayNotice && workDayActive === false ? (
         <aside className="work-day-required-notice" role="alert" aria-live="assertive">
-          קודם עליך להתחיל עבודה
+          {t("workDay", "requiredNotice")}
         </aside>
       ) : null}
 

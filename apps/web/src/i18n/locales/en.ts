@@ -367,6 +367,7 @@ export const en: TranslationMessages = {
   workDay: {
     title: "Work day",
     notStarted: "You have not started a work day yet",
+    requiredNotice: "Click “Start work” to activate the system",
     activeSince: "Work day started at {{time}}",
     start: "Start work",
     end: "End work",

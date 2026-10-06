@@ -365,6 +365,7 @@ export const he: TranslationMessages = {
   workDay: {
     title: "יום עבודה",
     notStarted: "טרם התחלת יום עבודה",
+    requiredNotice: "לחץ על ״תחילת עבודה״ כדי להפעיל את המערכת",
     activeSince: "יום העבודה התחיל ב־{{time}}",
     start: "תחילת עבודה",
     end: "סיים עבודה",
