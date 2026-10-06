@@ -495,7 +495,6 @@ export function ServiceCallWorkReportPanel({
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp,image/heic"
-                      capture="environment"
                       disabled={!canEdit || !editor.report || uploadingCategory !== null}
                       onChange={(event) =>
                         void handlePhotoUpload(photo.id, event.target.files?.[0])

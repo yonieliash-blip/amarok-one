@@ -56,6 +56,7 @@ export interface TranslationMessages {
     reports: string;
     messages: string;
     memberAccess: string;
+    inspiration: string;
     navGroupOverview: string;
     navGroupOperations: string;
     navGroupField: string;
@@ -813,6 +814,8 @@ export interface TranslationMessages {
     title: string;
     subtitle: string;
     newServiceCall: string;
+    newServiceCallCardTitle: string;
+    newServiceCallCardNote: string;
     refresh: string;
     loading: string;
     loadError: string;

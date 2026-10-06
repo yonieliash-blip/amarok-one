@@ -31,7 +31,8 @@ export type NavLabelKey =
   | "greenInvoiceQueries"
   | "reports"
   | "messages"
-  | "memberAccess";
+  | "memberAccess"
+  | "inspiration";
 
 export interface NavigationItemDefinition {
   id: string;
@@ -176,6 +177,12 @@ export const NAVIGATION_ITEMS: readonly NavigationItemDefinition[] = [
     to: "/administration/member-access",
     labelKey: "memberAccess",
     permissions: [PERMISSIONS.USERS_READ],
+  },
+  {
+    id: "inspiration",
+    to: "/administration/inspiration",
+    labelKey: "inspiration",
+    permissions: [PERMISSIONS.USERS_WRITE],
   },
 ] as const;
 

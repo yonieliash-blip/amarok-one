@@ -222,10 +222,7 @@ export function OfficeDashboardPage() {
         <div>
           <h2 className="management-dashboard__title">{greeting}</h2>
           {inspiration.text ? (
-            <p className="management-dashboard__subtitle">
-              {inspiration.text}
-              {inspiration.author ? ` — ${inspiration.author}` : ""}
-            </p>
+            <p className="management-dashboard__quote">{inspiration.text}</p>
           ) : null}
         </div>
         <div className="management-dashboard__actions">
